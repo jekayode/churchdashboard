@@ -1,0 +1,233 @@
+[
+    {
+        "id": 1,
+        "branch_id": 2,
+        "name": "Care Division",
+        "description": "Handles music, choir, and worship sessions.",
+        "leader_id": 1,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 2,
+        "branch_id": 2,
+        "name": "Family Life",
+        "description": "Focuses on youth engagement and programs.",
+        "leader_id": 2,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 3,
+        "branch_id": 2,
+        "name": "Maturity",
+        "description": "Coordinates evangelism and community outreach.",
+        "leader_id": 2,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 4,
+        "branch_id": 2,
+        "name": "People & Performance Division",
+        "description": "Oversees children's church and activities.",
+        "leader_id": 2,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 5,
+        "branch_id": 2,
+        "name": "Communications",
+        "description": "Handles music, choir, and worship sessions.",
+        "leader_id": 5,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 6,
+        "branch_id": 2,
+        "name": "Finance and Prayers",
+        "description": "Focuses on youth engagement and programs.",
+        "leader_id": 5,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 7,
+        "branch_id": 2,
+        "name": "Missions",
+        "description": "Coordinates evangelism and community outreach.",
+        "leader_id": 4,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 8,
+        "branch_id": 2,
+        "name": "Life Groups, Assimilation & Online Church Division",
+        "description": "Oversees children's church and activities.",
+        "leader_id": 5,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 9,
+        "branch_id": 3,
+        "name": "Care Division",
+        "description": "Handles music, choir, and worship sessions.",
+        "leader_id": 6,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 10,
+        "branch_id": 3,
+        "name": "Family Life",
+        "description": "Focuses on youth engagement and programs.",
+        "leader_id": 7,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 11,
+        "branch_id": 3,
+        "name": "Maturity",
+        "description": "Coordinates evangelism and community outreach.",
+        "leader_id": 7,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 12,
+        "branch_id": 3,
+        "name": "People & Performance Division",
+        "description": "Oversees children's church and activities.",
+        "leader_id": 6,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:13",
+        "updated_at": "2025-06-17 21:14:13",
+        "deleted_at": null
+    },
+    {
+        "id": 13,
+        "branch_id": 1,
+        "name": "Care Division",
+        "description": "This division provides holistic care and support, ensuring members and the surrounding community feel valued and connected.",
+        "leader_id": 214,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:42:05",
+        "deleted_at": null
+    },
+    {
+        "id": 14,
+        "branch_id": 1,
+        "name": "Family Life",
+        "description": "Focused on fostering strong relationships and personal growth through tailored support for singles, engaged couples, and married individuals.",
+        "leader_id": 212,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:41:34",
+        "deleted_at": null
+    },
+    {
+        "id": 15,
+        "branch_id": 1,
+        "name": "Maturity",
+        "description": "Dedicated to spiritual growth and development through discipleship, creative content, and worship.",
+        "leader_id": 9,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:41:20",
+        "deleted_at": null
+    },
+    {
+        "id": 16,
+        "branch_id": 1,
+        "name": "People & Performance Division",
+        "description": "Enhancing leadership, engaging volunteers, promoting learning, and leveraging technology for efficient operations.",
+        "leader_id": 1,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:39:46",
+        "deleted_at": null
+    },
+    {
+        "id": 17,
+        "branch_id": 1,
+        "name": "Communications",
+        "description": "Responsible for creating and sharing engaging content, managing the church's online presence, and maintaining a strong brand image.",
+        "leader_id": 218,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:41:52",
+        "deleted_at": null
+    },
+    {
+        "id": 18,
+        "branch_id": 1,
+        "name": "Finance and Prayers",
+        "description": "Manages financial resources, fosters strategic partnerships, supports church projects, and leads prayer initiatives for spiritual and financial growth.",
+        "leader_id": 78,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:42:19",
+        "deleted_at": null
+    },
+    {
+        "id": 19,
+        "branch_id": 1,
+        "name": "Missions",
+        "description": "Focused on spreading the gospel, supporting new believers, and expanding the church\u2019s reach through local and global missions.",
+        "leader_id": 166,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:40:19",
+        "deleted_at": null
+    },
+    {
+        "id": 20,
+        "branch_id": 1,
+        "name": "Life Groups, Assimilation & Online Church Division",
+        "description": "Focuses on fostering community, facilitating spiritual growth, and ensuring smooth integration of members both in-person and online.",
+        "leader_id": 97,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:41:01",
+        "deleted_at": null
+    },
+    {
+        "id": 21,
+        "branch_id": 1,
+        "name": "Ministry Operation",
+        "description": "Ensures smooth service delivery and a welcoming environment for all members and visitors through effective coordination and support services.",
+        "leader_id": 195,
+        "status": "active",
+        "created_at": "2025-06-23 18:10:14",
+        "updated_at": "2025-06-28 00:40:45",
+        "deleted_at": null
+    }
+]

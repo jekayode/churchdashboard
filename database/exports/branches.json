@@ -1,0 +1,62 @@
+[
+    {
+        "id": 1,
+        "name": "LifePointe Greater Lekki",
+        "logo": null,
+        "venue": "Screen 4, Nova Cinema, Novare Mall, Sangotedo",
+        "service_time": "Sunday 9:00 AM & 11:00 AM",
+        "phone": "+2348050602370",
+        "email": "gl@lifepointeng.org",
+        "map_embed_code": "<iframe src=\"https:\/\/www.google.com\/maps\/embed?pb=!1m18!1m12!1m3!1d3024.123456789!2d-74.0059413!3d40.7127753!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDQyJzQ2LjAiTiA3NMKwMDAnMjEuNCJX!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus\" width=\"600\" height=\"450\" style=\"border:0;\" allowfullscreen=\"\" loading=\"lazy\"><\/iframe>",
+        "pastor_id": 3,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:10",
+        "updated_at": "2025-06-23 18:15:23",
+        "deleted_at": null
+    },
+    {
+        "id": 2,
+        "name": "LifePointe Lekki",
+        "logo": null,
+        "venue": "Pistis Annex, Maruwa, Lekki",
+        "service_time": "Sunday 10:00 AM",
+        "phone": "+1-555-0102",
+        "email": "lekki@lifepointeng.org",
+        "map_embed_code": "<iframe src=\"https:\/\/www.google.com\/maps\/embed?pb=!1m18!1m12!1m3!1d3024.123456789!2d-74.0059413!3d40.7127753!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDQyJzQ2LjAiTiA3NMKwMDAnMjEuNCJX!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus\" width=\"600\" height=\"450\" style=\"border:0;\" allowfullscreen=\"\" loading=\"lazy\"><\/iframe>",
+        "pastor_id": 4,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:10",
+        "updated_at": "2025-06-23 17:36:59",
+        "deleted_at": null
+    },
+    {
+        "id": 3,
+        "name": "LifePointe Ojo",
+        "logo": null,
+        "venue": "Choice and Choices Event Centre, Iyana School, Ojo",
+        "service_time": "Sunday 10:00 AM",
+        "phone": "+1-555-0103",
+        "email": "ojo@lifepointeng.org",
+        "map_embed_code": "<iframe src=\"https:\/\/www.google.com\/maps\/embed?pb=!1m18!1m12!1m3!1d3024.123456789!2d-74.0059413!3d40.7127753!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNDDCsDQyJzQ2LjAiTiA3NMKwMDAnMjEuNCJX!5e0!3m2!1sen!2sus!4v1234567890123!5m2!1sen!2sus\" width=\"600\" height=\"450\" style=\"border:0;\" allowfullscreen=\"\" loading=\"lazy\"><\/iframe>",
+        "pastor_id": 5,
+        "status": "active",
+        "created_at": "2025-06-17 21:14:10",
+        "updated_at": "2025-06-23 17:33:37",
+        "deleted_at": null
+    },
+    {
+        "id": 4,
+        "name": "LifePointe Yaba",
+        "logo": null,
+        "venue": "2\/8 Chapel Street, Sabo yaba, Lagos,\nNigeria.",
+        "service_time": "Sunday 10:00 AM",
+        "phone": null,
+        "email": null,
+        "map_embed_code": null,
+        "pastor_id": 18,
+        "status": "active",
+        "created_at": "2025-06-23 17:34:16",
+        "updated_at": "2025-06-23 17:38:50",
+        "deleted_at": null
+    }
+]

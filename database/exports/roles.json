@@ -1,0 +1,56 @@
+[
+    {
+        "id": 1,
+        "name": "super_admin",
+        "display_name": "Super Admin",
+        "description": "Full system access across all branches and features",
+        "created_at": "2025-06-17 21:14:08",
+        "updated_at": "2025-06-17 21:14:08",
+        "deleted_at": null
+    },
+    {
+        "id": 2,
+        "name": "branch_pastor",
+        "display_name": "Branch Pastor",
+        "description": "Full access to manage a specific branch including members, ministries, and reports",
+        "created_at": "2025-06-17 21:14:08",
+        "updated_at": "2025-06-17 21:14:08",
+        "deleted_at": null
+    },
+    {
+        "id": 3,
+        "name": "ministry_leader",
+        "display_name": "Ministry Leader",
+        "description": "Manage ministries and departments within their assigned ministry",
+        "created_at": "2025-06-17 21:14:08",
+        "updated_at": "2025-06-17 21:14:08",
+        "deleted_at": null
+    },
+    {
+        "id": 4,
+        "name": "department_leader",
+        "display_name": "Department Leader",
+        "description": "Manage members and activities within their assigned department",
+        "created_at": "2025-06-17 21:14:08",
+        "updated_at": "2025-06-17 21:14:08",
+        "deleted_at": null
+    },
+    {
+        "id": 5,
+        "name": "church_member",
+        "display_name": "Church Member",
+        "description": "Basic member access to view events and update personal information",
+        "created_at": "2025-06-17 21:14:08",
+        "updated_at": "2025-06-17 21:14:08",
+        "deleted_at": null
+    },
+    {
+        "id": 6,
+        "name": "public_user",
+        "display_name": "Public User",
+        "description": "Limited access to public events and registration",
+        "created_at": "2025-06-17 21:14:08",
+        "updated_at": "2025-06-17 21:14:08",
+        "deleted_at": null
+    }
+]
