@@ -1274,4 +1274,5 @@ function hideNotification() {
     document.getElementById('notification').classList.add('hidden');
 }
 </script>
+
 @endsection 

@@ -202,26 +202,6 @@ final class ReportingService
             throw new \InvalidArgumentException('Invalid event type provided.');
         }
 
-        // Ensure required numeric fields have default values to prevent null constraint violations
-        $data['attendance_male'] = $data['attendance_male'] ?: 0;
-        $data['attendance_female'] = $data['attendance_female'] ?: 0;
-        $data['attendance_children'] = $data['attendance_children'] ?: 0;
-        $data['attendance_online'] = $data['attendance_online'] ?: 0;
-        $data['first_time_guests'] = $data['first_time_guests'] ?: 0;
-        $data['converts'] = $data['converts'] ?: 0;
-        $data['number_of_cars'] = $data['number_of_cars'] ?: 0;
-        $data['is_multi_service'] = $data['is_multi_service'] ?: false;
-
-        // Set second service defaults if multi-service
-        if ($data['is_multi_service']) {
-            $data['second_service_attendance_male'] = $data['second_service_attendance_male'] ?: 0;
-            $data['second_service_attendance_female'] = $data['second_service_attendance_female'] ?: 0;
-            $data['second_service_attendance_children'] = $data['second_service_attendance_children'] ?: 0;
-            $data['second_service_first_time_guests'] = $data['second_service_first_time_guests'] ?: 0;
-            $data['second_service_converts'] = $data['second_service_converts'] ?: 0;
-            $data['second_service_number_of_cars'] = $data['second_service_number_of_cars'] ?: 0;
-        }
-
         return EventReport::create($data);
     }
 

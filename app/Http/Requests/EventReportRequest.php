@@ -19,7 +19,7 @@ final class EventReportRequest extends FormRequest
             'event_id' => 'required|exists:events,id',
             'event_date' => 'required|date',
             'event_type' => 'required|string|max:100',
-            'service_type' => 'nullable|string|max:100|required_if:event_type,service',
+            'service_type' => 'nullable|string|max:100',
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'notes' => 'nullable|string',

@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Log;
 
 Route::get('/', function () {
     return view('welcome');
@@ -42,9 +42,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
         return view('admin.users.index');
     })->name('users');
     
-    Route::get('/reports', function () {
-        return view('admin.reports.index');
-    })->name('reports');
+    Route::get('/reports', [ReportingController::class, 'index'])->name('reports');
     
     Route::get('/import-export', function () {
         return view('admin.import-export.index');

@@ -46,3 +46,12 @@ node_modules/
 # Task files
 # tasks.json
 # tasks/ 
+.cursorrules
+/.taskmaster
+/.roo
+/.cursor
+
+.roomodes
+.windsurfrules
+
+README_SANCTUM.md

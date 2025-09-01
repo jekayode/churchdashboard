@@ -188,24 +188,24 @@ final class EventReportsImport implements ToCollection, WithHeadingRow, WithVali
             $cleanData['event_type'] = 'service';
         }
 
-        // Set defaults for required fields (ensuring no null values)
-        $cleanData['attendance_male'] = $cleanData['attendance_male'] ?: 0;
-        $cleanData['attendance_female'] = $cleanData['attendance_female'] ?: 0;
-        $cleanData['attendance_children'] = $cleanData['attendance_children'] ?: 0;
-        $cleanData['attendance_online'] = $cleanData['attendance_online'] ?: 0;
-        $cleanData['first_time_guests'] = $cleanData['first_time_guests'] ?: 0;
-        $cleanData['converts'] = $cleanData['converts'] ?: 0;
-        $cleanData['number_of_cars'] = $cleanData['number_of_cars'] ?: 0;
+        // Set defaults for required fields
+        $cleanData['attendance_male'] = $cleanData['attendance_male'] ?? 0;
+        $cleanData['attendance_female'] = $cleanData['attendance_female'] ?? 0;
+        $cleanData['attendance_children'] = $cleanData['attendance_children'] ?? 0;
+        $cleanData['attendance_online'] = $cleanData['attendance_online'] ?? 0;
+        $cleanData['first_time_guests'] = $cleanData['first_time_guests'] ?? 0;
+        $cleanData['converts'] = $cleanData['converts'] ?? 0;
+        $cleanData['number_of_cars'] = $cleanData['number_of_cars'] ?? 0;
         $cleanData['is_multi_service'] = $cleanData['is_multi_service'] ?? false;
 
-        // Set second service defaults if multi-service (ensuring no null values)
+        // Set second service defaults if multi-service
         if ($cleanData['is_multi_service']) {
-            $cleanData['second_service_attendance_male'] = $cleanData['second_service_attendance_male'] ?: 0;
-            $cleanData['second_service_attendance_female'] = $cleanData['second_service_attendance_female'] ?: 0;
-            $cleanData['second_service_attendance_children'] = $cleanData['second_service_attendance_children'] ?: 0;
-            $cleanData['second_service_first_time_guests'] = $cleanData['second_service_first_time_guests'] ?: 0;
-            $cleanData['second_service_converts'] = $cleanData['second_service_converts'] ?: 0;
-            $cleanData['second_service_number_of_cars'] = $cleanData['second_service_number_of_cars'] ?: 0;
+            $cleanData['second_service_attendance_male'] = $cleanData['second_service_attendance_male'] ?? 0;
+            $cleanData['second_service_attendance_female'] = $cleanData['second_service_attendance_female'] ?? 0;
+            $cleanData['second_service_attendance_children'] = $cleanData['second_service_attendance_children'] ?? 0;
+            $cleanData['second_service_first_time_guests'] = $cleanData['second_service_first_time_guests'] ?? 0;
+            $cleanData['second_service_converts'] = $cleanData['second_service_converts'] ?? 0;
+            $cleanData['second_service_number_of_cars'] = $cleanData['second_service_number_of_cars'] ?? 0;
         }
 
         return $cleanData;
@@ -324,23 +324,23 @@ final class EventReportsImport implements ToCollection, WithHeadingRow, WithVali
             'event_type' => $data['event_type'],
             'service_type' => $data['service_type'] ?? null,
             'report_date' => $data['report_date'],
-            'attendance_male' => $data['attendance_male'] ?: 0,
-            'attendance_female' => $data['attendance_female'] ?: 0,
-            'attendance_children' => $data['attendance_children'] ?: 0,
-            'attendance_online' => $data['attendance_online'] ?: 0,
-            'first_time_guests' => $data['first_time_guests'] ?: 0,
-            'converts' => $data['converts'] ?: 0,
+            'attendance_male' => $data['attendance_male'],
+            'attendance_female' => $data['attendance_female'],
+            'attendance_children' => $data['attendance_children'],
+            'attendance_online' => $data['attendance_online'],
+            'first_time_guests' => $data['first_time_guests'],
+            'converts' => $data['converts'],
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
-            'number_of_cars' => $data['number_of_cars'] ?: 0,
+            'number_of_cars' => $data['number_of_cars'],
             'notes' => $data['notes'] ?? null,
-            'is_multi_service' => $data['is_multi_service'] ?: false,
-            'second_service_attendance_male' => $data['is_multi_service'] ? ($data['second_service_attendance_male'] ?: 0) : 0,
-            'second_service_attendance_female' => $data['is_multi_service'] ? ($data['second_service_attendance_female'] ?: 0) : 0,
-            'second_service_attendance_children' => $data['is_multi_service'] ? ($data['second_service_attendance_children'] ?: 0) : 0,
-            'second_service_first_time_guests' => $data['is_multi_service'] ? ($data['second_service_first_time_guests'] ?: 0) : 0,
-            'second_service_converts' => $data['is_multi_service'] ? ($data['second_service_converts'] ?: 0) : 0,
-            'second_service_number_of_cars' => $data['is_multi_service'] ? ($data['second_service_number_of_cars'] ?: 0) : 0,
+            'is_multi_service' => $data['is_multi_service'],
+            'second_service_attendance_male' => $data['second_service_attendance_male'] ?? null,
+            'second_service_attendance_female' => $data['second_service_attendance_female'] ?? null,
+            'second_service_attendance_children' => $data['second_service_attendance_children'] ?? null,
+            'second_service_first_time_guests' => $data['second_service_first_time_guests'] ?? null,
+            'second_service_converts' => $data['second_service_converts'] ?? null,
+            'second_service_number_of_cars' => $data['second_service_number_of_cars'] ?? null,
             'second_service_start_time' => $data['second_service_start_time'] ?? null,
             'second_service_end_time' => $data['second_service_end_time'] ?? null,
             'second_service_notes' => $data['second_service_notes'] ?? null,

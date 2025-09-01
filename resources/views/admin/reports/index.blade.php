@@ -1,18 +1,12 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Reports & Analytics') }}
+        </h2>
+    </x-slot>
 
-@section('content')
-    <!-- Page Header -->
-    <div class="bg-white shadow">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-            <h1 class="text-3xl font-bold text-gray-900">
-                Reports & Analytics
-            </h1>
-        </div>
-    </div>
-    
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-
             <!-- Filters Section -->
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex justify-between items-center mb-6">
@@ -41,10 +35,10 @@
                     <!-- Period Selection Dropdown -->
                     <select id="periodSelect" class="border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="week">This Week</option>
-                        <option value="month">This Month</option>
+                        <option value="month" selected>This Month</option>
                         <option value="last_month">Last Month</option>
                         <option value="quarter">This Quarter</option>
-                        <option value="year" selected>This Year</option>
+                        <option value="year">This Year</option>
                         <option value="custom">Custom Range</option>
                     </select>
                     <select id="eventTypeFilter" class="border-gray-300 rounded-md shadow-sm">
@@ -88,13 +82,6 @@
                             <select id="branchSelect" class="bg-white border border-gray-300 rounded-md px-4 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">All Branches</option>
                             </select>
-                        </div>
-                    @elseif(auth()->user()->isBranchPastor())
-                        <!-- Branch Display for Branch Pastor -->
-                        <div class="relative">
-                            <span class="bg-blue-100 text-blue-800 px-4 py-2 rounded-md font-medium">
-                                Branch: {{ auth()->user()->getPrimaryBranch()->name ?? 'Unknown' }}
-                            </span>
                         </div>
                     @endif
                 </div>
@@ -351,14 +338,6 @@
                                 <!-- Branches will be populated dynamically -->
                             </select>
                         </div>
-                        @elseif(auth()->user()->isBranchPastor())
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                            <span class="bg-blue-100 text-blue-800 px-3 py-2 rounded-md font-medium">
-                                {{ auth()->user()->getPrimaryBranch()->name ?? 'Unknown' }}
-                            </span>
-                            <input type="hidden" id="reportBranchSelect" value="{{ auth()->user()->getPrimaryBranch()->id ?? '' }}">
-                        </div>
                         @endif
                     </div>
 
@@ -429,41 +408,13 @@
                             <label class="block text-sm font-medium text-gray-700">Event Type</label>
                             <select id="createEventType" name="event_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                                 <option value="">Select Event Type</option>
-                                <option value="service">Service</option>
-                                <option value="conference">Conference</option>
-                                <option value="workshop">Workshop</option>
-                                <option value="outreach">Outreach</option>
-                                <option value="social">Social</option>
-                                <option value="other">Other</option>
+                                @foreach($eventTypes as $eventType)
+                                    <option value="{{ $eventType }}">{{ $eventType }}</option>
+                                @endforeach
                             </select>
                         </div>
                         
-                        <!-- Service Type Details (shown when event type is "service") -->
-                        <div id="createServiceTypeDiv" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700">Service Type *</label>
-                            <select id="createServiceType" name="service_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                                <option value="">Select Service Type</option>
-                                <option value="Sunday Service">Sunday Service</option>
-                                <option value="Mid-Week Service">Mid-Week Service</option>
-                                <option value="Conferences">Conferences</option>
-                                <option value="Outreach">Outreach</option>
-                                <option value="Evangelism (Beautiful Feet)">Evangelism (Beautiful Feet)</option>
-                                <option value="Water Baptism">Water Baptism</option>
-                                <option value="TECi">TECi</option>
-                                <option value="Membership Class">Membership Class</option>
-                                <option value="LifeGroup Meeting">LifeGroup Meeting</option>
-                                <option value="Prayer Meeting">Prayer Meeting</option>
-                                <option value="Youth Service">Youth Service</option>
-                                <option value="Women Ministry">Women Ministry</option>
-                                <option value="Men Ministry">Men Ministry</option>
-                                <option value="Children Service">Children Service</option>
-                                <option value="Leadership Meeting">Leadership Meeting</option>
-                                <option value="Community Outreach">Community Outreach</option>
-                                <option value="Baby Dedication">Baby Dedication</option>
-                                <option value="Holy Ghost Baptism">Holy Ghost Baptism</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Start Time</label>
                             <input type="time" name="start_time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
@@ -604,41 +555,12 @@
                             <label class="block text-sm font-medium text-gray-700">Event Type</label>
                             <select id="editEventType" name="event_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                                 <option value="">Select Event Type</option>
-                                <option value="service">Service</option>
-                                <option value="conference">Conference</option>
-                                <option value="workshop">Workshop</option>
-                                <option value="outreach">Outreach</option>
-                                <option value="social">Social</option>
-                                <option value="other">Other</option>
+                                @foreach($eventTypes as $eventType)
+                                    <option value="{{ $eventType }}">{{ $eventType }}</option>
+                                @endforeach
                             </select>
                         </div>
-                        
-                        <!-- Service Type Details (shown when event type is "service") -->
-                        <div id="editServiceTypeDiv" class="hidden">
-                            <label class="block text-sm font-medium text-gray-700">Service Type *</label>
-                            <select id="editServiceType" name="service_type" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                                <option value="">Select Service Type</option>
-                                <option value="Sunday Service">Sunday Service</option>
-                                <option value="Mid-Week Service">Mid-Week Service</option>
-                                <option value="Conferences">Conferences</option>
-                                <option value="Outreach">Outreach</option>
-                                <option value="Evangelism (Beautiful Feet)">Evangelism (Beautiful Feet)</option>
-                                <option value="Water Baptism">Water Baptism</option>
-                                <option value="TECi">TECi</option>
-                                <option value="Membership Class">Membership Class</option>
-                                <option value="LifeGroup Meeting">LifeGroup Meeting</option>
-                                <option value="Prayer Meeting">Prayer Meeting</option>
-                                <option value="Youth Service">Youth Service</option>
-                                <option value="Women Ministry">Women Ministry</option>
-                                <option value="Men Ministry">Men Ministry</option>
-                                <option value="Children Service">Children Service</option>
-                                <option value="Leadership Meeting">Leadership Meeting</option>
-                                <option value="Community Outreach">Community Outreach</option>
-                                <option value="Baby Dedication">Baby Dedication</option>
-                                <option value="Holy Ghost Baptism">Holy Ghost Baptism</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Start Time</label>
                             <input type="time" id="editStartTime" name="start_time" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
@@ -819,52 +741,13 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-        // API Request Helper Function
-        async function makeAPIRequest(url, options = {}) {
-            const defaultOptions = {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            };
-            
-            // Add authorization header if API token is available
-            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
-            if (apiToken) {
-                defaultOptions.headers['Authorization'] = `Bearer ${apiToken}`;
-            }
-            
-            const mergedOptions = {
-                ...defaultOptions,
-                ...options,
-                headers: {
-                    ...defaultOptions.headers,
-                    ...(options.headers || {})
-                }
-            };
-            
-            return fetch(url, mergedOptions);
-        }
-
         // Initialize the reporting dashboard
         document.addEventListener('DOMContentLoaded', function() {
-            // Wait for Chart.js to load before initializing charts
-            if (typeof Chart !== 'undefined') {
-                initCharts();
-            } else {
-                // Retry after a short delay if Chart.js isn't loaded yet
-                setTimeout(function() {
-                    if (typeof Chart !== 'undefined') {
-                        initCharts();
-                    } else {
-                        console.error('Chart.js failed to load');
-                    }
-                }, 100);
-            }
+            // Initialize charts
+            initCharts();
             
-            // Set initial date filters for default period (This Year to show existing data)
-            setDateFiltersForPeriod('year');
+            // Set initial date filters for default period (This Month)
+            setDateFiltersForPeriod('month');
             
             // Load initial data
             loadDashboardData();
@@ -879,12 +762,7 @@
 
         function initCharts() {
             // Event Type Attendance Chart (Bar Chart)
-            const attendanceElement = document.getElementById('attendanceChart');
-            if (!attendanceElement) {
-                console.error('attendanceChart element not found');
-                return;
-            }
-            const attendanceCtx = attendanceElement.getContext('2d');
+            const attendanceCtx = document.getElementById('attendanceChart').getContext('2d');
             window.attendanceChart = new Chart(attendanceCtx, {
                 type: 'bar',
                 data: {
@@ -927,12 +805,7 @@
             });
 
             // Weekly Sunday Service Chart (Line Chart)
-            const eventTypeElement = document.getElementById('eventTypeChart');
-            if (!eventTypeElement) {
-                console.error('eventTypeChart element not found');
-                return;
-            }
-            const eventTypeCtx = eventTypeElement.getContext('2d');
+            const eventTypeCtx = document.getElementById('eventTypeChart').getContext('2d');
             window.eventTypeChart = new Chart(eventTypeCtx, {
                 type: 'line',
                 data: {
@@ -982,10 +855,7 @@
 
         function setupEventListeners() {
             // Period and branch selectors
-            const periodSelect = document.getElementById('periodSelect');
-            if (periodSelect) {
-                periodSelect.addEventListener('change', handlePeriodChange);
-            }
+            document.getElementById('periodSelect').addEventListener('change', handlePeriodChange);
             
             const branchSelect = document.getElementById('branchSelect');
             if (branchSelect) {
@@ -997,48 +867,31 @@
                 });
             }
 
-            // Modal controls - with null checks
-            const createReportBtn = document.getElementById('createReportBtn');
-            if (createReportBtn) createReportBtn.addEventListener('click', showCreateModal);
-            
-            const cancelReportBtn = document.getElementById('cancelReportBtn');
-            if (cancelReportBtn) cancelReportBtn.addEventListener('click', hideCreateModal);
+            // Modal controls
+            document.getElementById('createReportBtn').addEventListener('click', showCreateModal);
+            document.getElementById('cancelReportBtn').addEventListener('click', hideCreateModal);
             
             // Export PDF button
-            const exportPdfBtn = document.getElementById('exportPdfBtn');
-            if (exportPdfBtn) exportPdfBtn.addEventListener('click', exportToPDF);
+            document.getElementById('exportPdfBtn').addEventListener('click', exportToPDF);
             
             // Import Reports modal controls
-            const importReportsBtn = document.getElementById('importReportsBtn');
-            if (importReportsBtn) importReportsBtn.addEventListener('click', showImportModal);
-            
-            const cancelImportBtn = document.getElementById('cancelImportBtn');
-            if (cancelImportBtn) cancelImportBtn.addEventListener('click', hideImportModal);
-            
-            const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
-            if (downloadTemplateBtn) downloadTemplateBtn.addEventListener('click', downloadImportTemplate);
-            
-            const importReportsForm = document.getElementById('importReportsForm');
-            if (importReportsForm) importReportsForm.addEventListener('submit', handleImportReports);
+            document.getElementById('importReportsBtn').addEventListener('click', showImportModal);
+            document.getElementById('cancelImportBtn').addEventListener('click', hideImportModal);
+            document.getElementById('downloadTemplateBtn').addEventListener('click', downloadImportTemplate);
+            document.getElementById('importReportsForm').addEventListener('submit', handleImportReports);
             
             // Edit modal controls
-            const cancelEditBtn = document.getElementById('cancelEditBtn');
-            if (cancelEditBtn) cancelEditBtn.addEventListener('click', hideEditModal);
+            document.getElementById('cancelEditBtn').addEventListener('click', hideEditModal);
             
             // Second service toggle
-            const hasSecondService = document.getElementById('hasSecondService');
-            if (hasSecondService) {
-                hasSecondService.addEventListener('change', function() {
-                    const fields = document.getElementById('secondServiceFields');
-                    if (fields) {
-                        if (this.checked) {
-                            fields.classList.remove('hidden');
-                        } else {
-                            fields.classList.add('hidden');
-                        }
-                    }
-                });
-            }
+            document.getElementById('hasSecondService').addEventListener('change', function() {
+                const fields = document.getElementById('secondServiceFields');
+                if (this.checked) {
+                    fields.classList.remove('hidden');
+                } else {
+                    fields.classList.add('hidden');
+                }
+            });
 
             // Edit second service toggle
             document.getElementById('editHasSecondService').addEventListener('change', function() {
@@ -1056,60 +909,38 @@
             
             // Filter controls
                     document.getElementById('applyFiltersBtn').addEventListener('click', () => loadEventReports(1));
-        
-        // Date filter auto-update
-        const dateFromFilter = document.getElementById('dateFromFilter');
-        if (dateFromFilter) dateFromFilter.addEventListener('change', () => loadEventReports(1));
-        
-        const dateToFilter = document.getElementById('dateToFilter');
-        if (dateToFilter) dateToFilter.addEventListener('change', () => loadEventReports(1));
-        
-        const eventTypeFilter = document.getElementById('eventTypeFilter');
-        if (eventTypeFilter) eventTypeFilter.addEventListener('change', () => loadEventReports(1));
+            
+            // Date filter auto-update
+        document.getElementById('dateFromFilter').addEventListener('change', () => loadEventReports(1));
+        document.getElementById('dateToFilter').addEventListener('change', () => loadEventReports(1));
+        document.getElementById('eventTypeFilter').addEventListener('change', () => loadEventReports(1));
         
         // Pagination event listeners
-        const paginationPrev = document.getElementById('paginationPrev');
-        if (paginationPrev) {
-            paginationPrev.addEventListener('click', function() {
-                if (currentPage > 1) {
-                    loadEventReports(currentPage - 1);
-                }
-            });
-        }
+        document.getElementById('paginationPrev').addEventListener('click', function() {
+            if (currentPage > 1) {
+                loadEventReports(currentPage - 1);
+            }
+        });
         
-        const paginationNext = document.getElementById('paginationNext');
-        if (paginationNext) {
-            paginationNext.addEventListener('click', function() {
-                if (currentPage < totalPages) {
-                    loadEventReports(currentPage + 1);
-                }
-            });
-        }
+        document.getElementById('paginationNext').addEventListener('click', function() {
+            if (currentPage < totalPages) {
+                loadEventReports(currentPage + 1);
+            }
+        });
         
-        const perPageSelect = document.getElementById('perPageSelect');
-        if (perPageSelect) {
-            perPageSelect.addEventListener('change', function() {
-                const newPerPage = parseInt(this.value);
-                loadEventReports(1, newPerPage);
-            });
-        }
+        document.getElementById('perPageSelect').addEventListener('change', function() {
+            const newPerPage = parseInt(this.value);
+            loadEventReports(1, newPerPage);
+        });
             
             // Comparison
-            const comparePeriodsBtn = document.getElementById('comparePeriodsBtn');
-            if (comparePeriodsBtn) {
-                comparePeriodsBtn.addEventListener('click', comparePeriods);
-            }
+            document.getElementById('comparePeriodsBtn').addEventListener('click', comparePeriods);
         }
 
         // Handle period selection changes
         function handlePeriodChange() {
             const periodSelect = document.getElementById('periodSelect');
             const customDateRange = document.getElementById('customDateRange');
-            
-            if (!periodSelect || !customDateRange) {
-                console.error('Required elements not found for period change');
-                return;
-            }
             
             if (periodSelect.value === 'custom') {
                 customDateRange.classList.remove('hidden');
@@ -1128,14 +959,6 @@
 
         // Helper function to set date filters based on period
         function setDateFiltersForPeriod(period) {
-            const dateFromElement = document.getElementById('dateFromFilter');
-            const dateToElement = document.getElementById('dateToFilter');
-            
-            if (!dateFromElement || !dateToElement) {
-                console.error('Date filter elements not found');
-                return;
-            }
-            
             const now = new Date();
             let startDate, endDate;
             
@@ -1177,14 +1000,14 @@
                     
                 default:
                     // Clear filters for unknown periods
-                    dateFromElement.value = '';
-                    dateToElement.value = '';
+                    document.getElementById('dateFromFilter').value = '';
+                    document.getElementById('dateToFilter').value = '';
                     return;
             }
             
             // Set the date filter inputs
-            dateFromElement.value = startDate.toISOString().split('T')[0];
-            dateToElement.value = endDate.toISOString().split('T')[0];
+            document.getElementById('dateFromFilter').value = startDate.toISOString().split('T')[0];
+            document.getElementById('dateToFilter').value = endDate.toISOString().split('T')[0];
         }
 
         // Apply custom date range
@@ -1227,7 +1050,13 @@
                 if (branchId) params.append('branch_id', branchId);
                 
                 // Load dashboard statistics
-                const response = await makeAPIRequest(`/api/reports/dashboard?${params}`);
+                const response = await fetch(`/api/reports/dashboard?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1235,7 +1064,13 @@
                 }
                 
                 // Load trend data for charts
-                const trendResponse = await makeAPIRequest(`/api/reports/trends?${params}`);
+                const trendResponse = await fetch(`/api/reports/trends?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const trendData = await trendResponse.json();
                 
                 if (trendData.success) {
@@ -1248,12 +1083,7 @@
 
         async function loadDashboardData() {
             try {
-                const periodSelect = document.getElementById('periodSelect');
-                if (!periodSelect) {
-                    console.error('periodSelect element not found');
-                    return;
-                }
-                const period = periodSelect.value;
+                const period = document.getElementById('periodSelect').value;
                 const branchSelect = document.getElementById('branchSelect');
                 const branchId = branchSelect ? branchSelect.value : '';
                 
@@ -1265,7 +1095,13 @@
                 console.log('API URL:', `/api/reports/dashboard?${params}`);
                 
                 // Load dashboard statistics
-                const response = await makeAPIRequest(`/api/reports/dashboard?${params}`);
+                const response = await fetch(`/api/reports/dashboard?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const data = await response.json();
                 
                 console.log('Dashboard API response:', data);
@@ -1277,7 +1113,13 @@
                 }
                 
                 // Load trend data for charts
-                const trendResponse = await makeAPIRequest(`/api/reports/trends?${params}`);
+                const trendResponse = await fetch(`/api/reports/trends?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const trendData = await trendResponse.json();
                 
                 console.log('Trend API response:', trendData);
@@ -1487,7 +1329,13 @@
                 });
                 if (branchId) params.append('branch_id', branchId);
                 
-                const response = await makeAPIRequest(`/api/reports/trends?${params}`);
+                const response = await fetch(`/api/reports/trends?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1512,13 +1360,9 @@
                 
                 const params = new URLSearchParams();
                 
-                const eventTypeFilter = document.getElementById('eventTypeFilter');
-                const dateFromFilter = document.getElementById('dateFromFilter');
-                const dateToFilter = document.getElementById('dateToFilter');
-                
-                const eventType = eventTypeFilter ? eventTypeFilter.value : '';
-                const dateFrom = dateFromFilter ? dateFromFilter.value : '';
-                const dateTo = dateToFilter ? dateToFilter.value : '';
+                const eventType = document.getElementById('eventTypeFilter').value;
+                const dateFrom = document.getElementById('dateFromFilter').value;
+                const dateTo = document.getElementById('dateToFilter').value;
                 
                 // Add branch filter
                 const branchSelect = document.getElementById('branchSelect');
@@ -1533,7 +1377,14 @@
                 params.append('page', currentPage);
                 params.append('per_page', currentPerPage);
                 
-                const response = await makeAPIRequest(`/api/reports/event-reports?${params}`);
+                const response = await fetch(`/api/reports/event-reports?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1648,7 +1499,13 @@
 
         async function loadEventTypes() {
             try {
-                const response = await makeAPIRequest('/api/reports/event-types');
+                const response = await fetch('/api/reports/event-types', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const data = await response.json();
                 
                 if (data.success) {
@@ -1735,27 +1592,6 @@
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData);
                 
-                // Fix event type mapping - if event_type is "service", use the service_type value instead
-                if (data.event_type === 'service' && data.service_type) {
-                    data.event_type = data.service_type;
-                } else if (data.event_type === 'conference') {
-                    data.event_type = 'Conferences';
-                } else if (data.event_type === 'outreach') {
-                    data.event_type = 'Outreach';
-                } else if (data.event_type === 'evangelism') {
-                    data.event_type = 'Evangelism (Beautiful Feet)';
-                } else if (data.event_type === 'baptism') {
-                    data.event_type = 'Water Baptism';
-                } else if (data.event_type === 'teci') {
-                    data.event_type = 'TECi';
-                } else if (data.event_type === 'membership') {
-                    data.event_type = 'Membership Class';
-                } else if (data.event_type === 'lifegroup') {
-                    data.event_type = 'LifeGroup Meeting';
-                } else if (data.event_type === 'prayer') {
-                    data.event_type = 'Prayer Meeting';
-                }
-                
                 // Ensure has_second_service is properly set
                 data.has_second_service = document.getElementById('hasSecondService').checked;
                 
@@ -1774,10 +1610,11 @@
                 
                 console.log('Submitting data:', data); // Debug log
                 
-                const response = await makeAPIRequest('/api/reports/event-reports', {
+                const response = await fetch('/api/reports/event-reports', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify(data)
                 });
@@ -1945,27 +1782,6 @@
                 const formData = new FormData(e.target);
                 const data = Object.fromEntries(formData);
                 
-                // Fix event type mapping - if event_type is "service", use the service_type value instead
-                if (data.event_type === 'service' && data.service_type) {
-                    data.event_type = data.service_type;
-                } else if (data.event_type === 'conference') {
-                    data.event_type = 'Conferences';
-                } else if (data.event_type === 'outreach') {
-                    data.event_type = 'Outreach';
-                } else if (data.event_type === 'evangelism') {
-                    data.event_type = 'Evangelism (Beautiful Feet)';
-                } else if (data.event_type === 'baptism') {
-                    data.event_type = 'Water Baptism';
-                } else if (data.event_type === 'teci') {
-                    data.event_type = 'TECi';
-                } else if (data.event_type === 'membership') {
-                    data.event_type = 'Membership Class';
-                } else if (data.event_type === 'lifegroup') {
-                    data.event_type = 'LifeGroup Meeting';
-                } else if (data.event_type === 'prayer') {
-                    data.event_type = 'Prayer Meeting';
-                }
-                
                 // Ensure has_second_service is properly set
                 data.has_second_service = document.getElementById('editHasSecondService').checked;
                 
@@ -1984,10 +1800,11 @@
                 
                 console.log('Updating report:', reportId, data);
                 
-                const response = await makeAPIRequest(`/api/reports/event-reports/${reportId}`, {
+                const response = await fetch(`/api/reports/event-reports/${reportId}`, {
                     method: 'PUT',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify(data)
                 });
@@ -2018,8 +1835,11 @@
         async function deleteReport(id) {
             if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
                 try {
-                    const response = await makeAPIRequest(`/api/reports/event-reports/${id}`, {
-                        method: 'DELETE'
+                    const response = await fetch(`/api/reports/event-reports/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
                     });
                     
                     const result = await response.json();
@@ -2133,12 +1953,7 @@
 
         async function loadTrendData() {
             try {
-                const periodSelect = document.getElementById('periodSelect');
-                if (!periodSelect) {
-                    console.error('periodSelect element not found');
-                    return;
-                }
-                const period = periodSelect.value;
+                const period = document.getElementById('periodSelect').value;
                 const branchSelect = document.getElementById('branchSelect');
                 const branchId = branchSelect ? branchSelect.value : '';
                 
@@ -2173,13 +1988,9 @@
                 exportBtn.disabled = true;
 
                 // Get current period and date range for filename
-                const periodSelect = document.getElementById('periodSelect');
-                const dateFromFilter = document.getElementById('dateFromFilter');
-                
-                const period = periodSelect ? periodSelect.value : 'all';
-                const dateFrom = dateFromFilter ? dateFromFilter.value : '';
-                const dateToFilter = document.getElementById('dateToFilter');
-                const dateTo = dateToFilter ? dateToFilter.value : '';
+                const period = document.getElementById('periodSelect').value;
+                const dateFrom = document.getElementById('dateFromFilter').value;
+                const dateTo = document.getElementById('dateToFilter').value;
                 
                 // Get branch information
                 const branchSelect = document.getElementById('branchSelect');
@@ -2742,10 +2553,6 @@
         function initializeGlobalReport() {
             // Initialize year dropdown
             const yearSelect = document.getElementById('reportYear');
-            if (!yearSelect) {
-                console.error('reportYear element not found');
-                return;
-            }
             const currentYear = new Date().getFullYear();
             for (let year = currentYear; year >= currentYear - 5; year--) {
                 const option = document.createElement('option');
@@ -2757,10 +2564,6 @@
 
             // Set current month
             const monthSelect = document.getElementById('reportMonth');
-            if (!monthSelect) {
-                console.error('reportMonth element not found');
-                return;
-            }
             monthSelect.value = new Date().getMonth() + 1;
 
             // Load branches for super admin
@@ -3100,125 +2903,77 @@
         function setupCascadingDropdowns() {
             // Create modal event type dropdown
             const createEventTypeSelect = document.getElementById('createEventType');
-            const createServiceTypeDiv = document.getElementById('createServiceTypeDiv');
-            const createServiceTypeSelect = document.getElementById('createServiceType');
+
             
             // Edit modal event type dropdown
             const editEventTypeSelect = document.getElementById('editEventType');
-            const editServiceTypeDiv = document.getElementById('editServiceTypeDiv');
-            const editServiceTypeSelect = document.getElementById('editServiceType');
+
             
             // Event selection dropdowns
             const createEventSelect = document.getElementById('eventSelect');
             const editEventSelect = document.getElementById('editEventSelect');
             
             // Function to populate event type fields based on selected event
-            function populateEventTypeFields(eventId, eventTypeSelect, serviceTypeSelect, serviceTypeDiv) {
+            function populateEventTypeFields(eventId, eventTypeSelect) {
                 if (!eventId) {
                     // Clear fields if no event selected
                     eventTypeSelect.value = '';
-                    serviceTypeSelect.value = '';
-                    serviceTypeDiv.classList.add('hidden');
                     eventTypeSelect.removeAttribute('readonly');
-                    serviceTypeSelect.removeAttribute('readonly');
                     eventTypeSelect.style.backgroundColor = '';
-                    serviceTypeSelect.style.backgroundColor = '';
                     return;
                 }
                 
                 // Fetch event details
-                makeAPIRequest(`/api/events/${eventId}/details`)
+                fetch(`/api/events/${eventId}/details`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
                             const eventDetails = data.data;
                             
-                            // Set event type
-                            eventTypeSelect.value = eventDetails.event_type.toLowerCase();
-                            
-                            // Handle service type
-                            if (eventDetails.type === 'service' && eventDetails.service_type) {
-                                serviceTypeSelect.value = eventDetails.service_type.toLowerCase();
-                                serviceTypeDiv.classList.remove('hidden');
-                                serviceTypeSelect.setAttribute('required', 'required');
-                            } else {
-                                serviceTypeSelect.value = '';
-                                serviceTypeDiv.classList.add('hidden');
-                                serviceTypeSelect.removeAttribute('required');
+                            // Populate event type - try to match with the service_type from the event
+                            if (eventDetails.service_type) {
+                                eventTypeSelect.value = eventDetails.service_type;
+                            } else if (eventDetails.type) {
+                                // Fallback to type field if available
+                                eventTypeSelect.value = eventDetails.type;
                             }
                             
-                            // Make fields read-only since they're auto-populated
+                            // Make field read-only since it's auto-populated
                             eventTypeSelect.setAttribute('readonly', 'readonly');
-                            serviceTypeSelect.setAttribute('readonly', 'readonly');
                             
-                            // Add visual indication that fields are auto-populated
+                            // Add visual indication that field is auto-populated
                             eventTypeSelect.style.backgroundColor = '#f9f9f9';
-                            serviceTypeSelect.style.backgroundColor = '#f9f9f9';
                         }
                     })
                     .catch(error => {
                         console.error('Error fetching event details:', error);
                         // Remove read-only if there's an error
                         eventTypeSelect.removeAttribute('readonly');
-                        serviceTypeSelect.removeAttribute('readonly');
                         eventTypeSelect.style.backgroundColor = '';
-                        serviceTypeSelect.style.backgroundColor = '';
                     });
             }
             
-            // Handle create modal event type change
-            if (createEventTypeSelect) {
-                createEventTypeSelect.addEventListener('change', function() {
-                    if (this.value === 'service') {
-                        createServiceTypeDiv.classList.remove('hidden');
-                        createServiceTypeSelect.required = true;
-                    } else {
-                        createServiceTypeDiv.classList.add('hidden');
-                        createServiceTypeSelect.required = false;
-                        createServiceTypeSelect.value = '';
-                    }
-                });
-            }
-            
-            // Handle edit modal event type change
-            if (editEventTypeSelect) {
-                editEventTypeSelect.addEventListener('change', function() {
-                    if (this.value === 'service') {
-                        editServiceTypeDiv.classList.remove('hidden');
-                        editServiceTypeSelect.required = true;
-                    } else {
-                        editServiceTypeDiv.classList.add('hidden');
-                        editServiceTypeSelect.required = false;
-                        editServiceTypeSelect.value = '';
-                    }
-                });
-            }
+
             
             // Set up event listeners for event selection (auto-populate event type)
             if (createEventSelect) {
                 createEventSelect.addEventListener('change', function() {
-                    populateEventTypeFields(
-                        createEventSelect.value,
-                        createEventTypeSelect,
-                        createServiceTypeSelect,
-                        createServiceTypeDiv
-                    );
+                    populateEventTypeFields(createEventSelect.value, createEventTypeSelect);
                 });
             }
             
             if (editEventSelect) {
                 editEventSelect.addEventListener('change', function() {
-                    populateEventTypeFields(
-                        editEventSelect.value,
-                        editEventTypeSelect,
-                        editServiceTypeSelect,
-                        editServiceTypeDiv
-                    );
+                    populateEventTypeFields(editEventSelect.value, editEventTypeSelect);
                 });
             }
         }
     </script>
-
-        </div>  <!-- End of max-w-7xl container -->
-    </div>      <!-- End of py-6 container -->
-@endsection 
+    @endpush
+</x-app-layout> 
