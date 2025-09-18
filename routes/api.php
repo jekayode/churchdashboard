@@ -107,6 +107,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     // Member management routes
     Route::prefix('members')->group(function () {
         Route::get('/', [MemberController::class, 'index']);
+        Route::get('/statistics', [MemberController::class, 'statistics']);
         Route::post('/', [MemberController::class, 'store']);
         Route::get('/{member}', [MemberController::class, 'show']);
         Route::put('/{member}', [MemberController::class, 'update']);

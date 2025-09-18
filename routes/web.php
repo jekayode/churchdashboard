@@ -30,13 +30,54 @@ Route::get('/dashboard', function () {
     return view($dashboardView);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
+// Sidebar Layout Sample Route (for testing)
+Route::get('/sidebar-sample', function () {
+    return view('dashboards.sidebar-sample');
+})->middleware(['auth', 'verified'])->name('sidebar-sample');
+
+Route::get('/test-api', function () {
+    return view('test-api');
+})->middleware(['auth', 'verified'])->name('test-api');
+
 // Super Admin Routes
-Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/branches', [App\Http\Controllers\BranchController::class, 'indexView'])->name('branches');
+    
+    Route::get('/members', function () {
+        return view('admin.members.index');
+    })->name('members');
+    
+    Route::get('/departments', function () {
+        return view('admin.departments.index');
+    })->name('departments');
+    
+    Route::get('/ministries', function () {
+        return view('admin.ministries.index');
+    })->name('ministries');
+    
+    Route::get('/events', function () {
+        return view('admin.events.index');
+    })->name('events');
+    
+    Route::get('/small-groups', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        return view('admin.small-groups.index', compact('isSuperAdmin'));
+    })->name('small-groups');
+    
+    Route::get('/small-groups/reports', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        return view('admin.small-groups.reports.index', compact('isSuperAdmin'));
+    })->name('small-groups.reports');
     
     Route::get('/projections', function () {
         return view('admin.projections.index');
     })->name('projections');
+    
+    Route::get('/finances', function () {
+        return view('admin.finances.index');
+    })->name('finances');
     
     Route::get('/users', function () {
         return view('admin.users.index');
@@ -51,7 +92,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
 
 // Branch Pastor Routes
-Route::middleware(['auth', 'verified'])->prefix('pastor')->name('pastor.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefix('pastor')->name('pastor.')->group(function () {
     Route::get('/ministries', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
@@ -78,6 +119,40 @@ Route::middleware(['auth', 'verified'])->prefix('pastor')->name('pastor.')->grou
         return view('pastor.finances.index');
     })->name('finances');
     
+    Route::get('/reports', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        
+        // Get event types from EventReport model (same as admin)
+        $eventTypes = \App\Models\EventReport::EVENT_TYPES;
+        
+        return view('pastor.reports.index', compact('isSuperAdmin', 'eventTypes'));
+    })->name('reports');
+    
+    Route::get('/projections', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        return view('pastor.projections.index', compact('isSuperAdmin'));
+    })->name('projections');
+    
+    Route::get('/departments', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        return view('pastor.departments.index', compact('isSuperAdmin'));
+    })->name('departments');
+    
+    Route::get('/ministry-events', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        return view('pastor.ministry-events.index', compact('isSuperAdmin'));
+    })->name('ministry-events');
+    
+    Route::get('/import-export', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+        return view('pastor.import-export.index', compact('isSuperAdmin'));
+    })->name('import-export');
+    
     Route::get('/small-groups', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
@@ -92,13 +167,17 @@ Route::middleware(['auth', 'verified'])->prefix('pastor')->name('pastor.')->grou
         return view('pastor.small-groups.reports.index', compact('isSuperAdmin'));
     })->name('small-groups.reports');
     
+    Route::get('/groups/reports', function () {
+        return view('member.groups.reports');
+    })->name('groups.reports');
+    
     Route::get('/import-export', function () {
         return view('admin.import-export.index');
     })->name('import-export');
 });
 
 // Ministry Leader Routes
-Route::middleware(['auth', 'verified'])->prefix('ministry')->name('ministry.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:ministry_leader,super_admin,branch_pastor'])->prefix('ministry')->name('ministry.')->group(function () {
     Route::get('/departments', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
@@ -111,14 +190,14 @@ Route::middleware(['auth', 'verified'])->prefix('ministry')->name('ministry.')->
 });
 
 // Department Leader Routes
-Route::middleware(['auth', 'verified'])->prefix('department')->name('department.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:department_leader,super_admin,branch_pastor,ministry_leader'])->prefix('department')->name('department.')->group(function () {
     Route::get('/team', function () {
         return view('department.team.index');
     })->name('team');
 });
 
 // Church Member Routes
-Route::middleware(['auth', 'verified'])->prefix('member')->name('member.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:church_member,super_admin,branch_pastor,ministry_leader,department_leader'])->prefix('member')->name('member.')->group(function () {
     Route::get('/events', function () {
         return view('member.events.index');
     })->name('events');
@@ -138,9 +217,17 @@ Route::middleware(['auth', 'verified'])->prefix('member')->name('member.')->grou
         return view('member.groups.reports');
     })->name('groups.reports');
     
+    Route::get('/departments', function () {
+        return view('member.departments.index');
+    })->name('departments');
+    
     Route::get('/profile', function () {
         return view('member.profile.show');
     })->name('profile');
+    
+    // Profile completion routes
+    Route::get('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'showProfileCompletion'])->name('profile-completion');
+    Route::post('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'updateProfileCompletion'])->name('profile-completion');
 });
 
 // Public Routes (accessible to all)
@@ -168,6 +255,10 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::get('/about', function () {
         return view('public.about.index');
     })->name('about');
+    
+    // Guest registration routes
+    Route::get('/register/guest', [App\Http\Controllers\PublicAuthController::class, 'showGuestForm'])->name('guest-register');
+    Route::post('/register/guest', [App\Http\Controllers\PublicAuthController::class, 'storeGuest'])->name('guest-register');
 });
 
 // Utility Routes

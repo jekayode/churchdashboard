@@ -1,12 +1,4 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Branch Pastor Dashboard') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+<x-sidebar-layout title="Branch Pastor Dashboard">
             @php
                 $branch = Auth::user()->getPrimaryBranch();
             @endphp
@@ -272,7 +264,7 @@
                 <!-- Financial Overview -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
-                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Financial Overview</h4>
+                        <h4 class="text-lg font-semibold text-gray-900 mb-4">Financial Overview Test</h4>
                         <div class="space-y-3">
                             <div class="flex justify-between">
                                 <span class="text-sm text-gray-600">This Month Expenses</span>
@@ -281,7 +273,7 @@
                                 </span>
                             </div>
                             <div class="flex justify-between">
-                                <span class="text-sm text-gray-600">YTD Expenses</span>
+                                <span class="text-sm text-gray-600">YTD Expenses Test</span>
                                 <span class="text-sm font-medium">
                                     ${{ $branch ? number_format(\App\Models\Expense::where('branch_id', $branch->id)->whereYear('expense_date', now()->year)->sum('total_cost'), 2) : '0.00' }}
                                 </span>
@@ -299,6 +291,4 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</x-app-layout> 
+</x-sidebar-layout> 

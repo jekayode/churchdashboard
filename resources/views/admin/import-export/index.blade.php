@@ -53,13 +53,61 @@
                     <div x-show="activeImportTab === 'members'" class="space-y-4">
                         <div class="bg-gray-50 rounded-lg p-4 mb-4">
                             <h4 class="font-medium text-gray-900 mb-2">📋 Required Data Format</h4>
-                            <div class="text-sm text-gray-600 space-y-1">
-                                <p><strong>Required fields:</strong> name, email</p>
-                                <p><strong>TECI Status:</strong> not_started, 100_level, 200_level, 300_level, 400_level, 500_level, graduated, paused</p>
-                                <p><strong>Growth Level:</strong> core, pastor, growing, new_believer</p>
-                                <p><strong>Member Status:</strong> visitor, member, volunteer, leader, minister</p>
-                                <p><strong>Gender:</strong> male, female</p>
-                                <p><strong>Marital Status:</strong> single, married, divorced, separated, widowed, in_a_relationship, engaged</p>
+                            <div class="text-sm text-gray-600 space-y-2">
+                                <div>
+                                    <p><strong>Required fields:</strong> name (or first_name + surname), email</p>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p><strong>Basic Information:</strong></p>
+                                        <ul class="ml-4 space-y-1 text-xs">
+                                            <li>• first_name, surname, phone</li>
+                                            <li>• date_of_birth, gender, marital_status</li>
+                                            <li>• occupation, nearest_bus_stop</li>
+                                            <li>• anniversary, date_joined</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div>
+                                        <p><strong>Status & Levels:</strong></p>
+                                        <ul class="ml-4 space-y-1 text-xs">
+                                            <li>• member_status: visitor, member, volunteer, leader, minister</li>
+                                            <li>• growth_level: core, pastor, growing, new_believer</li>
+                                            <li>• teci_status: not_started, 100_level, 200_level, 300_level, 400_level, 500_level, graduated, paused</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <p><strong>Guest Form Fields:</strong></p>
+                                        <ul class="ml-4 space-y-1 text-xs">
+                                            <li>• preferred_call_time: anytime, morning, afternoon, evening</li>
+                                            <li>• home_address, age_group: 15-20, 21-25, 26-30, 31-35, 36-40, above-40</li>
+                                            <li>• discovery_source: social-media, word-of-mouth, billboard, email, website, promotional-material, radio-tv, outreach</li>
+                                            <li>• staying_intention: yes-for-sure, visit-when-in-town, just-visiting, weighing-options</li>
+                                            <li>• closest_location, prayer_request, additional_info</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div>
+                                        <p><strong>Leadership & Training:</strong></p>
+                                        <ul class="ml-4 space-y-1 text-xs">
+                                            <li>• leadership_trainings: ELP, MLCC, MLCP Basic, MLCP Advanced (comma-separated)</li>
+                                        </ul>
+                                        
+                                        <p class="mt-2"><strong>Gender Options:</strong></p>
+                                        <ul class="ml-4 space-y-1 text-xs">
+                                            <li>• male, female, prefer-not-to-say</li>
+                                        </ul>
+                                        
+                                        <p class="mt-2"><strong>Marital Status:</strong></p>
+                                        <ul class="ml-4 space-y-1 text-xs">
+                                            <li>• single, in-relationship, engaged, married, separated, divorced</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 

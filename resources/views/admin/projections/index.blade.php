@@ -1,8 +1,5 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="min-h-screen bg-gray-50 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<x-sidebar-layout title="Branch Projections Management">
+    <div class="space-y-6">
         <!-- Header Section -->
         <div class="md:flex md:items-center md:justify-between mb-8">
             <div class="flex-1 min-w-0">
@@ -232,7 +229,6 @@
             </div>
         </div>
     </div>
-</div>
 
 <!-- Create/Edit Projection Modal -->
 <div id="projection-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -1274,5 +1270,4 @@ function hideNotification() {
     document.getElementById('notification').classList.add('hidden');
 }
 </script>
-
-@endsection 
+</x-sidebar-layout> 

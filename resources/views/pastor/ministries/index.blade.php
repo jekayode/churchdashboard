@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-sidebar-layout title="Ministries Management">
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Ministries') }}
@@ -428,6 +428,7 @@
                 filteredLeaders: [],
                 leaderHighlightedIndex: -1,
                 selectedLeader: null,
+                searchTimeout: null,
 
                                         async init() {
                 await this.loadBranches();
@@ -713,14 +714,20 @@
                 async handleLeaderSearch() {
                     this.leaderHighlightedIndex = -1;
                     
+                    // Clear any existing search timeout
+                    if (this.searchTimeout) {
+                        clearTimeout(this.searchTimeout);
+                    }
+                    
                     if (!this.form.branch_id) {
                         this.filteredLeaders = [];
                         return;
                     }
                     
-                    // Local search first
+                    // Local search first for immediate feedback
                     if (this.leaderSearchTerm.length === 0) {
                         this.filteredLeaders = this.availableLeaders;
+                        return;
                     } else {
                         this.filteredLeaders = this.availableLeaders.filter(leader => 
                             leader.name.toLowerCase().includes(this.leaderSearchTerm.toLowerCase()) ||
@@ -728,9 +735,11 @@
                         );
                     }
                     
-                    // Remote search for more results
+                    // Debounced remote search for more comprehensive results
                     if (this.leaderSearchTerm.length >= 2) {
-                        await this.loadLeadersWithSearch();
+                        this.searchTimeout = setTimeout(async () => {
+                            await this.loadLeadersWithSearch();
+                        }, 300); // 300ms debounce delay
                     }
                 },
 
@@ -760,13 +769,25 @@
                         
                         if (response.ok) {
                             const data = await response.json();
+                            
+                            // Update available leaders and apply current search filter
                             this.availableLeaders = data.data || [];
-                            this.filteredLeaders = this.availableLeaders;
+                            
+                            // Reapply local filtering to new results
+                            if (this.leaderSearchTerm.length === 0) {
+                                this.filteredLeaders = this.availableLeaders;
+                            } else {
+                                this.filteredLeaders = this.availableLeaders.filter(leader => 
+                                    leader.name.toLowerCase().includes(this.leaderSearchTerm.toLowerCase()) ||
+                                    (leader.email && leader.email.toLowerCase().includes(this.leaderSearchTerm.toLowerCase()))
+                                );
+                            }
+                        } else {
+                            console.error('Failed to load leaders:', response.status, response.statusText);
                         }
                     } catch (error) {
                         console.error('Error loading leaders:', error);
-                        this.availableLeaders = [];
-                        this.filteredLeaders = [];
+                        // Don't clear existing results on error to avoid flickering
                     } finally {
                         this.loadingLeaders = false;
                     }
@@ -786,6 +807,12 @@
                     this.leaderSearchTerm = '';
                     this.showLeaderDropdown = false;
                     this.leaderHighlightedIndex = -1;
+                    
+                    // Clear any pending search timeout
+                    if (this.searchTimeout) {
+                        clearTimeout(this.searchTimeout);
+                        this.searchTimeout = null;
+                    }
                 },
                 
                 getSelectedLeaderName() {
@@ -812,4 +839,4 @@
 
 
     </script>
-</x-app-layout> 
+</x-sidebar-layout> 

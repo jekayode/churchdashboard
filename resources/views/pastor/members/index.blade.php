@@ -1,14 +1,17 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Members') }}
-            </h2>
+<x-sidebar-layout title="Members Management">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Members') }}
+        </h2>
+        <div class="flex space-x-3">
+            <a href="{{ route('pastor.import-export') }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                Import Members
+            </a>
             <button onclick="openAddMemberModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                 Add Member
             </button>
         </div>
-    </x-slot>
+    </div>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -58,6 +61,159 @@
                 </div>
             </div>
 
+            <!-- Member Statistics -->
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Member Statistics</h3>
+                        <button onclick="toggleStatistics()" id="toggleStatsBtn" class="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors duration-200">
+                            <svg id="statsChevron" class="w-4 h-4 mr-2 transform transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                            <span id="toggleStatsText">Show Statistics</span>
+                        </button>
+                    </div>
+                    <div id="statisticsContent" class="hidden transition-all duration-300 ease-in-out">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                        <!-- Total Members -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-blue-600">Total Members</p>
+                                    <p class="text-2xl font-bold text-blue-900" id="totalMembersStat">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visitors -->
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-yellow-600">Visitors</p>
+                                    <p class="text-2xl font-bold text-yellow-900" id="visitorCount">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Leaders -->
+                        <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-purple-600">Leaders</p>
+                                    <p class="text-2xl font-bold text-purple-900" id="leaderCount">-</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Volunteers -->
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-medium text-green-600">Volunteers</p>
+                                    <p class="text-2xl font-bold text-green-900" id="volunteerCount">-</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TECI Status Breakdown -->
+                    <div class="mb-6">
+                        <h4 class="text-md font-medium text-gray-900 mb-3">TECI Status Breakdown</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-gray-600">Not Started</p>
+                                <p class="text-lg font-bold text-gray-900" id="teciNotStarted">-</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-blue-600">100 Level</p>
+                                <p class="text-lg font-bold text-blue-900" id="teci100">-</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-blue-600">200 Level</p>
+                                <p class="text-lg font-bold text-blue-900" id="teci200">-</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-blue-600">300 Level</p>
+                                <p class="text-lg font-bold text-blue-900" id="teci300">-</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-blue-600">400 Level</p>
+                                <p class="text-lg font-bold text-blue-900" id="teci400">-</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-blue-600">500 Level</p>
+                                <p class="text-lg font-bold text-blue-900" id="teci500">-</p>
+                            </div>
+                            <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-green-600">Graduated</p>
+                                <p class="text-lg font-bold text-green-900" id="teciGraduated">-</p>
+                            </div>
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-yellow-600">Paused</p>
+                                <p class="text-lg font-bold text-yellow-900" id="teciPaused">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Leadership Training Breakdown -->
+                    <div>
+                        <h4 class="text-md font-medium text-gray-900 mb-3">Leadership Training Breakdown</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-purple-600">ELP</p>
+                                <p class="text-lg font-bold text-purple-900" id="trainingELP">-</p>
+                                <p class="text-xs text-gray-500">Emerging Leaders</p>
+                            </div>
+                            <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-indigo-600">MLCC</p>
+                                <p class="text-lg font-bold text-indigo-900" id="trainingMLCC">-</p>
+                                <p class="text-xs text-gray-500">Ministry Leadership</p>
+                            </div>
+                            <div class="bg-pink-50 border border-pink-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-pink-600">MLCP Basic</p>
+                                <p class="text-lg font-bold text-pink-900" id="trainingMLCPBasic">-</p>
+                                <p class="text-xs text-gray-500">Ministry Leadership</p>
+                            </div>
+                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                                <p class="text-xs text-red-600">MLCP Advanced</p>
+                                <p class="text-lg font-bold text-red-900" id="trainingMLCPAdvanced">-</p>
+                                <p class="text-xs text-gray-500">Advanced Leadership</p>
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Members List -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6">
@@ -93,121 +249,11 @@
                     </div>
                     
                     <form id="memberForm">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Name *</label>
-                                <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input type="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                                <input type="tel" name="phone" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
-                                <select name="gender" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select Gender</option>
-                                    <option value="male">Male</option>
-                                    <option value="female">Female</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                                <input type="date" name="date_of_birth" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Member Status</label>
-                                <select name="member_status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="visitor">Visitor</option>
-                                    <option value="member">Member</option>
-                                    <option value="volunteer">Volunteer</option>
-                                    <option value="leader">Leader</option>
-                                    <option value="minister">Minister</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Growth Level</label>
-                                <select name="growth_level" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="new_believer">New Believer</option>
-                                    <option value="growing">Growing</option>
-                                    <option value="core">Core</option>
-                                    <option value="pastor">Pastor</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">TECI Status</label>
-                                <select name="teci_status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="not_started">Not Started</option>
-                                    <option value="100_level">100 Level</option>
-                                    <option value="200_level">200 Level</option>
-                                    <option value="300_level">300 Level</option>
-                                    <option value="400_level">400 Level</option>
-                                    <option value="500_level">500 Level</option>
-                                    <option value="graduated">Graduated</option>
-                                    <option value="paused">Paused</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Marital Status</label>
-                                <select name="marital_status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select Status</option>
-                                    <option value="single">Single</option>
-                                    <option value="married">Married</option>
-                                    <option value="divorced">Divorced</option>
-                                    <option value="separated">Separated</option>
-                                    <option value="widowed">Widowed</option>
-                                    <option value="in_a_relationship">In A Relationship</option>
-                                    <option value="engaged">Engaged</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Occupation</label>
-                                <input type="text" name="occupation" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Nearest Bus Stop</label>
-                                <input type="text" name="nearest_bus_stop" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Anniversary</label>
-                                <input type="date" name="anniversary" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Date Joined</label>
-                                <input type="date" name="date_joined" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Leadership Trainings</label>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <label class="flex items-center">
-                                        <input type="checkbox" name="leadership_trainings[]" value="ELP" class="mr-2">
-                                        <span class="text-sm">ELP (Emerging Leaders Program)</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" name="leadership_trainings[]" value="MLCC" class="mr-2">
-                                        <span class="text-sm">MLCC (Ministry Leadership Core Course)</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" name="leadership_trainings[]" value="MLCP Basic" class="mr-2">
-                                        <span class="text-sm">MLCP Basic</span>
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="checkbox" name="leadership_trainings[]" value="MLCP Advanced" class="mr-2">
-                                        <span class="text-sm">MLCP Advanced</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Branch *</label>
-                                <select name="branch_id" id="modalBranchSelect" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select Branch</option>
-                                </select>
-                                <p id="branchNote" class="text-sm text-blue-600 mt-1 hidden"></p>
-                            </div>
-                        </div>
+                        <!-- Member Form Component -->
+                        <x-member-form 
+                            context="admin" 
+                            :show-required="true" 
+                            :show-optional="true" />
                         
                         <div class="flex justify-end space-x-3 mt-6">
                             <button type="button" onclick="closeMemberModal()" class="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
@@ -234,6 +280,7 @@
             console.log('isSuperAdmin:', isSuperAdmin);
             loadMembers();
             loadBranches(); // Always load branches for member creation
+            // Don't load statistics by default - they'll be loaded when the user clicks "Show Statistics"
             setupEventListeners();
             
             // Make functions globally accessible
@@ -244,6 +291,7 @@
             window.viewMember = viewMember;
             window.changePage = changePage;
             window.clearFilters = clearFilters;
+            window.toggleStatistics = toggleStatistics;
             
             console.log('Functions made global, openAddMemberModal exists:', typeof window.openAddMemberModal);
         });
@@ -347,6 +395,63 @@
                 console.error('Error loading branches:', error);
                 showNotification('Error loading branches: ' + error.message, 'error');
             }
+        }
+
+        async function loadMemberStatistics() {
+            console.log('Loading member statistics...');
+            try {
+                const response = await fetch('/api/members/statistics', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                console.log('Statistics response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Statistics data:', data);
+                    if (data.success) {
+                        updateStatisticsDisplay(data.data);
+                    } else {
+                        console.error('Failed to load statistics:', data.message);
+                    }
+                } else {
+                    console.error('Failed to load statistics:', response.status, response.statusText);
+                }
+            } catch (error) {
+                console.error('Error loading statistics:', error);
+            }
+        }
+
+        function updateStatisticsDisplay(stats) {
+            console.log('Updating statistics display with data:', stats);
+            
+            // Update main statistics
+            document.getElementById('totalMembersStat').textContent = stats.total_members || 0;
+            document.getElementById('visitorCount').textContent = stats.visitor_count || 0;
+            document.getElementById('leaderCount').textContent = stats.leader_count || 0;
+            document.getElementById('volunteerCount').textContent = stats.volunteer_count || 0;
+
+            // Update TECI status breakdown
+            const teciStats = stats.teci_stats || {};
+            document.getElementById('teciNotStarted').textContent = teciStats.not_started || 0;
+            document.getElementById('teci100').textContent = teciStats['100_level'] || 0;
+            document.getElementById('teci200').textContent = teciStats['200_level'] || 0;
+            document.getElementById('teci300').textContent = teciStats['300_level'] || 0;
+            document.getElementById('teci400').textContent = teciStats['400_level'] || 0;
+            document.getElementById('teci500').textContent = teciStats['500_level'] || 0;
+            document.getElementById('teciGraduated').textContent = teciStats.graduated || 0;
+            document.getElementById('teciPaused').textContent = teciStats.paused || 0;
+
+            // Update leadership training breakdown
+            const trainingStats = stats.training_stats || {};
+            document.getElementById('trainingELP').textContent = trainingStats.ELP || 0;
+            document.getElementById('trainingMLCC').textContent = trainingStats.MLCC || 0;
+            document.getElementById('trainingMLCPBasic').textContent = trainingStats['MLCP Basic'] || 0;
+            document.getElementById('trainingMLCPAdvanced').textContent = trainingStats['MLCP Advanced'] || 0;
         }
 
         async function loadMembers() {
@@ -638,6 +743,18 @@
                                     checkbox.checked = true;
                                 }
                             });
+                        } else if (key === 'name') {
+                            // Handle the old 'name' field by splitting into first_name and surname
+                            const nameParts = member[key] ? member[key].split(' ') : ['', ''];
+                            const firstNameInput = form.querySelector('[name="first_name"]');
+                            const surnameInput = form.querySelector('[name="surname"]');
+                            
+                            if (firstNameInput && nameParts[0]) {
+                                firstNameInput.value = nameParts[0];
+                            }
+                            if (surnameInput && nameParts.length > 1) {
+                                surnameInput.value = nameParts.slice(1).join(' ');
+                            }
                         } else {
                             const input = form.querySelector(`[name="${key}"]`);
                             if (input && member[key] !== null && member[key] !== undefined && member[key] !== '') {
@@ -729,5 +846,26 @@
                 notification.remove();
             }, 3000);
         }
+
+        function toggleStatistics() {
+            const content = document.getElementById('statisticsContent');
+            const chevron = document.getElementById('statsChevron');
+            const text = document.getElementById('toggleStatsText');
+            
+            if (content.classList.contains('hidden')) {
+                // Show statistics
+                content.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+                text.textContent = 'Hide Statistics';
+                
+                // Load statistics if not already loaded
+                loadMemberStatistics();
+            } else {
+                // Hide statistics
+                content.classList.add('hidden');
+                chevron.style.transform = 'rotate(0deg)';
+                text.textContent = 'Show Statistics';
+            }
+        }
     </script>
-</x-app-layout> 
+</x-sidebar-layout> 

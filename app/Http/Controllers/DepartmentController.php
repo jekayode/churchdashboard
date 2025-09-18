@@ -148,7 +148,7 @@ final class DepartmentController extends Controller
                 'ministry:id,name,branch_id,description',
                 'ministry.branch:id,name,venue,phone,email',
                 'leader:id,name,email,phone',
-                'members:id,name,email,phone',
+                'members:id,name,email,phone,member_status',
             ]);
 
             return response()->json([
@@ -396,6 +396,11 @@ final class DepartmentController extends Controller
                 array_fill_keys($memberIds, ['assigned_at' => now()])
             );
 
+            // Update member status to 'volunteer' for assigned members (if not already leader)
+            Member::whereIn('id', $memberIds)
+                ->where('member_status', '!=', 'leader')
+                ->update(['member_status' => 'volunteer']);
+
             $department->load([
                 'ministry:id,name,branch_id',
                 'ministry.branch:id,name',
@@ -405,13 +410,14 @@ final class DepartmentController extends Controller
             Log::info('Members assigned to department', [
                 'department_id' => $department->id,
                 'member_ids' => $memberIds,
+                'member_status_updated' => 'volunteer',
                 'assigned_by' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'data' => $department,
-                'message' => 'Members assigned successfully.',
+                'message' => 'Members assigned successfully. Member status updated to volunteer.',
             ]);
 
         } catch (\Exception $e) {

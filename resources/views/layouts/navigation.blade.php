@@ -39,7 +39,7 @@
                                      x-transition:leave="transition ease-in duration-75" 
                                      x-transition:leave-start="transform opacity-100 scale-100" 
                                      x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute left-0 z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                     class="absolute left-0 top-full z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                                     <div class="py-1">
                                         <a href="{{ route('admin.branches') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.branches*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('All Branches') }}
@@ -106,7 +106,7 @@
                                      x-transition:leave="transition ease-in duration-75" 
                                      x-transition:leave-start="transform opacity-100 scale-100" 
                                      x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute left-0 z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                     class="absolute left-0 top-full z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                                     <div class="py-1">
                                         <a href="{{ route('pastor.ministries') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('pastor.ministries*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('Ministries') }}
@@ -189,7 +189,7 @@
                                      x-transition:leave="transition ease-in duration-75" 
                                      x-transition:leave-start="transform opacity-100 scale-100" 
                                      x-transition:leave-end="transform opacity-0 scale-95"
-                                     class="absolute left-0 z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
+                                     class="absolute left-0 top-full z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                                     <div class="py-1">
                                         <a href="{{ route('member.groups') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('member.groups*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('Small Groups') }}
@@ -271,6 +271,12 @@
                                     {{ __('Member Profile') }}
                                 </x-dropdown-link>
                             @endif
+                        <x-dropdown-link :href="route('member.profile-completion')">
+                            {{ __('Complete Profile') }}
+                        </x-dropdown-link>
+                        <x-dropdown-link :href="route('sidebar-sample')">
+                            {{ __('Sidebar Sample') }}
+                        </x-dropdown-link>
 
                             <!-- Authentication -->
                             <form method="POST" action="{{ route('logout') }}">
@@ -442,6 +448,12 @@
                             {{ __('Member Profile') }}
                         </x-responsive-nav-link>
                     @endif
+                        <x-responsive-nav-link :href="route('member.profile-completion')">
+                            {{ __('Complete Profile') }}
+                        </x-responsive-nav-link>
+                        <x-responsive-nav-link :href="route('sidebar-sample')">
+                            {{ __('Sidebar Sample') }}
+                        </x-responsive-nav-link>
 
                     <!-- Authentication -->
                     <form method="POST" action="{{ route('logout') }}">

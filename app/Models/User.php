@@ -211,7 +211,11 @@ final class User extends Authenticatable
         $role = Role::where('name', $roleName)->first();
         
         if ($role && !$this->hasRole($roleName, $branchId)) {
-            $this->roles()->attach($role->id, ['branch_id' => $branchId]);
+            $this->roles()->attach($role->id, [
+                'branch_id' => $branchId,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
         }
     }
 

@@ -1,9 +1,9 @@
-<x-app-layout>
-    <x-slot name="header">
+<x-sidebar-layout title="Reports & Analytics">
+    <div class="mb-6">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Reports & Analytics') }}
         </h2>
-    </x-slot>
+    </div>
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
@@ -357,6 +357,36 @@
                 <div class="p-6 bg-white border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900 mb-6">Comparative Analytics</h3>
                     
+                    <!-- Preset and Branch Filter Options -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div>
+                            <label for="comparisonPreset" class="block text-sm font-medium text-gray-700 mb-1">Preset Comparisons</label>
+                            <select id="comparisonPreset" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">Custom Range</option>
+                                <option value="this_month_vs_last">This Month vs Last Month</option>
+                                <option value="this_quarter_vs_last">This Quarter vs Last Quarter</option>
+                                <option value="last_6_months_vs_previous">Last 6 Months vs Previous 6 Months</option>
+                                <option value="this_year_vs_last">This Year vs Last Year</option>
+                                <option value="last_30_days_vs_previous">Last 30 Days vs Previous 30 Days</option>
+                            </select>
+                        </div>
+                        @if(auth()->user()->isSuperAdmin())
+                        <div>
+                            <label for="comparisonBranch" class="block text-sm font-medium text-gray-700 mb-1">Branch (Optional)</label>
+                            <select id="comparisonBranch" class="w-full border-gray-300 rounded-md shadow-sm focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                                <option value="">All Branches</option>
+                                <!-- Branches will be populated dynamically -->
+                            </select>
+                        </div>
+                        @endif
+                        <div class="flex items-end">
+                            <button id="applyPresetBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                                Apply Preset
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Custom Date Range Selection -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                         <div>
                             <h4 class="font-medium text-gray-700 mb-2">Period 1</h4>
@@ -749,6 +779,11 @@
             // Set initial date filters for default period (This Month)
             setDateFiltersForPeriod('month');
             
+            // Load branches for super admin
+            @if(auth()->user()->isSuperAdmin())
+            loadBranches();
+            @endif
+            
             // Load initial data
             loadDashboardData();
             loadEventReports();
@@ -758,6 +793,7 @@
             
             // Event listeners
             setupEventListeners();
+            setupComparisonEventListeners();
         });
 
         function initCharts() {
@@ -933,8 +969,7 @@
             loadEventReports(1, newPerPage);
         });
             
-            // Comparison
-            document.getElementById('comparePeriodsBtn').addEventListener('click', comparePeriods);
+            // Comparison event listeners are handled in setupComparisonEventListeners()
         }
 
         // Handle period selection changes
@@ -1858,6 +1893,85 @@
             }
         }
 
+        function setupComparisonEventListeners() {
+            // Preset comparison selector
+            document.getElementById('comparisonPreset').addEventListener('change', function() {
+                const preset = this.value;
+                if (preset) {
+                    applyComparisonPreset(preset);
+                }
+            });
+
+            // Apply preset button
+            document.getElementById('applyPresetBtn').addEventListener('click', function() {
+                const preset = document.getElementById('comparisonPreset').value;
+                if (preset) {
+                    applyComparisonPreset(preset);
+                    comparePeriods();
+                }
+            });
+
+            // Compare periods button
+            document.getElementById('comparePeriodsBtn').addEventListener('click', comparePeriods);
+        }
+
+        function applyComparisonPreset(preset) {
+            const today = new Date();
+            let period1Start, period1End, period2Start, period2End;
+
+            switch (preset) {
+                case 'this_month_vs_last':
+                    // This month vs last month
+                    period1Start = new Date(today.getFullYear(), today.getMonth(), 1);
+                    period1End = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    period2Start = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    period2End = new Date(today.getFullYear(), today.getMonth(), 0);
+                    break;
+
+                case 'this_quarter_vs_last':
+                    // This quarter vs last quarter
+                    const currentQuarter = Math.floor(today.getMonth() / 3);
+                    period1Start = new Date(today.getFullYear(), currentQuarter * 3, 1);
+                    period1End = new Date(today.getFullYear(), (currentQuarter + 1) * 3, 0);
+                    period2Start = new Date(today.getFullYear(), (currentQuarter - 1) * 3, 1);
+                    period2End = new Date(today.getFullYear(), currentQuarter * 3, 0);
+                    break;
+
+                case 'last_6_months_vs_previous':
+                    // Last 6 months vs previous 6 months
+                    period1End = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    period1Start = new Date(today.getFullYear(), today.getMonth() - 5, 1);
+                    period2End = new Date(today.getFullYear(), today.getMonth() - 5, 0);
+                    period2Start = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+                    break;
+
+                case 'this_year_vs_last':
+                    // This year vs last year
+                    period1Start = new Date(today.getFullYear(), 0, 1);
+                    period1End = new Date(today.getFullYear(), 11, 31);
+                    period2Start = new Date(today.getFullYear() - 1, 0, 1);
+                    period2End = new Date(today.getFullYear() - 1, 11, 31);
+                    break;
+
+                case 'last_30_days_vs_previous':
+                    // Last 30 days vs previous 30 days
+                    period1End = new Date(today);
+                    period1Start = new Date(today.getTime() - (30 * 24 * 60 * 60 * 1000));
+                    period2End = new Date(period1Start.getTime() - (24 * 60 * 60 * 1000));
+                    period2Start = new Date(period2End.getTime() - (30 * 24 * 60 * 60 * 1000));
+                    break;
+
+                default:
+                    return;
+            }
+
+            // Format dates as YYYY-MM-DD for input fields
+            document.getElementById('period1Start').value = period1Start.toISOString().split('T')[0];
+            document.getElementById('period1End').value = period1End.toISOString().split('T')[0];
+            document.getElementById('period2Start').value = period2Start.toISOString().split('T')[0];
+            document.getElementById('period2End').value = period2End.toISOString().split('T')[0];
+        }
+
         async function comparePeriods() {
             try {
                 const period1Start = document.getElementById('period1Start').value;
@@ -1869,19 +1983,35 @@
                     alert('Please select all dates for comparison.');
                     return;
                 }
-                
+
                 const params = new URLSearchParams({
                     period1_start: period1Start,
                     period1_end: period1End,
                     period2_start: period2Start,
                     period2_end: period2End
                 });
+
+                // Add branch filter if selected
+                const branchSelect = document.getElementById('comparisonBranch');
+                const branchId = branchSelect ? branchSelect.value : '';
+                if (branchId) {
+                    params.append('branch_id', branchId);
+                }
                 
-                const response = await fetch(`/api/reports/comparative?${params}`);
+                const response = await fetch(`/api/reports/comparative?${params}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
                 const data = await response.json();
                 
                 if (data.success) {
                     displayComparisonResults(data.data);
+                } else {
+                    console.error('Comparison API returned error:', data.message);
+                    alert('Error loading comparison data: ' + (data.message || 'Unknown error'));
                 }
             } catch (error) {
                 console.error('Error comparing periods:', error);
@@ -2566,10 +2696,7 @@
             const monthSelect = document.getElementById('reportMonth');
             monthSelect.value = new Date().getMonth() + 1;
 
-            // Load branches for super admin
-            @if(auth()->user()->isSuperAdmin())
-            loadBranchesForReport();
-            @endif
+            // Branches are already loaded by the main loadBranches() function
 
             // Event listeners
             document.getElementById('generateGlobalReportBtn').addEventListener('click', generateGlobalReport);
@@ -2579,32 +2706,99 @@
         }
 
         @if(auth()->user()->isSuperAdmin())
-        async function loadBranchesForReport() {
+        async function loadBranches() {
             try {
-                const response = await fetch('/api/branches', {
+                // Try the main branches API first
+                let response = await fetch('/api/branches?per_page=1000', {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    credentials: 'include'
+                    credentials: 'same-origin'
                 });
+
+                // If main API fails, try the projections available branches endpoint
+                if (!response.ok) {
+                    response = await fetch('/api/projections/branches/available', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        credentials: 'same-origin'
+                    });
+                }
 
                 if (response.ok) {
                     const data = await response.json();
-                    const branchSelect = document.getElementById('reportBranchSelect');
                     
-                    data.forEach(branch => {
-                        const option = document.createElement('option');
-                        option.value = branch.id;
-                        option.textContent = `${branch.name} - ${branch.location}`;
-                        branchSelect.appendChild(option);
-                    });
+                    // Handle Laravel paginated response: {success: true, data: {data: [...], current_page: 1, ...}}
+                    let branches = [];
+                    if (data.success && data.data && data.data.data) {
+                        // Paginated response
+                        branches = data.data.data;
+                    } else if (data.success && Array.isArray(data.data)) {
+                        // Direct array response
+                        branches = data.data;
+                    } else if (Array.isArray(data)) {
+                        // Plain array response
+                        branches = data;
+                    }
+                    
+                    if (Array.isArray(branches) && branches.length > 0) {
+                        // Populate dashboard branch selector
+                        const branchSelect = document.getElementById('branchSelect');
+                        if (branchSelect) {
+                            // Clear existing options except "All Branches"
+                            branchSelect.innerHTML = '<option value="">All Branches</option>';
+                            
+                            branches.forEach(branch => {
+                                const option = document.createElement('option');
+                                option.value = branch.id;
+                                option.textContent = `${branch.name}${branch.venue ? ' - ' + branch.venue : ''}`;
+                                branchSelect.appendChild(option);
+                            });
+                        }
+
+                        // Populate Global Ministry Report branch selector
+                        const reportBranchSelect = document.getElementById('reportBranchSelect');
+                        if (reportBranchSelect) {
+                            // Clear existing options except "All Branches"
+                            reportBranchSelect.innerHTML = '<option value="">All Branches</option>';
+                            
+                            branches.forEach(branch => {
+                                const option = document.createElement('option');
+                                option.value = branch.id;
+                                option.textContent = `${branch.name}${branch.venue ? ' - ' + branch.venue : ''}`;
+                                reportBranchSelect.appendChild(option);
+                            });
+                        }
+
+                        // Populate Comparative Analytics branch selector
+                        const comparisonBranchSelect = document.getElementById('comparisonBranch');
+                        if (comparisonBranchSelect) {
+                            // Clear existing options except "All Branches"
+                            comparisonBranchSelect.innerHTML = '<option value="">All Branches</option>';
+                            
+                            branches.forEach(branch => {
+                                const option = document.createElement('option');
+                                option.value = branch.id;
+                                option.textContent = `${branch.name}${branch.venue ? ' - ' + branch.venue : ''}`;
+                                comparisonBranchSelect.appendChild(option);
+                            });
+                        }
+                    }
+                } else {
+                    console.error('Failed to load branches. Response status:', response.status);
+                    const errorText = await response.text();
+                    console.error('Error response:', errorText);
                 }
             } catch (error) {
                 console.error('Error loading branches:', error);
             }
         }
+
         @endif
 
         async function generateGlobalReport() {
@@ -2639,7 +2833,12 @@
 
                 if (response.ok) {
                     const data = await response.json();
-                    displayGlobalReport(data.data);
+                    console.log('API response:', data);
+                    if (data.success && data.data) {
+                        displayGlobalReport(data.data);
+                    } else {
+                        throw new Error(data.message || 'Invalid response format');
+                    }
                 } else {
                     const errorData = await response.json();
                     throw new Error(errorData.message || 'Failed to generate report');
@@ -2702,6 +2901,9 @@
         @endif
 
         function displayGlobalReport(reportData) {
+            console.log('Report data received:', reportData);
+            console.log('Highest attendance event:', reportData.highest_attendance_event);
+            console.log('Highest attendance event type:', typeof reportData.highest_attendance_event);
             const reportDisplay = document.getElementById('globalReportDisplay');
             const reportContent = document.getElementById('globalReportContent');
 
@@ -2709,9 +2911,9 @@
                 <div class="bg-white rounded-lg shadow-sm border">
                     <div class="px-6 py-4 border-b border-gray-200">
                         <h4 class="text-lg font-semibold text-gray-900">
-                            Global Ministry Monthly Report - ${reportData.month_name} ${reportData.year}
+                            Global Ministry Monthly Report - ${reportData.report_info?.month_name || 'Unknown'} ${reportData.report_info?.year || 'Unknown'}
                         </h4>
-                        <p class="text-sm text-gray-600">Generated on ${new Date(reportData.generated_at).toLocaleDateString()}</p>
+                        <p class="text-sm text-gray-600">Generated on ${reportData.report_info?.generated_at ? new Date(reportData.report_info.generated_at).toLocaleDateString() : 'Unknown'}</p>
                     </div>
                     
                     <div class="p-6">
@@ -2719,83 +2921,102 @@
                             <!-- Sunday Service -->
                             <div class="bg-blue-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-blue-900 mb-2">Sunday Service</h5>
-                                <p class="text-2xl font-bold text-blue-700">${reportData.sunday_service.monthly_average}</p>
+                                <p class="text-2xl font-bold text-blue-700">${reportData.sunday_service_attendance?.monthly_average || 0}</p>
                                 <p class="text-sm text-blue-600">Monthly Average</p>
+                                <p class="text-xs text-blue-500">Total: ${reportData.sunday_service_attendance?.total_attendance || 0}</p>
                             </div>
 
                             <!-- Guest Attraction -->
                             <div class="bg-green-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-green-900 mb-2">Guest Attraction</h5>
-                                <p class="text-2xl font-bold text-green-700">${reportData.guest_attraction.total_guests}</p>
+                                <p class="text-2xl font-bold text-green-700">${reportData.guest_attraction?.total_guests || 0}</p>
                                 <p class="text-sm text-green-600">Total Guests</p>
                             </div>
 
                             <!-- Converts -->
                             <div class="bg-yellow-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-yellow-900 mb-2">Converts</h5>
-                                <p class="text-2xl font-bold text-yellow-700">${reportData.converts.total_converts}</p>
+                                <p class="text-2xl font-bold text-yellow-700">${reportData.converts?.total_converts || 0}</p>
                                 <p class="text-sm text-yellow-600">Total Converts</p>
                             </div>
 
                             <!-- FDC Graduates -->
                             <div class="bg-purple-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-purple-900 mb-2">FDC Graduates</h5>
-                                <p class="text-2xl font-bold text-purple-700">${reportData.converts_assimilated_fdc_graduates.count}</p>
+                                <p class="text-2xl font-bold text-purple-700">${reportData.converts_assimilated_fdc_graduates?.count || 0}</p>
                                 <p class="text-sm text-purple-600">Assimilated</p>
                             </div>
 
                             <!-- Membership Class -->
                             <div class="bg-indigo-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-indigo-900 mb-2">Membership Class</h5>
-                                <p class="text-2xl font-bold text-indigo-700">${reportData.membership_class_graduates.count}</p>
+                                <p class="text-2xl font-bold text-indigo-700">${reportData.membership_class_graduates?.count || 0}</p>
                                 <p class="text-sm text-indigo-600">Graduates</p>
                             </div>
 
                             <!-- TECi Graduates -->
                             <div class="bg-pink-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-pink-900 mb-2">TECi Graduates</h5>
-                                <p class="text-2xl font-bold text-pink-700">${reportData.teci_graduates.count}</p>
+                                <p class="text-2xl font-bold text-pink-700">${reportData.teci_graduates?.count || 0}</p>
                                 <p class="text-sm text-pink-600">Graduates</p>
                             </div>
 
                             <!-- Small Groups -->
                             <div class="bg-emerald-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-emerald-900 mb-2">Small Groups</h5>
-                                <p class="text-2xl font-bold text-emerald-700">${reportData.small_groups.total_groups}</p>
+                                <p class="text-2xl font-bold text-emerald-700">${reportData.small_groups?.total_groups || 0}</p>
                                 <p class="text-sm text-emerald-600">Total Groups</p>
-                                <p class="text-xs text-emerald-500">Members: ${reportData.small_groups.total_membership}</p>
+                                <p class="text-xs text-emerald-500">Members: ${reportData.small_groups?.total_membership || 0}</p>
+                                <p class="text-xs text-emerald-500">Avg Attendance: ${reportData.small_groups?.monthly_average_attendance || 0}</p>
                             </div>
 
                             <!-- G-Squad Volunteers -->
                             <div class="bg-orange-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-orange-900 mb-2">G-Squad Volunteers</h5>
-                                <p class="text-2xl font-bold text-orange-700">${reportData.g_squad_volunteers.count}</p>
+                                <p class="text-2xl font-bold text-orange-700">${reportData.g_squad_volunteers?.count || 0}</p>
                                 <p class="text-sm text-orange-600">Total Volunteers</p>
                             </div>
 
-                            <!-- Leaders -->
+                            <!-- Leadership -->
                             <div class="bg-red-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-red-900 mb-2">Leadership</h5>
-                                <p class="text-2xl font-bold text-red-700">${reportData.leadership.total_leaders}</p>
+                                <p class="text-2xl font-bold text-red-700">${reportData.leadership?.total_leaders || 0}</p>
                                 <p class="text-sm text-red-600">Total Leaders</p>
+                                <div class="text-xs text-red-500 mt-1">
+                                    <p>Leaders: ${reportData.leadership?.leaders || 0}</p>
+                                    <p>Ministers: ${reportData.leadership?.ministers || 0}</p>
+                                    <p>Volunteers: ${reportData.leadership?.volunteers || 0}</p>
+                                </div>
                             </div>
 
                             <!-- Baptisms -->
                             <div class="bg-cyan-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-cyan-900 mb-2">Baptisms</h5>
                                 <div class="space-y-1">
-                                    <p class="text-sm text-cyan-700">Baby: <span class="font-semibold">${reportData.baptisms.baby_dedication}</span></p>
-                                    <p class="text-sm text-cyan-700">Water: <span class="font-semibold">${reportData.baptisms.water_baptism}</span></p>
-                                    <p class="text-sm text-cyan-700">Holy Ghost: <span class="font-semibold">${reportData.baptisms.holy_ghost_baptism}</span></p>
+                                    <p class="text-sm text-cyan-700">Baby: <span class="font-semibold">${reportData.baptisms?.baby_dedication || 0}</span></p>
+                                    <p class="text-sm text-cyan-700">Water: <span class="font-semibold">${reportData.baptisms?.water_baptism || 0}</span></p>
+                                    <p class="text-sm text-cyan-700">Holy Ghost: <span class="font-semibold">${reportData.baptisms?.holy_ghost_baptism || 0}</span></p>
                                 </div>
                             </div>
 
                             <!-- TECi Enrollment -->
                             <div class="bg-gray-50 p-4 rounded-lg">
                                 <h5 class="font-medium text-gray-900 mb-2">TECi Enrollment</h5>
-                                <p class="text-lg font-bold text-gray-700">${reportData.teci_enrollment.current_enrollment}</p>
+                                <p class="text-lg font-bold text-gray-700">${reportData.teci_enrollment?.current_enrollment || 0}</p>
                                 <p class="text-sm text-gray-600">Current Students</p>
-                                <p class="text-xs text-gray-500">Pending Graduation: ${reportData.teci_enrollment.pending_graduation}</p>
+                                <p class="text-xs text-gray-500">Pending Graduation: ${reportData.teci_enrollment?.pending_graduation || 0}</p>
+                            </div>
+
+                            <!-- Highest Attendance Event -->
+                            <div class="bg-violet-50 p-4 rounded-lg">
+                                <h5 class="font-medium text-violet-900 mb-2">Highest Attendance Event</h5>
+                                ${reportData.highest_attendance_event ? `
+                                    <p class="text-lg font-bold text-violet-700">${reportData.highest_attendance_event.event_name || 'Unknown Event'}</p>
+                                    <p class="text-sm text-violet-600">${reportData.highest_attendance_event.attendance || 0} attendees</p>
+                                    <p class="text-xs text-violet-500">${reportData.highest_attendance_event.date ? new Date(reportData.highest_attendance_event.date).toLocaleDateString() : 'Unknown date'}</p>
+                                ` : `
+                                    <p class="text-sm text-violet-600">No events recorded</p>
+                                `}
                             </div>
                         </div>
                     </div>
@@ -2976,4 +3197,4 @@
         }
     </script>
     @endpush
-</x-app-layout> 
+</x-sidebar-layout> 

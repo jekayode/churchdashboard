@@ -1,12 +1,4 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Super Admin Dashboard') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+<x-sidebar-layout title="Super Admin Dashboard">
             <!-- Welcome Section -->
             <div class="bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
@@ -197,6 +189,4 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</x-app-layout> 
+</x-sidebar-layout> 

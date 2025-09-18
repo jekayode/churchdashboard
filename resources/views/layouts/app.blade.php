@@ -28,7 +28,8 @@
     </head>
     <body class="font-sans antialiased bg-gradient-to-br from-church-50 via-white to-secondary-50 min-h-screen">
         <div class="min-h-screen">
-            @include('layouts.navigation')
+           @include('layouts.navigation')
+           <!--  @include('components.role-based-sidebar') -->
 
             <!-- Page Heading -->
             @if (isset($header))

@@ -24,6 +24,8 @@ final class Member extends Model
         'user_id',
         'branch_id',
         'name',
+        'first_name',
+        'surname',
         'email',
         'phone',
         'date_of_birth',
@@ -38,6 +40,19 @@ final class Member extends Model
         'growth_level',
         'leadership_trainings',
         'member_status',
+        // Guest form fields
+        'preferred_call_time',
+        'home_address',
+        'age_group',
+        'prayer_request',
+        'discovery_source',
+        'staying_intention',
+        'closest_location',
+        'additional_info',
+        'consent_given_at',
+        'consent_ip',
+        'profile_completion_percentage',
+        'registration_source',
     ];
 
     /**
@@ -51,6 +66,7 @@ final class Member extends Model
         'date_joined' => 'date',
         'date_attended_membership_class' => 'date',
         'leadership_trainings' => 'array',
+        'consent_given_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -170,6 +186,80 @@ final class Member extends Model
     public function getAgeAttribute(): ?int
     {
         return $this->date_of_birth?->age;
+    }
+
+    /**
+     * Get the full name from first_name and surname.
+     */
+    public function getFullNameAttribute(): string
+    {
+        return trim(($this->first_name ?? '') . ' ' . ($this->surname ?? ''));
+    }
+
+    /**
+     * Mutator to auto-populate name field when first_name changes.
+     */
+    public function setFirstNameAttribute($value): void
+    {
+        $this->attributes['first_name'] = $value;
+        $this->updateNameField();
+    }
+
+    /**
+     * Mutator to auto-populate name field when surname changes.
+     */
+    public function setSurnameAttribute($value): void
+    {
+        $this->attributes['surname'] = $value;
+        $this->updateNameField();
+    }
+
+    /**
+     * Update the name field based on first_name and surname.
+     */
+    private function updateNameField(): void
+    {
+        $firstName = $this->attributes['first_name'] ?? '';
+        $surname = $this->attributes['surname'] ?? '';
+        
+        if (empty($surname)) {
+            $this->attributes['name'] = trim($firstName);
+        } else {
+            $this->attributes['name'] = trim($firstName . ' ' . $surname);
+        }
+    }
+
+    /**
+     * Calculate profile completion percentage.
+     */
+    public function calculateProfileCompletion(): int
+    {
+        $totalFields = 15; // Total number of profile fields (excluding system fields)
+        $filledFields = 0;
+        
+        $fields = [
+            'first_name', 'surname', 'email', 'phone', 'date_of_birth',
+            'gender', 'marital_status', 'home_address', 'age_group', 
+            'prayer_request', 'discovery_source', 'staying_intention',
+            'closest_location', 'additional_info', 'preferred_call_time'
+        ];
+        
+        foreach ($fields as $field) {
+            if (!empty($this->$field)) {
+                $filledFields++;
+            }
+        }
+        
+        return (int) round(($filledFields / $totalFields) * 100);
+    }
+
+    /**
+     * Update profile completion percentage.
+     */
+    public function updateProfileCompletion(): void
+    {
+        $this->profile_completion_percentage = $this->calculateProfileCompletion();
+        $this->save();
     }
 
     /**

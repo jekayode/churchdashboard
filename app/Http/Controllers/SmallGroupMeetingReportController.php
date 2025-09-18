@@ -21,7 +21,7 @@ final class SmallGroupMeetingReportController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
-        $query = SmallGroupMeetingReport::with(['smallGroup', 'reportedBy'])
+        $query = SmallGroupMeetingReport::with(['smallGroup.branch', 'reportedBy'])
             ->orderBy('meeting_date', 'desc');
 
         // Apply role-based filtering

@@ -42,6 +42,14 @@ final class ReportingController extends Controller
     {
         $user = auth()->user();
         $branchId = $user->isSuperAdmin() ? $request->get('branch_id') : $user->getActiveBranchId();
+        
+        // Cast branch_id to integer if it's not null
+        if ($branchId !== null && $branchId !== '') {
+            $branchId = (int) $branchId;
+        } else {
+            $branchId = null;
+        }
+        
         $period = $request->get('period', 'month');
         
         try {
@@ -79,6 +87,13 @@ final class ReportingController extends Controller
         $user = auth()->user();
         $branchId = $user->isSuperAdmin() ? $request->get('branch_id') : $user->getActiveBranchId();
         
+        // Cast branch_id to integer if it's not null
+        if ($branchId !== null && $branchId !== '') {
+            $branchId = (int) $branchId;
+        } else {
+            $branchId = null;
+        }
+        
         $period1 = [
             'start' => $request->get('period1_start'),
             'end' => $request->get('period1_end'),
@@ -104,6 +119,13 @@ final class ReportingController extends Controller
     {
         $user = auth()->user();
         $branchId = $user->isSuperAdmin() ? $request->get('branch_id') : $user->getActiveBranchId();
+        
+        // Cast branch_id to integer if it's not null
+        if ($branchId !== null && $branchId !== '') {
+            $branchId = (int) $branchId;
+        } else {
+            $branchId = null;
+        }
         
         $filters = $request->only([
             'event_type',
@@ -139,6 +161,14 @@ final class ReportingController extends Controller
         
         $user = auth()->user();
         $branchId = $user->isSuperAdmin() ? $request->get('branch_id') : $user->getActiveBranchId();
+        
+        // Cast branch_id to integer if it's not null
+        if ($branchId !== null && $branchId !== '') {
+            $branchId = (int) $branchId;
+        } else {
+            $branchId = null;
+        }
+        
         $year = $request->get('year', now()->year);
         $month = $request->get('month', now()->month);
         
@@ -255,6 +285,14 @@ final class ReportingController extends Controller
         
         $user = auth()->user();
         $branchId = $user->isSuperAdmin() ? $request->get('branch_id') : $user->getActiveBranchId();
+        
+        // Cast branch_id to integer if it's not null
+        if ($branchId !== null && $branchId !== '') {
+            $branchId = (int) $branchId;
+        } else {
+            $branchId = null;
+        }
+        
         $period = $request->get('period', 'month');
         
         try {
@@ -299,6 +337,13 @@ final class ReportingController extends Controller
         
         $user = auth()->user();
         $branchId = $user->isSuperAdmin() ? $request->get('branch_id') : $user->getActiveBranchId();
+        
+        // Cast branch_id to integer if it's not null
+        if ($branchId !== null && $branchId !== '') {
+            $branchId = (int) $branchId;
+        } else {
+            $branchId = null;
+        }
         
         $filters = $request->only([
             'event_type',
@@ -355,6 +400,13 @@ final class ReportingController extends Controller
         
         $user = auth()->user();
         $branchId = $user->isSuperAdmin() ? $request->get('branch_id') : $user->getActiveBranchId();
+        
+        // Cast branch_id to integer if it's not null
+        if ($branchId !== null && $branchId !== '') {
+            $branchId = (int) $branchId;
+        } else {
+            $branchId = null;
+        }
         
         $year = $request->get('year', now()->year);
         $month = $request->get('month', now()->month);

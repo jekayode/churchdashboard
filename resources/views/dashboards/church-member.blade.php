@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-sidebar-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Member Dashboard') }}
@@ -21,8 +21,41 @@
                 </div>
             </div>
 
+            <!-- Profile Completion Section -->
+            @if($member && $member->profile_completion_percentage < 100)
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-6 mb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <svg class="h-6 w-6 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <h3 class="text-lg font-medium text-yellow-800">Complete Your Profile</h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-yellow-700">
+                                    Your profile is {{ $member->profile_completion_percentage }}% complete. 
+                                    Help us get to know you better by completing your profile information.
+                                </p>
+                            </div>
+                            <div class="mt-4">
+                                <div class="bg-yellow-200 rounded-full h-2">
+                                    <div class="bg-yellow-600 h-2 rounded-full" style="width: {{ $member->profile_completion_percentage }}%"></div>
+                                </div>
+                            </div>
+                            <div class="mt-4">
+                                <a href="{{ route('member.profile-completion') }}" 
+                                   class="inline-flex items-center px-4 py-2 bg-yellow-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-yellow-700 focus:bg-yellow-700 active:bg-yellow-900 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                    Complete Profile
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
             <!-- Personal Growth Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
                 <!-- TECI Status -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
@@ -106,6 +139,36 @@
                                         Not Joined
                                     @endif
                                 </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Departments -->
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Departments</p>
+                                <div class="text-sm font-semibold text-gray-900">
+                                    @if($member && $member->departments()->exists())
+                                        @foreach($member->departments()->limit(2)->get() as $department)
+                                            <div class="mb-1">{{ $department->name }}</div>
+                                        @endforeach
+                                        @if($member->departments()->count() > 2)
+                                            <div class="text-xs text-gray-500">+{{ $member->departments()->count() - 2 }} more</div>
+                                        @endif
+                                    @else
+                                        <span class="text-gray-400">Not Assigned</span>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -207,7 +270,7 @@
                                     Not serving yet
                                 @endif
                             </p>
-                            <a href="#" class="text-green-600 hover:text-green-800 text-sm font-medium">Find Ministry</a>
+                            <a href="{{ route('member.departments') }}" class="text-green-600 hover:text-green-800 text-sm font-medium">View Departments</a>
                         </div>
 
                         <!-- Community Connection -->
@@ -230,6 +293,53 @@
                     </div>
                 </div>
             </div>
+
+            <!-- My Departments -->
+            @if($member && $member->departments()->exists())
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-lg font-semibold text-gray-900">My Departments</h3>
+                            <span class="px-3 py-1 bg-indigo-100 text-indigo-800 text-sm font-medium rounded-full">
+                                {{ $member->departments()->count() }} Department{{ $member->departments()->count() > 1 ? 's' : '' }}
+                            </span>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            @foreach($member->departments()->with(['ministry:id,name', 'leader:id,name'])->get() as $department)
+                                <div class="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+                                    <div class="flex items-start justify-between">
+                                        <div class="flex-1">
+                                            <h4 class="font-medium text-gray-900 mb-1">{{ $department->name }}</h4>
+                                            <p class="text-sm text-gray-500 mb-2">{{ $department->ministry?->name }}</p>
+                                            @if($department->description)
+                                                <p class="text-xs text-gray-600 mb-2">{{ Str::limit($department->description, 80) }}</p>
+                                            @endif
+                                            @if($department->leader)
+                                                <div class="flex items-center text-xs text-gray-500">
+                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                    </svg>
+                                                    Led by {{ $department->leader->name }}
+                                                </div>
+                                            @endif
+                                        </div>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full {{ $department->status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                            {{ ucfirst($department->status) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                        
+                        <div class="mt-4 text-center">
+                            <p class="text-sm text-gray-500">
+                                Interested in serving in other departments? Contact your pastor or ministry leader.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <!-- Recent Activity -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
@@ -261,4 +371,4 @@
             </div>
         </div>
     </div>
-</x-app-layout> 
+</x-sidebar-layout> 

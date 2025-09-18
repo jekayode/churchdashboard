@@ -1,22 +1,19 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('Small Group Meeting Reports') }}
-            </h2>
-            <div class="flex gap-2">
-                <button onclick="openReportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
-                    Submit Report
-                </button>
-                <button onclick="showStatistics()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-                    View Statistics
-                </button>
-            </div>
+<x-sidebar-layout title="Small Group Meeting Reports">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+            {{ __('Small Group Meeting Reports') }}
+        </h2>
+        <div class="flex gap-2">
+            <button onclick="openReportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                Submit Report
+            </button>
+            <button onclick="showStatistics()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                View Statistics
+            </button>
         </div>
-    </x-slot>
+    </div>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Filters and Search -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6">
@@ -41,7 +38,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
                             <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Statuses</option>
-                                <option value="pending">Pending</option>
+                                <option value="submitted">Submitted</option>
                                 <option value="approved">Approved</option>
                                 <option value="rejected">Rejected</option>
                             </select>
@@ -223,7 +220,6 @@
                 </div>
             </div>
         </div>
-    </div>
 
     <script>
         let currentPage = 1;
@@ -620,8 +616,10 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(data => {
@@ -646,8 +644,10 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({ reason: reason })
             })
             .then(response => response.json())
@@ -774,7 +774,7 @@
         // Utility functions
         function getStatusBadgeClass(status) {
             const classes = {
-                pending: 'bg-yellow-100 text-yellow-800',
+                submitted: 'bg-yellow-100 text-yellow-800',
                 approved: 'bg-green-100 text-green-800',
                 rejected: 'bg-red-100 text-red-800'
             };
@@ -783,12 +783,13 @@
 
         function canEditReport(report) {
             // Logic to determine if current user can edit this report
-            return report.status === 'pending' || report.status === 'rejected';
+            return report.status === 'submitted' || report.status === 'rejected';
         }
 
         function canApproveReport(report) {
             // Logic to determine if current user can approve this report
-            return report.status === 'pending' && {{ $isSuperAdmin ? 'true' : 'false' }};
+            // Both Super Admins and Branch Pastors can approve reports
+            return report.status === 'submitted';
         }
 
         function formatDate(dateString) {
@@ -826,4 +827,4 @@
             };
         }
     </script>
-</x-app-layout> 
+</x-sidebar-layout> 

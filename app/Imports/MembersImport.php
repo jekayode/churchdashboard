@@ -158,6 +158,16 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             'growth_level' => ['growth_level', 'level'],
             'member_status' => ['member_status', 'status'],
             'branch_name' => ['branch_name', 'branch', 'church_branch'],
+            // Guest form fields
+            'preferred_call_time' => ['preferred_call_time', 'call_time', 'best_time_to_call'],
+            'home_address' => ['home_address', 'address', 'residential_address'],
+            'age_group' => ['age_group', 'age_range'],
+            'prayer_request' => ['prayer_request', 'prayer_requests', 'prayer_needs'],
+            'discovery_source' => ['discovery_source', 'how_did_you_hear', 'how_heard_about_us'],
+            'staying_intention' => ['staying_intention', 'intention_to_stay', 'plan_to_stay'],
+            'closest_location' => ['closest_location', 'nearest_location', 'preferred_location'],
+            'additional_info' => ['additional_info', 'additional_information', 'other_info', 'notes'],
+            'leadership_trainings' => ['leadership_trainings', 'trainings', 'completed_trainings'],
         ];
 
         foreach ($fieldMap as $dbField => $possibleHeaders) {
@@ -209,7 +219,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
                 'divorced' => 'divorced',
                 'separated' => 'separated',
                 'widowed', 'widow', 'widower' => 'widowed',
-                'in a relationship', 'relationship', 'dating' => 'in_a_relationship',
+                'in a relationship', 'relationship', 'dating', 'in-relationship' => 'in_a_relationship',
                 'engaged', 'engagement' => 'engaged',
                 default => 'single'
             };
@@ -245,11 +255,13 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
     {
         return [
             'name' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:255',
+            'last_name' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:20',
             'date_of_birth' => 'nullable|date',
             'anniversary' => 'nullable|date',
-            'gender' => 'nullable|in:male,female',
+            'gender' => 'nullable|in:male,female,prefer-not-to-say',
             'marital_status' => 'nullable|in:single,married,divorced,separated,widowed,in_a_relationship,engaged',
             'occupation' => 'nullable|string|max:255',
             'nearest_bus_stop' => 'nullable|string|max:255',
@@ -259,6 +271,16 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             'growth_level' => 'nullable|in:core,pastor,growing,new_believer',
             'member_status' => 'nullable|in:visitor,member,volunteer,leader,minister',
             'branch_name' => $this->branchId ? 'nullable' : 'required|string',
+            // Guest form fields
+            'preferred_call_time' => 'nullable|in:anytime,morning,afternoon,evening',
+            'home_address' => 'nullable|string|max:1000',
+            'age_group' => 'nullable|in:15-20,21-25,26-30,31-35,36-40,above-40',
+            'prayer_request' => 'nullable|string|max:2000',
+            'discovery_source' => 'nullable|in:social-media,word-of-mouth,billboard,email,website,promotional-material,radio-tv,outreach',
+            'staying_intention' => 'nullable|in:yes-for-sure,visit-when-in-town,just-visiting,weighing-options',
+            'closest_location' => 'nullable|string|max:255',
+            'additional_info' => 'nullable|string|max:2000',
+            'leadership_trainings' => 'nullable|string', // Will be processed as JSON array
         ];
     }
 
@@ -325,10 +347,35 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             $branchId = Branch::first()?->id;
         }
 
+        // Handle first_name and surname
+        $firstName = $data['first_name'] ?? null;
+        $surname = $data['last_name'] ?? null;
+        
+        // If name is provided but first_name/surname are not, try to split
+        if (!$firstName && !$surname && isset($data['name'])) {
+            $nameParts = explode(' ', trim($data['name']), 2);
+            $firstName = $nameParts[0] ?? null;
+            $surname = $nameParts[1] ?? null;
+        }
+
+        // Handle leadership_trainings - convert string to array if needed
+        $leadershipTrainings = $data['leadership_trainings'] ?? [];
+        if (is_string($leadershipTrainings)) {
+            // Try to parse as JSON first, then as comma-separated
+            $decoded = json_decode($leadershipTrainings, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $leadershipTrainings = $decoded;
+            } else {
+                $leadershipTrainings = array_map('trim', explode(',', $leadershipTrainings));
+            }
+        }
+
         return [
             'user_id' => $userId, // Can be null if no email provided
             'branch_id' => $branchId,
             'name' => $data['name'],
+            'first_name' => $firstName,
+            'surname' => $surname,
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
@@ -341,8 +388,18 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             'date_attended_membership_class' => $data['date_attended_membership_class'] ?? null,
             'teci_status' => $data['teci_status'] ?? 'not_started',
             'growth_level' => $data['growth_level'] ?? 'new_believer',
-            'leadership_trainings' => $data['leadership_trainings'] ?? [],
+            'leadership_trainings' => $leadershipTrainings,
             'member_status' => $data['member_status'] ?? 'member',
+            // Guest form fields
+            'preferred_call_time' => $data['preferred_call_time'] ?? null,
+            'home_address' => $data['home_address'] ?? null,
+            'age_group' => $data['age_group'] ?? null,
+            'prayer_request' => $data['prayer_request'] ?? null,
+            'discovery_source' => $data['discovery_source'] ?? null,
+            'staying_intention' => $data['staying_intention'] ?? null,
+            'closest_location' => $data['closest_location'] ?? null,
+            'additional_info' => $data['additional_info'] ?? null,
+            'registration_source' => 'imported',
         ];
     }
 
@@ -381,11 +438,22 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             '*.last_name' => 'required_without:*.name|string|max:255',
             '*.email' => 'nullable|email|max:255',
             '*.phone' => 'nullable|max:20',
-            '*.gender' => 'nullable|in:male,female',
+            '*.gender' => 'nullable|in:male,female,prefer-not-to-say',
+            '*.marital_status' => 'nullable|in:single,married,divorced,separated,widowed,in_a_relationship,engaged',
             '*.date_of_birth' => 'nullable|date|before:today',
             '*.member_status' => 'nullable|in:visitor,member,volunteer,leader,minister',
             '*.teci_status' => 'nullable|in:not_started,100_level,200_level,300_level,400_level,500_level,graduated,paused',
             '*.growth_level' => 'nullable|in:core,pastor,growing,new_believer',
+            // Guest form fields
+            '*.preferred_call_time' => 'nullable|in:anytime,morning,afternoon,evening',
+            '*.home_address' => 'nullable|string|max:1000',
+            '*.age_group' => 'nullable|in:15-20,21-25,26-30,31-35,36-40,above-40',
+            '*.prayer_request' => 'nullable|string|max:2000',
+            '*.discovery_source' => 'nullable|in:social-media,word-of-mouth,billboard,email,website,promotional-material,radio-tv,outreach',
+            '*.staying_intention' => 'nullable|in:yes-for-sure,visit-when-in-town,just-visiting,weighing-options',
+            '*.closest_location' => 'nullable|string|max:255',
+            '*.additional_info' => 'nullable|string|max:2000',
+            '*.leadership_trainings' => 'nullable|string',
         ];
     }
 
@@ -399,11 +467,16 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             '*.first_name.required_without' => 'First name is required when full name is not provided.',
             '*.last_name.required_without' => 'Last name is required when full name is not provided.',
             '*.email.email' => 'Please provide a valid email address.',
-            '*.gender.in' => 'Gender must be either male or female.',
+            '*.gender.in' => 'Gender must be male, female, or prefer-not-to-say.',
+            '*.marital_status.in' => 'Marital status must be a valid option.',
             '*.date_of_birth.before' => 'Date of birth must be in the past.',
             '*.teci_status.in' => 'TECI status must be a valid level.',
             '*.growth_level.in' => 'Growth level must be a valid level.',
             '*.member_status.in' => 'Member status must be a valid status.',
+            '*.preferred_call_time.in' => 'Preferred call time must be anytime, morning, afternoon, or evening.',
+            '*.age_group.in' => 'Age group must be a valid range.',
+            '*.discovery_source.in' => 'Discovery source must be a valid option.',
+            '*.staying_intention.in' => 'Staying intention must be a valid option.',
         ];
     }
 

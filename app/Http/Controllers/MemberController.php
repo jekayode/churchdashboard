@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\MemberRequest;
+use App\Http\Requests\AdminMemberRequest;
 use App\Models\Member;
 use App\Models\Department;
 use App\Models\SmallGroup;
@@ -18,6 +18,110 @@ use Illuminate\Support\Facades\DB;
 final class MemberController extends Controller
 {
     use AuthorizesRequests;
+    /**
+     * Get member statistics for dashboard.
+     */
+    public function statistics(Request $request): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+            $branchId = null;
+
+            // For non-super admins, limit to their branch
+            if (!$user->isSuperAdmin()) {
+                $userBranch = $user->getPrimaryBranch();
+                if ($userBranch) {
+                    $branchId = $userBranch->id;
+                }
+            } else {
+                // Super admin can filter by branch if provided
+                $branchId = $request->get('branch_id');
+            }
+
+            // Base query with branch filter
+            $baseQuery = Member::query();
+            if ($branchId) {
+                $baseQuery->where('branch_id', $branchId);
+            }
+
+            // Get basic counts - create fresh queries for each
+            $totalMembers = (clone $baseQuery)->count();
+            $visitorCount = (clone $baseQuery)->where('member_status', 'visitor')->count();
+            $leaderCount = (clone $baseQuery)->where('member_status', 'leader')->count();
+            $volunteerCount = (clone $baseQuery)->where('member_status', 'volunteer')->count();
+
+            // TECI Status breakdown
+            $teciStats = (clone $baseQuery)
+                ->selectRaw('teci_status, COUNT(*) as count')
+                ->groupBy('teci_status')
+                ->pluck('count', 'teci_status')
+                ->toArray();
+
+            // Leadership Training breakdown
+            $trainingStats = (clone $baseQuery)
+                ->whereNotNull('leadership_trainings')
+                ->where('leadership_trainings', '!=', '[]')
+                ->where('leadership_trainings', '!=', '')
+                ->get()
+                ->flatMap(function ($member) {
+                    $trainings = is_string($member->leadership_trainings) 
+                        ? json_decode($member->leadership_trainings, true) 
+                        : $member->leadership_trainings;
+                    return is_array($trainings) && !empty($trainings) ? $trainings : [];
+                })
+                ->countBy()
+                ->toArray();
+
+            // Debug logging
+            \Log::info('Member Statistics Debug', [
+                'total_members' => $totalMembers,
+                'visitor_count' => $visitorCount,
+                'leader_count' => $leaderCount,
+                'volunteer_count' => $volunteerCount,
+                'teci_stats' => $teciStats,
+                'training_stats' => $trainingStats,
+                'branch_id' => $branchId
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_members' => $totalMembers,
+                    'visitor_count' => $visitorCount,
+                    'leader_count' => $leaderCount,
+                    'volunteer_count' => $volunteerCount,
+                    'teci_stats' => [
+                        'not_started' => $teciStats['not_started'] ?? 0,
+                        '100_level' => $teciStats['100_level'] ?? 0,
+                        '200_level' => $teciStats['200_level'] ?? 0,
+                        '300_level' => $teciStats['300_level'] ?? 0,
+                        '400_level' => $teciStats['400_level'] ?? 0,
+                        '500_level' => $teciStats['500_level'] ?? 0,
+                        'graduated' => $teciStats['graduated'] ?? 0,
+                        'paused' => $teciStats['paused'] ?? 0,
+                    ],
+                    'training_stats' => [
+                        'ELP' => $trainingStats['ELP'] ?? 0,
+                        'MLCC' => $trainingStats['MLCC'] ?? 0,
+                        'MLCP Basic' => $trainingStats['MLCP Basic'] ?? 0,
+                        'MLCP Advanced' => $trainingStats['MLCP Advanced'] ?? 0,
+                    ]
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error fetching member statistics', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch member statistics'
+            ], 500);
+        }
+    }
+
     /**
      * Display a listing of members with advanced search and filtering.
      */
@@ -44,6 +148,14 @@ final class MemberController extends Controller
                 if ($userBranch) {
                     $query->where('branch_id', $userBranch->id);
                 }
+                
+                Log::info('Member API Debug - Branch filtering', [
+                    'user_id' => $user->id,
+                    'is_super_admin' => $user->isSuperAdmin(),
+                    'user_branch_id' => $userBranch ? $userBranch->id : null,
+                    'user_branch_name' => $userBranch ? $userBranch->name : null,
+                    'request_params' => $request->all(),
+                ]);
             }
 
             // Apply filters
@@ -56,8 +168,22 @@ final class MemberController extends Controller
             $this->applySorting($query, $request);
 
             // Paginate results
-            $perPage = min($request->get('per_page', 15), 100);
+            // Allow larger pagination for assignment scenarios (when exclude_department is used)
+            $maxPerPage = $request->has('exclude_department') ? 1000 : 100;
+            $perPage = min($request->get('per_page', 15), $maxPerPage);
             $members = $query->paginate($perPage);
+
+            // Add debug logging for member results
+            Log::info('Member API Debug - Query results', [
+                'total_members' => $members->total(),
+                'current_page_count' => $members->count(),
+                'per_page' => $members->perPage(),
+                'max_per_page_allowed' => $maxPerPage,
+                'is_assignment_request' => $request->has('exclude_department'),
+                'exclude_department' => $request->get('exclude_department'),
+                'member_names' => $members->pluck('name')->toArray(),
+                'member_branch_ids' => $members->pluck('branch_id')->toArray(),
+            ]);
 
             // Add computed fields
             $members->getCollection()->transform(function ($member) {
@@ -91,7 +217,7 @@ final class MemberController extends Controller
     /**
      * Store a newly created member.
      */
-    public function store(MemberRequest $request): JsonResponse
+    public function store(AdminMemberRequest $request): JsonResponse
     {
         Gate::authorize('create', Member::class);
 
@@ -216,7 +342,7 @@ final class MemberController extends Controller
     /**
      * Update the specified member.
      */
-    public function update(MemberRequest $request, Member $member): JsonResponse
+    public function update(AdminMemberRequest $request, Member $member): JsonResponse
     {
         Gate::authorize('update', $member);
 
@@ -586,6 +712,13 @@ final class MemberController extends Controller
             });
         }
 
+        // Exclude department filter (for member assignment)
+        if ($request->filled('exclude_department')) {
+            $query->whereDoesntHave('departments', function ($q) use ($request) {
+                $q->where('departments.id', $request->exclude_department);
+            });
+        }
+
         // Leadership roles filter
         if ($request->filled('has_leadership_role')) {
             if ($request->boolean('has_leadership_role')) {
@@ -732,7 +865,7 @@ final class MemberController extends Controller
 
             // Create the user account
             $user = \App\Models\User::create([
-                'name' => $memberData['name'],
+                'name' => trim(($memberData['first_name'] ?? '') . ' ' . ($memberData['surname'] ?? '')),
                 'email' => $memberData['email'],
                 'password' => bcrypt($tempPassword),
                 'email_verified_at' => now(), // Auto-verify for church members

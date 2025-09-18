@@ -288,9 +288,8 @@ final class ProjectionController extends Controller
         
         if ($request->filled('year')) {
             $query->where('year', $request->integer('year'));
-        } else {
-            $query->currentYear();
         }
+        // Note: For statistics, we want ALL projections, not just current year
         
         $projections = $query->get();
         

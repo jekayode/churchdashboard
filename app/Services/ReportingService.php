@@ -665,6 +665,10 @@ final class ReportingService
                 'leadership' => $this->getLeadershipData($branchId),
                 'baptisms' => $this->getBaptismsData($branchId, $startDate, $endDate),
                 'teci_enrollment' => $this->getTeciEnrollmentData($branchId),
+                'highest_attendance_event' => $this->getHighestAttendanceEventForPeriod($branchId, [
+                    'start' => $startDate,
+                    'end' => $endDate
+                ]),
             ];
         });
     }
@@ -1204,7 +1208,7 @@ final class ReportingService
         return [
             'total_groups' => $totalGroups,
             'total_membership' => $totalMembership,
-            'monthly_average_attendance' => round($avgAttendance, 2),
+            'monthly_average_attendance' => round((float) $avgAttendance, 2),
         ];
     }
 
@@ -1228,13 +1232,26 @@ final class ReportingService
      */
     private function getLeadershipData(?int $branchId): array
     {
-        $totalLeaders = Member::query()
+        $leaders = Member::query()
             ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
-            ->whereIn('member_status', ['leader', 'minister'])
+            ->where('member_status', 'leader')
+            ->count();
+
+        $ministers = Member::query()
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->where('member_status', 'minister')
+            ->count();
+
+        $volunteers = Member::query()
+            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->where('member_status', 'volunteer')
             ->count();
 
         return [
-            'total_leaders' => $totalLeaders,
+            'total_leaders' => $leaders + $ministers,
+            'leaders' => $leaders,
+            'ministers' => $ministers,
+            'volunteers' => $volunteers,
         ];
     }
 
