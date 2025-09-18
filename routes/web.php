@@ -227,7 +227,7 @@ Route::middleware(['auth', 'verified', 'role:church_member,super_admin,branch_pa
     
     // Profile completion routes
     Route::get('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'showProfileCompletion'])->name('profile-completion');
-    Route::post('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'updateProfileCompletion'])->name('profile-completion');
+    Route::post('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'updateProfileCompletion'])->name('profile-completion.update');
 });
 
 // Public Routes (accessible to all)

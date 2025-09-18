@@ -27,7 +27,7 @@
             <!-- Profile Completion Form -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-8">
-                    <form method="POST" action="{{ route('member.profile-completion') }}" class="space-y-6">
+                    <form method="POST" action="{{ route('member.profile-completion.update') }}" class="space-y-6">
                         @csrf
                         
                         <!-- Member Form Component -->
