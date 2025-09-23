@@ -17,26 +17,26 @@
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gradient-to-br from-church-50 via-white to-secondary-50">
             <!-- Navigation -->
-            <nav class="bg-white shadow-sm">
+            <nav class="bg-gray-900">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
                         <div class="flex items-center">
-                            <div class="flex-shrink-0 flex items-center">
-                                <img src="/img/lifepoint-logo.png" alt="LifePointe" class="h-8 w-auto"/>
-                            </div>
+                            <a href="/" class="flex-shrink-0 flex items-center">
+                                <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-9 w-auto"/>
+                            </a>
                         </div>
-                        <div class="flex items-center space-x-4">
+                        <div class="flex items-center space-x-6">
                             @if (Route::has('login'))
                                 @auth
-                                    <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-church-600 px-3 py-2 rounded-md text-sm font-medium">
+                                    <a href="{{ route('dashboard') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                                         Dashboard
                                     </a>
                                 @else
-                                    <a href="{{ route('login') }}" class="text-gray-700 hover:text-church-600 px-3 py-2 rounded-md text-sm font-medium">
+                                    <a href="{{ route('login') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                                         Login
                                     </a>
                                     @if (Route::has('register'))
-                                        <a href="{{ route('register') }}" class="bg-church-500 hover:bg-church-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                        <a href="{{ route('register') }}" class="text-secondary-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                                             Register
                                         </a>
                                     @endif
