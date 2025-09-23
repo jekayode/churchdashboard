@@ -41,7 +41,7 @@
         <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
             <div class="px-4 py-6 sm:px-0">
                 <div class="mb-6">
-                    <h1 class="text-3xl font-bold text-gray-900 mb-2">LifeGroups</h1>
+                        <h1 class="text-3xl font-bold text-gray-900 mb-2 font-display">LifeGroups</h1>
                     <p class="text-gray-600">Find friends, family, and focus. Join a LifeGroup near you!</p>
                 </div>
 

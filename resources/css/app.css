@@ -5,7 +5,9 @@
 /* Clash Display for headings */
 @font-face {
     font-family: 'Clash Display';
-    src: url('/fonts/ClashDisplay-Variable.woff2') format('woff2');
+    src: url('/fonts/ClashDisplay-Variable.woff2') format('woff2'),
+         url('/fonts/ClashDisplay-Variable.woff') format('woff'),
+         url('/fonts/ClashDisplay-Variable.ttf') format('truetype');
     font-weight: 100 900;
     font-style: normal;
     font-display: swap;

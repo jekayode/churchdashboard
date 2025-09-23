@@ -57,8 +57,8 @@
                                 <h5 class="text-xs sm:text-sm font-semibold tracking-wide text-gray-900 uppercase">
                                     Welcome to LifePointe
                                 </h5>
-                                <h1 class="mt-3 text-4xl sm:text-5xl md:text-5xl font-extrabold text-gray-900 sm:max-w-xl sm:mx-auto lg:mx-0">
-                                    We’re a resting place for the weary and a signpost for the lost
+                                <h1 class="mt-3 text-4xl sm:text-5xl md:text-5xl font-extrabold text-gray-900 sm:max-w-xl sm:mx-auto lg:mx-0 font-display">
+                                    We're a resting place for the weary and a signpost for the lost
                                 </h1>
                                 <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                                     <div class="rounded-md shadow">
@@ -86,7 +86,7 @@
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="lg:text-center">
                         <h2 class="text-base text-church-600 font-semibold tracking-wide uppercase">What We Offer</h2>
-                        <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl">
+                        <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-gray-900 sm:text-4xl font-display">
                             A place to belong and grow
                         </p>
                     </div>
@@ -134,7 +134,7 @@
             <section class="py-12 bg-white">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="lg:text-center mb-8">
-                        <h2 class="text-3xl font-extrabold tracking-tight text-gray-900">Find friends, family, and focus</h2>
+                        <h2 class="text-3xl font-extrabold tracking-tight text-gray-900 font-display">Find friends, family, and focus</h2>
                         <p class="mt-2 text-gray-600">Locate the Nearest Service to You</p>
                     </div>
                     <div x-data="lifegroups()" x-init="init()">
@@ -246,7 +246,7 @@
             <!-- CTA Section -->
             <div class="gradient-brand">
                 <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
-                    <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
+                    <h2 class="text-3xl font-extrabold text-white sm:text-4xl font-display">
                         <span class="block">Ready to get started?</span>
                         <span class="block">Join us this Sunday!</span>
                     </h2>

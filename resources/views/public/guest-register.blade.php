@@ -41,7 +41,7 @@
         <div class="py-12">
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <div class="mb-6">
-                    <h1 class="text-3xl font-bold text-gray-900 mb-2">First-Time Guest Registration</h1>
+                            <h1 class="text-3xl font-bold text-gray-900 mb-2 font-display">First-Time Guest Registration</h1>
                     <p class="text-gray-600">Welcome to LifePointe! Please fill out this form to get started.</p>
                 </div>
             <!-- Welcome Section -->
