@@ -225,6 +225,7 @@ final class MemberController extends Controller
             DB::beginTransaction();
 
             $data = $request->validated();
+            $data = $this->normalizeMemberPayload($data);
             
             // For non-super admins, ensure they can only assign members to their own branch
             $user = auth()->user();
@@ -350,6 +351,7 @@ final class MemberController extends Controller
             DB::beginTransaction();
 
             $data = $request->validated();
+            $data = $this->normalizeMemberPayload($data);
             $oldStatus = $member->member_status;
             
             // For non-super admins, ensure they can only assign members to their own branch
@@ -1133,5 +1135,44 @@ final class MemberController extends Controller
                 ],
             ], 500);
         }
+    }
+
+    private function normalizeMemberPayload(array $data): array
+    {
+        $dateFields = [
+            'date_of_birth', 'anniversary', 'date_joined', 'date_attended_membership_class'
+        ];
+        foreach ($dateFields as $field) {
+            if (array_key_exists($field, $data) && ($data[$field] === '' || $data[$field] === null)) {
+                $data[$field] = null;
+            }
+        }
+
+        // Map growth_level from UI to DB where needed
+        $growthMap = [
+            'new_believer' => 'new_believer',
+            'growing' => 'growing',
+            'core' => 'core',
+            'pastor' => 'pastor',
+            'mature' => 'pastor', // fallback mapping if legacy UI sends 'mature'
+        ];
+        if (isset($data['growth_level'])) {
+            $data['growth_level'] = $growthMap[$data['growth_level']] ?? $data['growth_level'];
+        }
+
+        // Ensure leadership_trainings is array
+        if (isset($data['leadership_trainings']) && is_string($data['leadership_trainings'])) {
+            $decoded = json_decode($data['leadership_trainings'], true);
+            $data['leadership_trainings'] = is_array($decoded) ? $decoded : [];
+        }
+
+        // Keep name in sync when first/surname provided
+        if (!empty($data['first_name']) || !empty($data['surname'])) {
+            $first = trim($data['first_name'] ?? '');
+            $last = trim($data['surname'] ?? '');
+            $data['name'] = trim($first.' '.$last) ?: ($data['name'] ?? '');
+        }
+
+        return $data;
     }
 } 
