@@ -1238,6 +1238,17 @@ final class ImportExportService
                     'end_time' => '18:00',
                     'number_of_cars' => 15,
                     'notes' => 'Youth baptism ceremony',
+                    // Multi-service fields for full compatibility
+                    'is_multi_service' => true,
+                    'second_service_attendance_male' => 18,
+                    'second_service_attendance_female' => 22,
+                    'second_service_attendance_children' => 9,
+                    'second_service_first_time_guests' => 2,
+                    'second_service_converts' => 1,
+                    'second_service_number_of_cars' => 11,
+                    'second_service_start_time' => '18:30',
+                    'second_service_end_time' => '20:00',
+                    'second_service_notes' => 'Evening youth rally',
                 ],
             ];
 
@@ -1271,6 +1282,17 @@ final class ImportExportService
                         'End Time',
                         'Number of Cars',
                         'Notes',
+                        // Second service compatible columns
+                        'Is Multi Service',
+                        'Second Service Male Attendance',
+                        'Second Service Female Attendance',
+                        'Second Service Children Attendance',
+                        'Second Service First Time Guests',
+                        'Second Service Converts',
+                        'Second Service Number of Cars',
+                        'Second Service Start Time',
+                        'Second Service End Time',
+                        'Second Service Notes',
                     ];
                 }
             };
