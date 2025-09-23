@@ -56,7 +56,7 @@
                                 <h5 class="text-xs sm:text-sm font-semibold tracking-wide text-gray-900 uppercase">
                                     Welcome to LifePointe
                                 </h5>
-                                <h1 class="mt-3 text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 sm:max-w-xl sm:mx-auto lg:mx-0">
+                                <h1 class="mt-3 text-4xl sm:text-5xl md:text-5xl font-extrabold text-gray-900 sm:max-w-xl sm:mx-auto lg:mx-0">
                                     We’re a resting place for the weary and a signpost for the lost
                                 </h1>
                                 <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
@@ -236,21 +236,13 @@
         </div>
 
         <script>
+            // Static data functions - no API calls needed
             function lifegroups() {
                 return {
                     branches: [],
                     groups: [],
                     filters: { branch_id: '', q: '' },
-                    async init() { await this.loadBranches(); await this.load(); },
-                    async loadBranches() {
-                        const res = await fetch('/api/public/branches');
-                        this.branches = await res.json();
-                    },
-                    async load() {
-                        const params = new URLSearchParams(this.filters).toString();
-                        const res = await fetch(`/api/public/small-groups?${params}`);
-                        this.groups = await res.json();
-                    }
+                    init() { /* Static data - no API calls */ }
                 }
             }
 
@@ -259,26 +251,14 @@
                     branches: [],
                     events: [],
                     filters: { branch_id: '', when: 'upcoming' },
-                    async init() { await this.loadBranches(); await this.load(); },
-                    async loadBranches() {
-                        const res = await fetch('/api/public/branches');
-                        this.branches = await res.json();
-                    },
-                    async load() {
-                        const params = new URLSearchParams(this.filters).toString();
-                        const res = await fetch(`/api/public/events?${params}`);
-                        this.events = await res.json();
-                    }
+                    init() { /* Static data - no API calls */ }
                 }
             }
 
             function footerExpressions() {
                 return {
                     branches: [],
-                    async init() {
-                        const res = await fetch('/api/public/branches');
-                        this.branches = await res.json();
-                    }
+                    init() { /* Static data - no API calls */ }
                 }
             }
         </script>
