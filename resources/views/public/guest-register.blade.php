@@ -112,7 +112,7 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <!-- Church Info -->
                     <div>
                         <h3 class="text-lg font-semibold text-white mb-4">LifePointe Church</h3>
@@ -138,16 +138,6 @@
                             <li><a href="{{ route('register') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Register</a></li>
                             <li><a href="{{ route('public.guest-register') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Guest Registration</a></li>
                         </ul>
-                    </div>
-
-                    <!-- Contact Info -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-white mb-4">Get In Touch</h3>
-                        <div class="space-y-2 text-sm text-gray-300">
-                            <p>Email: info@lifepointeng.org</p>
-                            <p>Phone: +234 (0) 123 456 7890</p>
-                            <p>Follow us on social media</p>
-                        </div>
                     </div>
                 </div>
 
