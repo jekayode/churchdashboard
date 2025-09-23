@@ -1,76 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Events • LifePointe</title>
-        @vite(['resources/css/app.css','resources/js/app.js'])
-    </head>
-    <body class="bg-gray-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="eventsPage()" x-init="init()">
-            <div class="mb-6 flex flex-col md:flex-row md:items-end gap-4">
-                <div class="md:w-1/3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Expression (Branch)</label>
-                    <select x-model="filters.branch_id" @change="load()" class="w-full rounded-lg border-gray-300">
-                        <option value="">All Expressions</option>
-                        <template x-for="b in branches" :key="b.id">
-                            <option :value="b.id" x-text="b.name"></option>
-                        </template>
-                    </select>
-                </div>
-                <div class="md:w-1/3">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">When</label>
-                    <select x-model="filters.when" @change="load()" class="w-full rounded-lg border-gray-300">
-                        <option value="upcoming">Upcoming</option>
-                        <option value="this_week">This week</option>
-                        <option value="next_week">Next week</option>
-                        <option value="past">Past</option>
-                    </select>
-                </div>
-            </div>
-
-            <div x-show="loading" class="text-center py-8">Loading events...</div>
-            <div x-show="!loading && events.length === 0" class="text-center py-8 text-gray-500">No events match your filters.</div>
-
-            <div x-show="!loading && events.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                <template x-for="e in events" :key="e.id">
-                    <div class="border rounded-lg p-4 bg-white">
-                        <h3 class="font-semibold text-gray-900" x-text="e.name"></h3>
-                        <p class="text-sm text-gray-600" x-text="e.branch?.name"></p>
-                        <p class="text-xs text-gray-500 mt-1" x-text="e.start_date + ' ' + (e.start_time || '')"></p>
-                        <p class="text-xs text-gray-500" x-text="e.location"></p>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        <script>
-            function eventsPage() {
-                return {
-                    branches: [],
-                    events: [],
-                    loading: false,
-                    filters: { branch_id: '', when: 'this_week' },
-                    async init() {
-                        this.loading = true;
-                        await this.loadBranches();
-                        await this.load();
-                        this.loading = false;
-                    },
-                    async loadBranches() {
-                        const res = await fetch('/api/welcome/branches');
-                        this.branches = await res.json();
-                    },
-                    async load() {
-                        const params = new URLSearchParams(this.filters).toString();
-                        const res = await fetch(`/api/welcome/events?${params}`);
-                        this.events = await res.json();
-                    }
-                }
-            }
-        </script>
-    </body>
-</html>
 
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
@@ -124,6 +51,11 @@
                                 placeholder="Search events..." 
                                 class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                             >
+                        </div>
+                        <div>
+                            <select id="branchFilter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="">All Expressions</option>
+                            </select>
                         </div>
                         <div>
                             <select id="dateFilter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
@@ -207,44 +139,69 @@
 
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
+            loadBranches();
             loadEvents();
             
             // Add event listeners for filters
             document.getElementById('searchInput').addEventListener('input', debounce(loadEvents, 300));
+            document.getElementById('branchFilter').addEventListener('change', loadEvents);
             document.getElementById('dateFilter').addEventListener('change', loadEvents);
             document.getElementById('serviceTypeFilter').addEventListener('change', loadEvents);
         });
+
+        async function loadBranches() {
+            try {
+                const response = await fetch('/api/welcome/branches');
+                const branches = await response.json();
+                
+                const branchFilter = document.getElementById('branchFilter');
+                branchFilter.innerHTML = '<option value="">All Expressions</option>';
+                
+                branches.forEach(branch => {
+                    const option = document.createElement('option');
+                    option.value = branch.id;
+                    option.textContent = branch.name;
+                    branchFilter.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading branches:', error);
+            }
+        }
 
         async function loadEvents() {
             try {
                 document.getElementById('loadingState').classList.remove('hidden');
                 document.getElementById('noEventsState').classList.add('hidden');
                 
-                const params = new URLSearchParams({
-                    status: 'active',
-                    page: currentPage,
-                    per_page: 12
-                });
+                const params = new URLSearchParams();
 
                 // Add filters
                 const search = document.getElementById('searchInput').value;
-                if (search) params.append('search', search);
+                if (search) params.append('q', search);
+
+                const branchId = document.getElementById('branchFilter').value;
+                if (branchId) params.append('branch_id', branchId);
 
                 const dateFilter = document.getElementById('dateFilter').value;
-                if (dateFilter) params.append('date_filter', dateFilter);
+                if (dateFilter) {
+                    if (dateFilter === 'today') {
+                        params.append('when', 'today');
+                    } else if (dateFilter === 'week') {
+                        params.append('when', 'this_week');
+                    } else if (dateFilter === 'month') {
+                        params.append('when', 'upcoming');
+                    }
+                } else {
+                    params.append('when', 'upcoming');
+                }
 
                 const serviceType = document.getElementById('serviceTypeFilter').value;
                 if (serviceType) params.append('service_type', serviceType);
 
-                const response = await fetch(`/public-api/events?${params}`);
-                const data = await response.json();
+                const response = await fetch(`/api/welcome/events?${params}`);
+                const events = await response.json();
 
-                if (data.success) {
-                    renderEventsGrid(data.data.data);
-                } else {
-                    console.error('Error loading events:', data.message);
-                    showNotification('Error loading events', 'error');
-                }
+                renderEventsGrid(events);
             } catch (error) {
                 console.error('Error loading events:', error);
                 showNotification('Error loading events', 'error');
@@ -272,10 +229,7 @@
                     month: 'long',
                     day: 'numeric'
                 });
-                const formattedTime = eventDate.toLocaleTimeString('en-US', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
+                const formattedTime = event.start_time || '';
 
                 return `
                     <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
@@ -287,7 +241,7 @@
                                 </span>
                             </div>
                             
-                            <p class="text-gray-600 text-sm mb-4">${event.description || 'Join us for this exciting event!'}</p>
+                            <p class="text-gray-600 text-sm mb-4">${event.branch?.name || 'Join us for this exciting event!'}</p>
                             
                             <div class="space-y-2 text-sm text-gray-500 mb-4">
                                 <div class="flex items-center">
@@ -296,19 +250,21 @@
                                     </svg>
                                     ${formattedDate}
                                 </div>
-                                <div class="flex items-center">
-                                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    ${formattedTime}
-                                </div>
-                                ${event.venue ? `
+                                ${formattedTime ? `
+                                    <div class="flex items-center">
+                                        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        ${formattedTime}
+                                    </div>
+                                ` : ''}
+                                ${event.location ? `
                                     <div class="flex items-center">
                                         <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        ${event.venue}
+                                        ${event.location}
                                     </div>
                                 ` : ''}
                             </div>
