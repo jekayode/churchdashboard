@@ -217,7 +217,7 @@
             <div class="mt-4 p-4 bg-blue-50 rounded-lg">
                 <h4 class="text-sm font-medium text-blue-900 mb-2">Available Template Variables:</h4>
                 <div class="text-xs text-blue-800 space-y-1">
-                    <div><code>{{member_name}}</code> - Full member name</div>
+                    <div><code>@{{member_name}}</code> - Full member name</div>
                     <div><code>@{{member_first_name}}</code> - First name only</div>
                     <div><code>@{{member_birthday}}</code> - Birthday date (e.g., "January 15")</div>
                     <div><code>@{{member_anniversary}}</code> - Anniversary date (e.g., "June 20")</div>
