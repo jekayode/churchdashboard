@@ -17,17 +17,23 @@
 <body class="font-sans antialiased bg-gray-50">
     <div class="min-h-screen">
         <!-- Navigation -->
-        <nav class="bg-white shadow">
+        <nav class="bg-gray-900">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div class="flex justify-between h-16">
+                <div class="flex justify-between h-20">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <h1 class="text-xl font-bold text-gray-900">{{ config('app.name', 'Church Dashboard') }}</h1>
-                        </div>
+                        <a href="/" class="flex-shrink-0 flex items-center">
+                            <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-12 w-auto"/>
+                        </a>
                     </div>
-                    <div class="flex items-center space-x-4">
-                        <a href="{{ route('login') }}" class="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium">Login</a>
-                        <a href="{{ route('register') }}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-md text-sm font-medium">Register</a>
+                    <div class="flex items-center space-x-8">
+                        <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            Events
+                        </a>
+                        <a href="{{ route('public.lifegroups') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            LifeGroups
+                        </a>
+                        <a href="{{ route('login') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Login</a>
+                        <a href="{{ route('register') }}" class="bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Register</a>
                     </div>
                 </div>
             </div>

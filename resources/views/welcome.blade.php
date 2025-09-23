@@ -19,13 +19,19 @@
             <!-- Navigation -->
             <nav class="bg-gray-900">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between h-22">
+                    <div class="flex justify-between h-20">
                         <div class="flex items-center">
                             <a href="/" class="flex-shrink-0 flex items-center">
-                                <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-10 w-auto"/>
+                                <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-12 w-auto"/>
                             </a>
                         </div>
-                        <div class="flex items-center space-x-6">
+                        <div class="flex items-center space-x-8">
+                            <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                Events
+                            </a>
+                            <a href="{{ route('public.lifegroups') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                LifeGroups
+                            </a>
                             @if (Route::has('login'))
                                 @auth
                                     <a href="{{ route('dashboard') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
@@ -36,7 +42,7 @@
                                         Login
                                     </a>
                                     @if (Route::has('register'))
-                                        <a href="{{ route('register') }}" class="text-secondary-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                        <a href="{{ route('register') }}" class="bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
                                             Register
                                         </a>
                                     @endif
