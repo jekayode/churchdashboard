@@ -84,6 +84,55 @@
                 </div>
             </div>
         </div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-900">
+            <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Church Info -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-4">LifePointe Church</h3>
+                        <p class="text-gray-300 text-sm mb-4">
+                            We're a resting place for the weary and a signpost for the lost. 
+                            Join us as we grow together in faith, community, and purpose.
+                        </p>
+                        <div class="flex space-x-4">
+                            <a href="{{ route('public.events') }}" class="text-gray-400 hover:text-white transition-colors">
+                                Events
+                            </a>
+                            <a href="{{ route('public.lifegroups') }}" class="text-gray-400 hover:text-white transition-colors">
+                                LifeGroups
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Quick Links -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-4">Quick Links</h3>
+                        <ul class="space-y-2">
+                            <li><a href="{{ route('login') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Login</a></li>
+                            <li><a href="{{ route('register') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Register</a></li>
+                            <li><a href="{{ route('public.guest-register') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Guest Registration</a></li>
+                        </ul>
+                    </div>
+
+                    <!-- Contact Info -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-white mb-4">Get In Touch</h3>
+                        <div class="space-y-2 text-sm text-gray-300">
+                            <p>Email: info@lifepointeng.org</p>
+                            <p>Phone: +234 (0) 123 456 7890</p>
+                            <p>Follow us on social media</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Copyright -->
+                <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                    <p class="text-gray-400 text-sm">© LifePointe Church 2025. All rights reserved.</p>
+                </div>
+            </div>
+        </footer>
     </div>
 
     <script>
