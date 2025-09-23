@@ -350,6 +350,55 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     });
 });
 
+// Public read-only endpoints for welcome page
+Route::prefix('public')->group(function () {
+    Route::get('/branches', function () {
+        return \App\Models\Branch::query()
+            ->select(['id','name','address','city','state','service_time'])
+            ->orderBy('name')
+            ->get();
+    });
+
+    Route::get('/small-groups', function (\Illuminate\Http\Request $request) {
+        $query = \App\Models\SmallGroup::query()
+            ->select(['id','branch_id','name','location','meeting_day','meeting_time'])
+            ->with(['branch:id,name']);
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', (int) $request->get('branch_id'));
+        }
+
+        if ($search = trim((string) $request->get('q', ''))) {
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        return $query->orderBy('name')->limit(100)->get();
+    });
+
+    Route::get('/events', function (\Illuminate\Http\Request $request) {
+        $query = \App\Models\Event::query()
+            ->select(['id','branch_id','name','event_type','service_type','start_date','end_date','start_time','end_time','location'])
+            ->with(['branch:id,name']);
+
+        if ($request->filled('branch_id')) {
+            $query->where('branch_id', (int) $request->get('branch_id'));
+        }
+
+        $when = $request->get('when');
+        if ($when === 'past') {
+            $query->whereDate('start_date', '<', now()->toDateString());
+        } elseif ($when === 'this_week') {
+            $query->whereBetween('start_date', [now()->startOfWeek()->toDateString(), now()->endOfWeek()->toDateString()]);
+        } elseif ($when === 'next_week') {
+            $query->whereBetween('start_date', [now()->addWeek()->startOfWeek()->toDateString(), now()->addWeek()->endOfWeek()->toDateString()]);
+        } else {
+            $query->whereDate('start_date', '>=', now()->toDateString());
+        }
+
+        return $query->orderBy('start_date')->limit(100)->get();
+    });
+});
+
 // Communication performance monitoring
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('communication-performance')->group(function () {

@@ -19,10 +19,10 @@
             <!-- Navigation -->
             <nav class="bg-gray-900">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div class="flex justify-between h-16">
+                    <div class="flex justify-between h-22">
                         <div class="flex items-center">
                             <a href="/" class="flex-shrink-0 flex items-center">
-                                <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-9 w-auto"/>
+                                <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-10 w-auto"/>
                             </a>
                         </div>
                         <div class="flex items-center space-x-6">
@@ -51,9 +51,9 @@
             <div class="relative overflow-hidden">
                 <div class="max-w-7xl mx-auto">
                     <div class="relative z-10 pb-8 bg-gradient-to-br from-church-50 to-secondary-50 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
-                        <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+                        <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28 pt-6">
                             <div class="sm:text-center lg:text-left">
-                                <h5 class="text-xs sm:text-sm font-semibold tracking-wide text-white uppercase">
+                                <h5 class="text-xs sm:text-sm font-semibold tracking-wide text-gray-900 uppercase">
                                     Welcome to LifePointe
                                 </h5>
                                 <h1 class="mt-3 text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 sm:max-w-xl sm:mx-auto lg:mx-0">
@@ -129,6 +129,79 @@
                 </div>
             </div>
 
+            <!-- LifeGroups (Small Groups) Section -->
+            <section class="py-12 bg-white">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="lg:text-center mb-8">
+                        <h2 class="text-3xl font-extrabold tracking-tight text-gray-900">Find friends, family, and focus</h2>
+                        <p class="mt-2 text-gray-600">Locate the Nearest Service to You</p>
+                    </div>
+                    <div x-data="lifegroups()" x-init="init()">
+                        <div class="flex flex-col md:flex-row md:items-end gap-4 mb-6">
+                            <div class="md:w-1/3">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Expression (Branch)</label>
+                                <select x-model="filters.branch_id" @change="load()" class="w-full rounded-lg border-gray-300">
+                                    <option value="">All Expressions</option>
+                                    <template x-for="b in branches" :key="b.id">
+                                        <option :value="b.id" x-text="b.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            <div class="md:flex-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Search LifeGroups</label>
+                                <input x-model.debounce.400ms="filters.q" @input="load()" type="text" placeholder="Search by name or location" class="w-full rounded-lg border-gray-300"/>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <template x-for="g in groups" :key="g.id">
+                                <div class="border rounded-lg p-4">
+                                    <h3 class="font-semibold text-gray-900" x-text="g.name"></h3>
+                                    <p class="text-sm text-gray-600" x-text="g.branch?.name"></p>
+                                    <p class="text-sm text-gray-600" x-text="g.location"></p>
+                                    <p class="text-xs text-gray-500 mt-1" x-text="g.meeting_day + ' ' + g.meeting_time"></p>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Events Section -->
+            <section class="py-12 bg-gray-50">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" x-data="eventsList()" x-init="init()">
+                    <div class="flex flex-col md:flex-row md:items-end gap-4 mb-6">
+                        <div class="md:w-1/3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Expression (Branch)</label>
+                            <select x-model="filters.branch_id" @change="load()" class="w-full rounded-lg border-gray-300">
+                                <option value="">All Expressions</option>
+                                <template x-for="b in branches" :key="b.id">
+                                    <option :value="b.id" x-text="b.name"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div class="md:w-1/3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">When</label>
+                            <select x-model="filters.when" @change="load()" class="w-full rounded-lg border-gray-300">
+                                <option value="upcoming">Upcoming</option>
+                                <option value="this_week">This week</option>
+                                <option value="next_week">Next week</option>
+                                <option value="past">Past</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <template x-for="e in events" :key="e.id">
+                            <div class="border rounded-lg p-4 bg-white">
+                                <h3 class="font-semibold text-gray-900" x-text="e.name"></h3>
+                                <p class="text-sm text-gray-600" x-text="e.branch?.name"></p>
+                                <p class="text-xs text-gray-500 mt-1" x-text="e.start_date + ' ' + (e.start_time || '')"></p>
+                                <p class="text-xs text-gray-500" x-text="e.location"></p>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </section>
+
             <!-- CTA Section -->
             <div class="gradient-brand">
                 <div class="max-w-2xl mx-auto text-center py-16 px-4 sm:py-20 sm:px-6 lg:px-8">
@@ -146,22 +219,68 @@
             </div>
 
             <!-- Footer -->
-            <footer class="bg-gray-800">
-                <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-                    <div class="text-center">
-                        <h3 class="text-lg font-semibold text-white">LifePointe Church</h3>
-                        <p class="mt-2 text-gray-400">Building lives, transforming communities, and spreading God's love.</p>
-                        <div class="mt-6">
-                            <a href="{{ route('public.about') }}" class="text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                About Us
-                            </a>
-                            <a href="{{ route('public.events') }}" class="text-gray-400 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                Events
-                            </a>
-                        </div>
+            <footer class="bg-gray-900">
+                <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8" x-data="footerExpressions()" x-init="init()">
+                    <h3 class="text-lg font-semibold text-white mb-6">Expressions</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <template x-for="b in branches" :key="b.id">
+                            <div class="text-gray-300">
+                                <h4 class="font-semibold text-white" x-text="b.name"></h4>
+                                <p class="text-sm" x-text="(b.address || '') + (b.city ? ', ' + b.city : '')"></p>
+                                <p class="text-xs text-gray-400" x-text="b.service_time ? ('Service Time: ' + b.service_time) : ''"></p>
+                            </div>
+                        </template>
                     </div>
                 </div>
             </footer>
         </div>
+
+        <script>
+            function lifegroups() {
+                return {
+                    branches: [],
+                    groups: [],
+                    filters: { branch_id: '', q: '' },
+                    async init() { await this.loadBranches(); await this.load(); },
+                    async loadBranches() {
+                        const res = await fetch('/api/public/branches');
+                        this.branches = await res.json();
+                    },
+                    async load() {
+                        const params = new URLSearchParams(this.filters).toString();
+                        const res = await fetch(`/api/public/small-groups?${params}`);
+                        this.groups = await res.json();
+                    }
+                }
+            }
+
+            function eventsList() {
+                return {
+                    branches: [],
+                    events: [],
+                    filters: { branch_id: '', when: 'upcoming' },
+                    async init() { await this.loadBranches(); await this.load(); },
+                    async loadBranches() {
+                        const res = await fetch('/api/public/branches');
+                        this.branches = await res.json();
+                    },
+                    async load() {
+                        const params = new URLSearchParams(this.filters).toString();
+                        const res = await fetch(`/api/public/events?${params}`);
+                        this.events = await res.json();
+                    }
+                }
+            }
+
+            function footerExpressions() {
+                return {
+                    branches: [],
+                    async init() {
+                        const res = await fetch('/api/public/branches');
+                        this.branches = await res.json();
+                    }
+                }
+            }
+        </script>
     </body>
 </html>
