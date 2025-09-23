@@ -4,7 +4,8 @@
     'showRequired' => true,
     'showOptional' => true,
     'requiredFields' => [],
-    'optionalFields' => []
+    'optionalFields' => [],
+    'selectedBranchId' => null
 ])
 
 @php
@@ -113,7 +114,7 @@
                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                             <option value="">Select a branch</option>
                             @foreach(\App\Models\Branch::all() as $branch)
-                                <option value="{{ $branch->id }}" {{ old('branch_id', $member?->branch_id) == $branch->id ? 'selected' : '' }}>
+                                <option value="{{ $branch->id }}" {{ old('branch_id', $member?->branch_id ?? $selectedBranchId) == $branch->id ? 'selected' : '' }}>
                                     {{ $branch->name }}
                                 </option>
                             @endforeach

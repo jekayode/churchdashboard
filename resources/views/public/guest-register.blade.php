@@ -62,7 +62,8 @@
                         <x-member-form 
                             context="guest" 
                             :show-required="true" 
-                            :show-optional="true" />
+                            :show-optional="true" 
+                            :selected-branch-id="request('branch')" />
 
                         <!-- Consent Section -->
                         <div class="bg-gray-50 p-6 rounded-lg">
