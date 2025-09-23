@@ -127,6 +127,14 @@
                     </div>
                 </div>
 
+                <!-- Our Locations -->
+                <div class="mt-12 pt-8 border-t border-gray-700">
+                    <h3 class="text-lg font-semibold text-white mb-6">Our Locations</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="locationsGrid">
+                        <!-- Locations will be loaded here -->
+                    </div>
+                </div>
+
                 <!-- Copyright -->
                 <div class="border-t border-gray-700 mt-8 pt-8 text-center">
                     <p class="text-gray-400 text-sm">© LifePointe Church 2025. All rights reserved.</p>
@@ -140,6 +148,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadBranches();
             loadLifeGroups();
+            loadLocations();
             
             // Add event listeners for filters
             document.getElementById('searchInput').addEventListener('input', debounce(loadLifeGroups, 300));
@@ -188,6 +197,24 @@
                 showNotification('Error loading LifeGroups', 'error');
             } finally {
                 document.getElementById('loadingState').classList.add('hidden');
+            }
+        }
+
+        async function loadLocations() {
+            try {
+                const response = await fetch('/api/welcome/branches');
+                const branches = await response.json();
+                
+                const locationsGrid = document.getElementById('locationsGrid');
+                locationsGrid.innerHTML = branches.map(branch => `
+                    <div class="text-gray-300">
+                        <h4 class="font-semibold text-white mb-2">${branch.name}</h4>
+                        <p class="text-sm mb-1">${branch.venue || ''}</p>
+                        <p class="text-xs text-gray-400">${branch.service_time ? 'Service: ' + branch.service_time : ''}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading locations:', error);
             }
         }
 
