@@ -266,34 +266,57 @@
 
             <!-- Footer -->
             <footer class="bg-gray-900">
-                <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8" x-data="footerExpressions()" x-init="init()">
-                    <h3 class="text-lg font-semibold text-white mb-6">Expressions</h3>
-                    
-                    <!-- Loading State -->
-                    <div x-show="loading" class="text-center py-4">
-                        <div class="inline-flex items-center text-gray-400">
-                            <svg class="animate-spin -ml-1 mr-3 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Loading Expressions...
+                <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                    <!-- Our Locations -->
+                    <div class="mb-12">
+                        <h3 class="text-lg font-semibold text-white mb-6">Our Locations</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="locationsGrid">
+                            <!-- Locations will be loaded here -->
                         </div>
                     </div>
 
-                    <!-- Empty State -->
-                    <div x-show="!loading && branches.length === 0" class="text-center py-4">
-                        <p class="text-gray-400">No expressions available.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Church Info -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4">LifePointe Church</h3>
+                            <p class="text-gray-300 text-sm mb-4">
+                                We're a resting place for the weary and a signpost for the lost. 
+                                Join us as we grow together in faith, community, and purpose.
+                            </p>
+                            <div class="flex space-x-4">
+                                <a href="{{ route('public.events') }}" class="text-gray-400 hover:text-white transition-colors">
+                                    Events
+                                </a>
+                                <a href="{{ route('public.lifegroups') }}" class="text-gray-400 hover:text-white transition-colors">
+                                    LifeGroups
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Quick Links -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4">Quick Links</h3>
+                            <ul class="space-y-2">
+                                <li><a href="{{ route('login') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Login</a></li>
+                                <li><a href="{{ route('register') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Register</a></li>
+                                <li><a href="{{ route('public.guest-register') }}" class="text-gray-300 hover:text-white text-sm transition-colors">Guest Registration</a></li>
+                            </ul>
+                        </div>
+
+                        <!-- Contact Info -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-white mb-4">Get In Touch</h3>
+                            <div class="space-y-2 text-sm text-gray-300">
+                                <p>Email: info@lifepointeng.org</p>
+                                <p>Phone: +234 (0) 123 456 7890</p>
+                                <p>Follow us on social media</p>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Branches Grid -->
-                    <div x-show="!loading && branches.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <template x-for="b in branches" :key="b.id">
-                            <div class="text-gray-300">
-                                <h4 class="font-semibold text-white" x-text="b.name"></h4>
-                                <p class="text-sm" x-text="b.venue || ''"></p>
-                                <p class="text-xs text-gray-400" x-text="b.service_time ? ('Service Time: ' + b.service_time) : ''"></p>
-                            </div>
-                        </template>
+                    <!-- Copyright -->
+                    <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+                        <p class="text-gray-400 text-sm">© LifePointe Church 2025. All rights reserved.</p>
                     </div>
                 </div>
             </footer>
@@ -378,6 +401,29 @@
                         }
                         this.loading = false;
                     }
+                }
+            }
+
+            // Load locations for footer
+            document.addEventListener('DOMContentLoaded', function() {
+                loadLocations();
+            });
+
+            async function loadLocations() {
+                try {
+                    const response = await fetch('/api/welcome/branches');
+                    const branches = await response.json();
+                    
+                    const locationsGrid = document.getElementById('locationsGrid');
+                    locationsGrid.innerHTML = branches.map(branch => `
+                        <div class="text-gray-300">
+                            <h4 class="font-semibold text-white mb-2">${branch.name}</h4>
+                            <p class="text-sm mb-1">${branch.venue || ''}</p>
+                            <p class="text-xs text-gray-400">${branch.service_time ? 'Service: ' + branch.service_time : ''}</p>
+                        </div>
+                    `).join('');
+                } catch (error) {
+                    console.error('Error loading locations:', error);
                 }
             }
         </script>

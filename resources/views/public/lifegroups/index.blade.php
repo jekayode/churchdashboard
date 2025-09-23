@@ -88,6 +88,14 @@
         <!-- Footer -->
         <footer class="bg-gray-900">
             <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+                <!-- Our Locations -->
+                <div class="mb-12">
+                    <h3 class="text-lg font-semibold text-white mb-6">Our Locations</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="locationsGrid">
+                        <!-- Locations will be loaded here -->
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <!-- Church Info -->
                     <div>
@@ -124,14 +132,6 @@
                             <p>Phone: +234 (0) 123 456 7890</p>
                             <p>Follow us on social media</p>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Our Locations -->
-                <div class="mt-12 pt-8 border-t border-gray-700">
-                    <h3 class="text-lg font-semibold text-white mb-6">Our Locations</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6" id="locationsGrid">
-                        <!-- Locations will be loaded here -->
                     </div>
                 </div>
 
