@@ -77,7 +77,7 @@
                     </div>
                 </div>
                 <div class="lg:absolute lg:inset-y-0 lg:right-0 lg:w-1/2">
-                    <img class="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full" src="https://images.unsplash.com/photo-1544376664-80b17f09d399?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80" alt="Church community">
+                    <img class="h-56 w-full object-cover sm:h-72 md:h-96 lg:w-full lg:h-full" src="img/home-hero.jpeg" alt="Church community">
                 </div>
             </div>
 
