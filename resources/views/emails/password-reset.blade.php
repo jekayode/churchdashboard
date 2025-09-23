@@ -216,8 +216,8 @@
             <div class="footer-content">
                 <div class="footer-left">
                     <h3>Contact</h3>
-                    <p>1912 Mcwhorter Road, FL 11223</p>
-                    <p>+111 222 333 | Info@company.com</p>
+                    <p>Pistis Annex, 3 Remi Olowude St,</p>
+                    <p>Eti-Osa 105102, Lagos</p>
                 </div>
                 <div class="footer-right">
                     <h3>Follow Us</h3>
