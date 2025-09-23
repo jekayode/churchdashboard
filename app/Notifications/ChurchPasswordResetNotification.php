@@ -26,15 +26,14 @@ final class ChurchPasswordResetNotification extends ResetPassword
      */
     protected function buildMailMessage($url): MailMessage
     {
+        $expiration = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
+        
         return (new MailMessage)
-            ->subject('Reset Your Church Dashboard Password')
-            ->greeting('Hello from ' . config('app.name') . '!')
-            ->line('You are receiving this email because we received a password reset request for your church dashboard account.')
-            ->action('Reset Password', $url)
-            ->line('This password reset link will expire in ' . config('auth.passwords.'.config('auth.defaults.passwords').'.expire') . ' minutes.')
-            ->line('If you did not request a password reset, no further action is required.')
-            ->salutation('Blessings,')
-            ->salutation(config('app.name') . ' Team')
-            ->salutation('*Serving our church community with love and dedication*');
+            ->subject('Reset Your LifePointe Church Password')
+            ->view('emails.password-reset', [
+                'actionUrl' => $url,
+                'expiration' => $expiration,
+                'user' => $this->notifiable
+            ]);
     }
 } 
