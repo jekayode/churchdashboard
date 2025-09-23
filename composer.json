@@ -15,6 +15,7 @@
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
         "pragmarx/google2fa": "^8.0",
+        "resend/resend-laravel": "^0.22.0",
         "simplesoftwareio/simple-qrcode": "^4.2"
     },
     "require-dev": {
