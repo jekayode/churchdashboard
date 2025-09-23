@@ -168,9 +168,9 @@
                             <p class="text-gray-500">No LifeGroups found. Check back later!</p>
                         </div>
 
-                        <!-- LifeGroups Grid -->
+                        <!-- LifeGroups Grid (show 4) -->
                         <div x-show="!loading && groups.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                            <template x-for="g in groups" :key="g.id">
+                            <template x-for="g in groups.slice(0,4)" :key="g.id">
                                 <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
                                     <h3 class="font-semibold text-gray-900" x-text="g.name"></h3>
                                     <p class="text-sm text-gray-600" x-text="g.branch?.name"></p>
@@ -178,6 +178,9 @@
                                     <p class="text-xs text-gray-500 mt-1" x-text="g.meeting_day + ' ' + g.meeting_time"></p>
                                 </div>
                             </template>
+                        </div>
+                        <div class="mt-6 text-center">
+                            <a href="{{ route('public.lifegroups') }}" class="inline-flex items-center px-5 py-2 rounded-md text-sm font-medium text-white bg-church-500 hover:bg-church-600">View all LifeGroups</a>
                         </div>
                     </div>
                 </div>
@@ -222,9 +225,9 @@
                         <p class="text-gray-500">No events found for the selected criteria.</p>
                     </div>
 
-                    <!-- Events Grid -->
+                    <!-- Events Grid (show 4) -->
                     <div x-show="!loading && events.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <template x-for="e in events" :key="e.id">
+                        <template x-for="e in events.slice(0,4)" :key="e.id">
                             <div class="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
                                 <h3 class="font-semibold text-gray-900" x-text="e.name"></h3>
                                 <p class="text-sm text-gray-600" x-text="e.branch?.name"></p>
@@ -232,6 +235,9 @@
                                 <p class="text-xs text-gray-500" x-text="e.location"></p>
                             </div>
                         </template>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <a href="{{ route('public.events') }}" class="inline-flex items-center px-5 py-2 rounded-md text-sm font-medium text-white bg-church-500 hover:bg-church-600">View all Events</a>
                     </div>
                 </div>
             </section>

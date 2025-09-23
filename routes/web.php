@@ -343,6 +343,10 @@ Route::prefix('public')->name('public.')->group(function () {
         return view('public.events.index');
     })->name('events');
 
+    Route::get('/lifegroups', function () {
+        return view('public.lifegroups.index');
+    })->name('lifegroups');
+
     Route::get('/registration-success', function () {
         // This route should only be accessed via redirect with session data
         $eventName = session('registration_success.event_name');

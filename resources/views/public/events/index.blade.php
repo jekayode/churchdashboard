@@ -1,4 +1,78 @@
 <!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Events • LifePointe</title>
+        @vite(['resources/css/app.css','resources/js/app.js'])
+    </head>
+    <body class="bg-gray-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10" x-data="eventsPage()" x-init="init()">
+            <div class="mb-6 flex flex-col md:flex-row md:items-end gap-4">
+                <div class="md:w-1/3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expression (Branch)</label>
+                    <select x-model="filters.branch_id" @change="load()" class="w-full rounded-lg border-gray-300">
+                        <option value="">All Expressions</option>
+                        <template x-for="b in branches" :key="b.id">
+                            <option :value="b.id" x-text="b.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="md:w-1/3">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">When</label>
+                    <select x-model="filters.when" @change="load()" class="w-full rounded-lg border-gray-300">
+                        <option value="upcoming">Upcoming</option>
+                        <option value="this_week">This week</option>
+                        <option value="next_week">Next week</option>
+                        <option value="past">Past</option>
+                    </select>
+                </div>
+            </div>
+
+            <div x-show="loading" class="text-center py-8">Loading events...</div>
+            <div x-show="!loading && events.length === 0" class="text-center py-8 text-gray-500">No events match your filters.</div>
+
+            <div x-show="!loading && events.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <template x-for="e in events" :key="e.id">
+                    <div class="border rounded-lg p-4 bg-white">
+                        <h3 class="font-semibold text-gray-900" x-text="e.name"></h3>
+                        <p class="text-sm text-gray-600" x-text="e.branch?.name"></p>
+                        <p class="text-xs text-gray-500 mt-1" x-text="e.start_date + ' ' + (e.start_time || '')"></p>
+                        <p class="text-xs text-gray-500" x-text="e.location"></p>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <script>
+            function eventsPage() {
+                return {
+                    branches: [],
+                    events: [],
+                    loading: false,
+                    filters: { branch_id: '', when: 'this_week' },
+                    async init() {
+                        this.loading = true;
+                        await this.loadBranches();
+                        await this.load();
+                        this.loading = false;
+                    },
+                    async loadBranches() {
+                        const res = await fetch('/api/welcome/branches');
+                        this.branches = await res.json();
+                    },
+                    async load() {
+                        const params = new URLSearchParams(this.filters).toString();
+                        const res = await fetch(`/api/welcome/events?${params}`);
+                        this.events = await res.json();
+                    }
+                }
+            }
+        </script>
+    </body>
+</html>
+
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
