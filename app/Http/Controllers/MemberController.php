@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 final class MemberController extends Controller
 {
@@ -1171,6 +1172,14 @@ final class MemberController extends Controller
             $first = trim($data['first_name'] ?? '');
             $last = trim($data['surname'] ?? '');
             $data['name'] = trim($first.' '.$last) ?: ($data['name'] ?? '');
+        }
+
+        // Backward-compat: if legacy DB does not have split name columns, drop them
+        if (! Schema::hasColumn('members', 'first_name')) {
+            unset($data['first_name']);
+        }
+        if (! Schema::hasColumn('members', 'surname')) {
+            unset($data['surname']);
         }
 
         return $data;
