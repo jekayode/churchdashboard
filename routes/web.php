@@ -365,7 +365,7 @@ Route::prefix('public')->name('public.')->group(function () {
 
     // Guest registration routes
     Route::get('/register/guest', [App\Http\Controllers\PublicAuthController::class, 'showGuestForm'])->name('guest-register');
-    Route::post('/register/guest', [App\Http\Controllers\PublicAuthController::class, 'storeGuest'])->name('guest-register');
+    Route::post('/register/guest', [App\Http\Controllers\PublicAuthController::class, 'storeGuest'])->name('guest-register.store');
 });
 
 // Utility Routes
