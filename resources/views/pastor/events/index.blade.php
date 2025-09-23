@@ -1,12 +1,15 @@
 <x-sidebar-layout title="Events Management">
     <x-slot name="header">
-        <div class="flex justify-between items-center">
+            <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
                 {{ __('Event Management') }}
             </h2>
-            <button id="createEventBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
+            <div class="flex items-center gap-3">
+                <a id="fullEditLinkHeader" href="#" class="hidden text-sm text-blue-600 hover:text-blue-800 underline">Edit (Full)</a>
+                <button id="createEventBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded">
                 Create Event
-            </button>
+                </button>
+            </div>
         </div>
     </x-slot>
 
@@ -47,6 +50,18 @@
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold tracking-tight text-gray-900">Events</h1>
+                    <p class="mt-1 text-sm text-gray-500">Create and manage branch events and services.</p>
+                </div>
+                @can('create', \App\Models\Event::class)
+                    <button id="createEventBtn" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M10 5v10m5-5H5"/></svg>
+                        Create Event
+                    </button>
+                @endcan
+            </div>
             
             <!-- Statistics Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="statisticsCards">
@@ -231,7 +246,10 @@
         <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Create New Event</h3>
+            <div class="flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-900" id="modalTitle">Create New Event</h3>
+                <a id="fullEditLink" href="#" target="_blank" class="hidden text-sm text-blue-600 hover:text-blue-800 underline">Edit (Full)</a>
+            </div>
                     <button id="closeModal" class="text-gray-400 hover:text-gray-600">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -1217,12 +1235,29 @@
                 title.textContent = 'Edit Event';
                 submitBtn.textContent = 'Update Event';
                 populateEventForm(event);
+                // If recurring, expose a link to full edit page
+                try {
+                    const fullEditLink = document.getElementById('fullEditLink');
+                    const fullEditLinkHeader = document.getElementById('fullEditLinkHeader');
+                    if (event.is_recurring) {
+                        const url = `/admin/events/${event.id}/edit`;
+                        fullEditLink?.setAttribute('href', url);
+                        fullEditLink?.classList.remove('hidden');
+                        fullEditLinkHeader?.setAttribute('href', url);
+                        fullEditLinkHeader?.classList.remove('hidden');
+                    } else {
+                        fullEditLink?.classList.add('hidden');
+                        fullEditLinkHeader?.classList.add('hidden');
+                    }
+                } catch (e) { /* no-op */ }
             } else {
                 title.textContent = 'Create New Event';
                 submitBtn.textContent = 'Create Event';
                 document.getElementById('eventForm').reset();
                 document.getElementById('eventId').value = '';
                 clearFormBuilder();
+                document.getElementById('fullEditLink')?.classList.add('hidden');
+                document.getElementById('fullEditLinkHeader')?.classList.add('hidden');
             }
             
             modal.classList.remove('hidden');

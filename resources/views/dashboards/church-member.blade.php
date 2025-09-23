@@ -14,10 +14,10 @@
             @endphp
 
             <!-- Welcome Section -->
-            <div class="bg-gradient-to-r from-purple-600 to-pink-600 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+            <div class="bg-gradient-brand overflow-hidden shadow-church sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
                     <h3 class="text-2xl font-bold mb-2">Welcome, {{ $user->name }}!</h3>
-                    <p class="text-purple-100">{{ $branch?->name ?? 'Church' }} Member - Growing in Faith</p>
+                    <p class="text-white/90">{{ $branch?->name ?? 'Church' }} Member - Growing in Faith</p>
                 </div>
             </div>
 
@@ -40,7 +40,9 @@
                             </div>
                             <div class="mt-4">
                                 <div class="bg-yellow-200 rounded-full h-2">
-                                    <div class="bg-yellow-600 h-2 rounded-full" style="width: {{ $member->profile_completion_percentage }}%"></div>
+                                    <div class="bg-yellow-600 h-2 rounded-full relative" style="width: {{ $member->profile_completion_percentage }}%">
+                                        <span class="absolute -right-6 -top-5 text-xs font-semibold text-yellow-800">{{ $member->profile_completion_percentage }}%</span>
+                                    </div>
                                 </div>
                             </div>
                             <div class="mt-4">

@@ -15,14 +15,14 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div class="min-h-screen bg-gradient-to-br from-church-50 via-white to-secondary-50">
             <!-- Navigation -->
             <nav class="bg-white shadow-sm">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div class="flex justify-between h-16">
                         <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <h1 class="text-2xl font-bold text-blue-600">LifePointe</h1>
+                            <div class="flex-shrink-0 flex items-center">
+                                <img src="/img/lifepoint-logo.png" alt="LifePointe" class="h-8 w-auto"/>
                             </div>
                         </div>
                         <div class="flex items-center space-x-4">
@@ -36,7 +36,7 @@
                                         Login
                                     </a>
                                     @if (Route::has('register'))
-                                        <a href="{{ route('register') }}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                        <a href="{{ route('register') }}" class="bg-church-500 hover:bg-church-600 text-white px-4 py-2 rounded-md text-sm font-medium">
                                             Register
                                         </a>
                                     @endif
@@ -50,24 +50,24 @@
             <!-- Hero Section -->
             <div class="relative overflow-hidden">
                 <div class="max-w-7xl mx-auto">
-                    <div class="relative z-10 pb-8 bg-gradient-to-br from-blue-50 to-indigo-100 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+                    <div class="relative z-10 pb-8 bg-gradient-to-br from-church-50 to-secondary-50 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
                         <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
                             <div class="sm:text-center lg:text-left">
                                 <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
                                     <span class="block xl:inline">Welcome to</span>
-                                    <span class="block text-blue-600 xl:inline">LifePointe Church</span>
+                                    <span class="block text-church-600 xl:inline">LifePointe Church</span>
                                 </h1>
                                 <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
                                     Join our community and experience God's love, grow in faith, and make a difference in the world around us.
                                 </p>
                                 <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                                     <div class="rounded-md shadow">
-                                        <a href="{{ route('public.guest-register') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10">
+                                        <a href="{{ route('public.guest-register') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-church-500 hover:bg-church-600 md:py-4 md:text-lg md:px-10">
                                             First-Time Guest Registration
                                         </a>
                                     </div>
                                     <div class="mt-3 sm:mt-0 sm:ml-3">
-                                        <a href="{{ route('public.events') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 md:py-4 md:text-lg md:px-10">
+                                        <a href="{{ route('public.events') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-church-700 bg-church-100 hover:bg-church-200 md:py-4 md:text-lg md:px-10">
                                             View Events
                                         </a>
                                     </div>

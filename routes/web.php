@@ -8,6 +8,18 @@ use App\Http\Controllers\TwoFactorController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
+// Admin: regenerate recurring instances for a specific event
+Route::middleware(['auth'])->group(function () {
+    Route::post('/admin/events/{event}/generate-instances', [\App\Http\Controllers\EventController::class, 'generateInstancesForEvent'])
+        ->name('admin.events.generate-instances');
+    Route::get('/admin/events/{event}', [\App\Http\Controllers\EventController::class, 'showAdmin'])
+        ->name('admin.events.show');
+    Route::get('/admin/events/{event}/edit', [\App\Http\Controllers\EventController::class, 'showAdmin'])
+        ->name('admin.events.edit');
+    Route::put('/admin/events/{event}', [\App\Http\Controllers\EventController::class, 'updateAdmin'])
+        ->name('admin.events.update');
+});
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -15,9 +27,9 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     $user = Auth::user();
     $primaryRole = $user->getPrimaryRole();
-    
+
     // Route to role-specific dashboard views
-    $dashboardView = match($primaryRole?->name) {
+    $dashboardView = match ($primaryRole?->name) {
         'super_admin' => 'dashboards.super-admin',
         'branch_pastor' => 'dashboards.branch-pastor',
         'ministry_leader' => 'dashboards.ministry-leader',
@@ -26,7 +38,7 @@ Route::get('/dashboard', function () {
         'public_user' => 'dashboards.public-user',
         default => 'dashboard',
     };
-    
+
     return view($dashboardView);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -42,138 +54,232 @@ Route::get('/test-api', function () {
 // Super Admin Routes
 Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/branches', [App\Http\Controllers\BranchController::class, 'indexView'])->name('branches');
-    
+
     Route::get('/members', function () {
         return view('admin.members.index');
     })->name('members');
-    
+
     Route::get('/departments', function () {
         return view('admin.departments.index');
     })->name('departments');
-    
+
     Route::get('/ministries', function () {
         return view('admin.ministries.index');
     })->name('ministries');
-    
+
     Route::get('/events', function () {
         return view('admin.events.index');
     })->name('events');
-    
+
     Route::get('/small-groups', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('admin.small-groups.index', compact('isSuperAdmin'));
     })->name('small-groups');
-    
+
     Route::get('/small-groups/reports', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('admin.small-groups.reports.index', compact('isSuperAdmin'));
     })->name('small-groups.reports');
-    
+
     Route::get('/projections', function () {
         return view('admin.projections.index');
     })->name('projections');
-    
+
     Route::get('/finances', function () {
         return view('admin.finances.index');
     })->name('finances');
-    
+
     Route::get('/users', function () {
         return view('admin.users.index');
     })->name('users');
-    
+
     Route::get('/reports', [ReportingController::class, 'index'])->name('reports');
-    
+
     Route::get('/import-export', function () {
         return view('admin.import-export.index');
     })->name('import-export');
-});
 
+    // Communication Routes
+    Route::prefix('communication')->name('communication.')->group(function () {
+        Route::get('/settings', function () {
+            $isSuperAdmin = true;
+
+            return view('admin.communication.settings', compact('isSuperAdmin'));
+        })->name('settings');
+
+        Route::get('/templates', function () {
+            $isSuperAdmin = true;
+
+            return view('admin.communication.templates', compact('isSuperAdmin'));
+        })->name('templates');
+
+        Route::get('/campaigns', function () {
+            $isSuperAdmin = true;
+
+            return view('admin.communication.campaigns', compact('isSuperAdmin'));
+        })->name('campaigns');
+
+        Route::get('/logs', function () {
+            $isSuperAdmin = true;
+
+            return view('admin.communication.logs', compact('isSuperAdmin'));
+        })->name('logs');
+
+        Route::get('/quick-send', function () {
+            $isSuperAdmin = true;
+
+            return view('admin.communication.quick-send', compact('isSuperAdmin'));
+        })->name('quick-send');
+
+        Route::get('/mass-send', function () {
+            $isSuperAdmin = true;
+
+            return view('admin.communication.mass-send', compact('isSuperAdmin'));
+        })->name('mass-send');
+    });
+});
 
 // Branch Pastor Routes
 Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefix('pastor')->name('pastor.')->group(function () {
     Route::get('/ministries', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.ministries.index', compact('isSuperAdmin'));
     })->name('ministries');
-    
+
     Route::get('/members', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.members.index', compact('isSuperAdmin'));
     })->name('members');
-    
+
     Route::get('/events', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.events.index', compact('isSuperAdmin'));
     })->name('events');
-    
+
     Route::get('/events/{event}/registrations', function ($eventId) {
         return view('pastor.events.registrations', compact('eventId'));
     })->name('events.registrations');
-    
+
     Route::get('/finances', function () {
         return view('pastor.finances.index');
     })->name('finances');
-    
+
     Route::get('/reports', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
-        
+
         // Get event types from EventReport model (same as admin)
         $eventTypes = \App\Models\EventReport::EVENT_TYPES;
-        
+
         return view('pastor.reports.index', compact('isSuperAdmin', 'eventTypes'));
     })->name('reports');
-    
+
     Route::get('/projections', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.projections.index', compact('isSuperAdmin'));
     })->name('projections');
-    
+
     Route::get('/departments', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.departments.index', compact('isSuperAdmin'));
     })->name('departments');
-    
+
     Route::get('/ministry-events', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.ministry-events.index', compact('isSuperAdmin'));
     })->name('ministry-events');
-    
+
     Route::get('/import-export', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.import-export.index', compact('isSuperAdmin'));
     })->name('import-export');
-    
+
     Route::get('/small-groups', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.small-groups.index', compact('isSuperAdmin'));
     })->name('small-groups');
-    
+
     Route::get('/small-groups/{smallGroup}/members', [App\Http\Controllers\SmallGroupController::class, 'showMembers'])->name('small-groups.members');
-    
+
     Route::get('/small-groups/reports', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('pastor.small-groups.reports.index', compact('isSuperAdmin'));
     })->name('small-groups.reports');
-    
+
     Route::get('/groups/reports', function () {
         return view('member.groups.reports');
     })->name('groups.reports');
-    
+
     Route::get('/import-export', function () {
         return view('admin.import-export.index');
     })->name('import-export');
+
+    // Communication Routes
+    Route::prefix('communication')->name('communication.')->group(function () {
+        Route::get('/settings', function () {
+            $user = Auth::user();
+            $isSuperAdmin = $user->isSuperAdmin();
+
+            return view('admin.communication.settings', compact('isSuperAdmin'));
+        })->name('settings');
+
+        Route::get('/templates', function () {
+            $user = Auth::user();
+            $isSuperAdmin = $user->isSuperAdmin();
+
+            return view('admin.communication.templates', compact('isSuperAdmin'));
+        })->name('templates');
+
+        Route::get('/campaigns', function () {
+            $user = Auth::user();
+            $isSuperAdmin = $user->isSuperAdmin();
+
+            return view('admin.communication.campaigns', compact('isSuperAdmin'));
+        })->name('campaigns');
+
+        Route::get('/logs', function () {
+            $user = Auth::user();
+            $isSuperAdmin = $user->isSuperAdmin();
+
+            return view('admin.communication.logs', compact('isSuperAdmin'));
+        })->name('logs');
+
+        Route::get('/quick-send', function () {
+            $user = Auth::user();
+            $isSuperAdmin = $user->isSuperAdmin();
+
+            return view('admin.communication.quick-send', compact('isSuperAdmin'));
+        })->name('quick-send');
+
+        Route::get('/mass-send', function () {
+            $user = Auth::user();
+            $isSuperAdmin = $user->isSuperAdmin();
+
+            return view('admin.communication.mass-send', compact('isSuperAdmin'));
+        })->name('mass-send');
+    });
 });
 
 // Ministry Leader Routes
@@ -181,9 +287,10 @@ Route::middleware(['auth', 'verified', 'role:ministry_leader,super_admin,branch_
     Route::get('/departments', function () {
         $user = Auth::user();
         $isSuperAdmin = $user->isSuperAdmin();
+
         return view('ministry.departments.index', compact('isSuperAdmin'));
     })->name('departments');
-    
+
     Route::get('/events', function () {
         return view('ministry.events.index');
     })->name('events');
@@ -201,30 +308,30 @@ Route::middleware(['auth', 'verified', 'role:church_member,super_admin,branch_pa
     Route::get('/events', function () {
         return view('member.events.index');
     })->name('events');
-    
+
     Route::get('/groups', function () {
         $user = Auth::user();
-        
+
         // Redirect admins and pastors to the management interface
         if ($user->isSuperAdmin() || $user->isBranchPastor()) {
             return redirect()->route('pastor.small-groups');
         }
-        
+
         return view('member.groups.index');
     })->name('groups');
-    
+
     Route::get('/groups/reports', function () {
         return view('member.groups.reports');
     })->name('groups.reports');
-    
+
     Route::get('/departments', function () {
         return view('member.departments.index');
     })->name('departments');
-    
+
     Route::get('/profile', function () {
         return view('member.profile.show');
     })->name('profile');
-    
+
     // Profile completion routes
     Route::get('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'showProfileCompletion'])->name('profile-completion');
     Route::post('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'updateProfileCompletion'])->name('profile-completion.update');
@@ -235,27 +342,27 @@ Route::prefix('public')->name('public.')->group(function () {
     Route::get('/events', function () {
         return view('public.events.index');
     })->name('events');
-    
+
     Route::get('/registration-success', function () {
         // This route should only be accessed via redirect with session data
         $eventName = session('registration_success.event_name');
         $userEmail = session('registration_success.user_email');
         $generatedPassword = session('registration_success.generated_password');
-        
-        if (!$eventName || !$userEmail) {
+
+        if (! $eventName || ! $userEmail) {
             return redirect()->route('public.events')->with('error', 'Invalid access to success page.');
         }
-        
+
         // Clear the session data after displaying
         session()->forget('registration_success');
-        
+
         return view('public.registration-success', compact('eventName', 'userEmail', 'generatedPassword'));
     })->name('registration-success');
-    
+
     Route::get('/about', function () {
         return view('public.about.index');
     })->name('about');
-    
+
     // Guest registration routes
     Route::get('/register/guest', [App\Http\Controllers\PublicAuthController::class, 'showGuestForm'])->name('guest-register');
     Route::post('/register/guest', [App\Http\Controllers\PublicAuthController::class, 'storeGuest'])->name('guest-register');

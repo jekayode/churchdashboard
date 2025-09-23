@@ -21,7 +21,7 @@ class ProfileCompletionRequest extends BaseMemberRequest
     {
         // For profile completion, only optional fields are validated
         $rules = $this->getCommonRules();
-        
+
         // Remove required fields since they're already set
         unset($rules['first_name'], $rules['surname'], $rules['email'], $rules['phone'], $rules['branch_id']);
 
@@ -36,7 +36,3 @@ class ProfileCompletionRequest extends BaseMemberRequest
         return $this->getCommonMessages();
     }
 }
-
-
-
-

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 final class Branch extends Model
@@ -112,5 +113,58 @@ final class Branch extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Get communication settings for this branch.
+     */
+    public function communicationSetting(): HasOne
+    {
+        return $this->hasOne(CommunicationSetting::class);
+    }
+
+    /**
+     * Get message templates for this branch.
+     */
+    public function messageTemplates(): HasMany
+    {
+        return $this->hasMany(MessageTemplate::class);
+    }
+
+    /**
+     * Get email campaigns for this branch.
+     */
+    public function emailCampaigns(): HasMany
+    {
+        return $this->hasMany(EmailCampaign::class);
+    }
+
+    /**
+     * Get communication logs for this branch.
+     */
+    public function communicationLogs(): HasMany
+    {
+        return $this->hasMany(CommunicationLog::class);
+    }
+
+    /**
+     * Get or create communication settings for this branch.
+     */
+    public function getOrCreateCommunicationSetting(): CommunicationSetting
+    {
+        return $this->communicationSetting ?: $this->communicationSetting()->create([
+            'email_provider' => 'smtp',
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * Check if communication is configured for this branch.
+     */
+    public function hasCommunicationConfigured(): bool
+    {
+        $setting = $this->communicationSetting;
+
+        return $setting && $setting->is_active && $setting->email_config;
     }
 }

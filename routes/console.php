@@ -14,3 +14,19 @@ Schedule::command('events:generate-recurring --weeks=12')
     ->sundays()
     ->at('06:00')
     ->description('Generate recurring event instances for the next 12 weeks');
+
+// Schedule email campaign processing (synchronous)
+Schedule::command('campaigns:process')
+    ->everyFiveMinutes()
+    ->description('Process due email campaign steps');
+
+// Schedule email campaign processing (asynchronous - recommended for production)
+Schedule::command('campaigns:process-async')
+    ->everyFiveMinutes()
+    ->description('Process due email campaign steps asynchronously');
+
+// Schedule birthday and anniversary messages
+Schedule::command('messages:send-birthday-anniversary')
+    ->daily()
+    ->at('09:00')
+    ->description('Send birthday and anniversary messages to members');

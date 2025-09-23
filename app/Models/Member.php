@@ -109,6 +109,16 @@ final class Member extends Model
     }
 
     /**
+     * Get the ministries this member belongs to (through departments).
+     */
+    public function ministries()
+    {
+        return Ministry::whereHas('departments.members', function ($query) {
+            $query->where('members.id', $this->id);
+        });
+    }
+
+    /**
      * Get the ministries this member leads.
      */
     public function ledMinistries(): HasMany
@@ -193,7 +203,7 @@ final class Member extends Model
      */
     public function getFullNameAttribute(): string
     {
-        return trim(($this->first_name ?? '') . ' ' . ($this->surname ?? ''));
+        return trim(($this->first_name ?? '').' '.($this->surname ?? ''));
     }
 
     /**
@@ -221,11 +231,11 @@ final class Member extends Model
     {
         $firstName = $this->attributes['first_name'] ?? '';
         $surname = $this->attributes['surname'] ?? '';
-        
+
         if (empty($surname)) {
             $this->attributes['name'] = trim($firstName);
         } else {
-            $this->attributes['name'] = trim($firstName . ' ' . $surname);
+            $this->attributes['name'] = trim($firstName.' '.$surname);
         }
     }
 
@@ -236,20 +246,20 @@ final class Member extends Model
     {
         $totalFields = 15; // Total number of profile fields (excluding system fields)
         $filledFields = 0;
-        
+
         $fields = [
             'first_name', 'surname', 'email', 'phone', 'date_of_birth',
-            'gender', 'marital_status', 'home_address', 'age_group', 
+            'gender', 'marital_status', 'home_address', 'age_group',
             'prayer_request', 'discovery_source', 'staying_intention',
-            'closest_location', 'additional_info', 'preferred_call_time'
+            'closest_location', 'additional_info', 'preferred_call_time',
         ];
-        
+
         foreach ($fields as $field) {
-            if (!empty($this->$field)) {
+            if (! empty($this->$field)) {
                 $filledFields++;
             }
         }
-        
+
         return (int) round(($filledFields / $totalFields) * 100);
     }
 
@@ -284,11 +294,11 @@ final class Member extends Model
             // If no assignments, default to 'member' (unless they were already a visitor)
             $this->member_status = 'member';
         }
-        
+
         // Only save and log if status actually changed
         if ($oldStatus !== $this->member_status) {
             $this->save();
-            
+
             // Log the status change automatically
             $this->logStatusChange(
                 $oldStatus,
@@ -310,7 +320,7 @@ final class Member extends Model
         ?int $changedBy = null
     ): bool {
         $previousStatus = $this->member_status;
-        
+
         if ($previousStatus === $newStatus) {
             return false; // No change needed
         }

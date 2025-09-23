@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\EventRequest;
+use App\Models\Branch;
 use App\Models\Event;
 use App\Models\EventRegistration;
-use App\Models\Branch;
+use App\Models\Member;
+use App\Models\User;
 use App\Services\ChurchServiceManager;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -15,12 +17,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use App\Models\Member;
 
 final class EventController extends Controller
 {
@@ -45,12 +45,12 @@ final class EventController extends Controller
             $this->applyFilters($query, $request);
 
             // Apply search
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->has('search') && ! empty($request->search)) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%")
-                      ->orWhere('location', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%");
                 });
             }
 
@@ -69,6 +69,7 @@ final class EventController extends Controller
                 $event->is_published = $event->isPublished();
                 $event->total_registrations = $event->registrations_count;
                 $event->checked_in_count = $event->getCheckedInCountAttribute();
+
                 return $event;
             });
 
@@ -79,7 +80,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving public events: ' . $e->getMessage(), [
+            Log::error('Error retrieving public events: '.$e->getMessage(), [
                 'request_data' => $request->all(),
             ]);
 
@@ -101,7 +102,7 @@ final class EventController extends Controller
 
             // Apply role-based filtering
             $user = Auth::user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $query->where('branch_id', $userBranch->id);
@@ -112,12 +113,12 @@ final class EventController extends Controller
             $this->applyFilters($query, $request);
 
             // Apply search
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->has('search') && ! empty($request->search)) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%")
-                      ->orWhere('location', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('location', 'like', "%{$search}%");
                 });
             }
 
@@ -136,6 +137,7 @@ final class EventController extends Controller
                 $event->is_published = $event->isPublished();
                 $event->total_registrations = $event->registrations_count;
                 $event->checked_in_count = $event->getCheckedInCountAttribute();
+
                 return $event;
             });
 
@@ -146,7 +148,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving events: ' . $e->getMessage(), [
+            Log::error('Error retrieving events: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
             ]);
@@ -173,7 +175,7 @@ final class EventController extends Controller
             $event = Event::create($eventData);
 
             // Generate recurring instances if this is a recurring event
-            if (!empty($validatedData['is_recurring'])) {
+            if (! empty($validatedData['is_recurring'])) {
                 $this->generateRecurringInstancesForEvent($event, $validatedData);
             }
 
@@ -196,8 +198,8 @@ final class EventController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error creating event: ' . $e->getMessage(), [
+
+            Log::error('Error creating event: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->validated(),
                 'error' => $e->getMessage(),
@@ -222,28 +224,28 @@ final class EventController extends Controller
                 'branch:id,name,venue',
                 'registrations' => function ($query) {
                     $query->with(['user:id,name', 'member:id,name'])
-                          ->orderBy('registration_date', 'desc');
+                        ->orderBy('registration_date', 'desc');
                 },
                 'reports' => function ($query) {
                     $query->with('reporter:id,name')
-                          ->orderBy('report_date', 'desc');
-                }
+                        ->orderBy('report_date', 'desc');
+                },
             ]);
 
             // Add computed fields
             $event->is_upcoming = $event->isUpcoming();
             $event->is_published = $event->isPublished();
-            
+
             // Registration statistics
             $totalRegistrations = $event->registrations->count();
             $checkedInCount = $event->registrations->where('checked_in', true)->count();
             $attendanceRate = $totalRegistrations > 0 ? round(($checkedInCount / $totalRegistrations) * 100, 2) : 0;
-            
+
             $event->total_registrations = $totalRegistrations;
             $event->checked_in_count = $checkedInCount;
             $event->registrations_count = $totalRegistrations;
             $event->checkins_count = $checkedInCount;
-            $event->attendance_rate = $attendanceRate . '%';
+            $event->attendance_rate = $attendanceRate.'%';
 
             return response()->json([
                 'success' => true,
@@ -252,7 +254,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving event: ' . $e->getMessage(), [
+            Log::error('Error retrieving event: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
             ]);
@@ -296,7 +298,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving event details: ' . $e->getMessage(), [
+            Log::error('Error retrieving event details: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
             ]);
@@ -352,8 +354,8 @@ final class EventController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error updating event: ' . $e->getMessage(), [
+
+            Log::error('Error updating event: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
                 'request_data' => $request->validated(),
@@ -393,8 +395,8 @@ final class EventController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error deleting event: ' . $e->getMessage(), [
+
+            Log::error('Error deleting event: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
             ]);
@@ -415,7 +417,7 @@ final class EventController extends Controller
 
         try {
             // Validate the event is available for registration
-            if (!$event->isPublished()) {
+            if (! $event->isPublished()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'This event is not available for registration.',
@@ -425,7 +427,7 @@ final class EventController extends Controller
             // Basic validation - for authenticated users doing simple registration, use their profile info
             $user = Auth::user();
             $isSimpleRegistration = $event->registration_type === 'simple' && $user;
-            
+
             if ($isSimpleRegistration) {
                 // For simple registration by authenticated users, use their profile data
                 $validator = Validator::make($request->all(), [
@@ -514,8 +516,8 @@ final class EventController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error registering for event: ' . $e->getMessage(), [
+
+            Log::error('Error registering for event: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
@@ -540,7 +542,7 @@ final class EventController extends Controller
                 ->with(['user:id,name,email,phone', 'member:id,name']);
 
             // Apply filters
-            if ($request->has('status') && !empty($request->status)) {
+            if ($request->has('status') && ! empty($request->status)) {
                 if ($request->status === 'checked_in') {
                     $query->where('checked_in', true);
                 } elseif ($request->status === 'registered') {
@@ -548,21 +550,21 @@ final class EventController extends Controller
                 }
             }
 
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->has('search') && ! empty($request->search)) {
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('phone', 'like', "%{$search}%")
-                      ->orWhereHas('user', function ($userQuery) use ($search) {
-                          $userQuery->where('name', 'like', "%{$search}%")
-                                   ->orWhere('email', 'like', "%{$search}%");
-                      });
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%")
+                        ->orWhereHas('user', function ($userQuery) use ($search) {
+                            $userQuery->where('name', 'like', "%{$search}%")
+                                ->orWhere('email', 'like', "%{$search}%");
+                        });
                 });
             }
 
             // Apply date filters
-            if ($request->has('date_filter') && !empty($request->date_filter)) {
+            if ($request->has('date_filter') && ! empty($request->date_filter)) {
                 $now = now();
                 switch ($request->date_filter) {
                     case 'today':
@@ -571,12 +573,12 @@ final class EventController extends Controller
                     case 'week':
                         $query->whereBetween('registration_date', [
                             $now->startOfWeek()->toDateString(),
-                            $now->endOfWeek()->toDateString()
+                            $now->endOfWeek()->toDateString(),
                         ]);
                         break;
                     case 'month':
                         $query->whereMonth('registration_date', $now->month)
-                              ->whereYear('registration_date', $now->year);
+                            ->whereYear('registration_date', $now->year);
                         break;
                 }
             }
@@ -584,6 +586,7 @@ final class EventController extends Controller
             // Handle CSV export
             if ($request->has('export') && $request->export === 'csv') {
                 $registrations = $query->get();
+
                 return $this->exportRegistrationsCSV($registrations, $event);
             }
 
@@ -596,7 +599,7 @@ final class EventController extends Controller
                 'total' => $totalRegistrations,
                 'checked_in' => $checkedInCount,
                 'pending' => $pendingCount,
-                'attendance_rate' => $totalRegistrations > 0 ? round(($checkedInCount / $totalRegistrations) * 100, 2) : 0
+                'attendance_rate' => $totalRegistrations > 0 ? round(($checkedInCount / $totalRegistrations) * 100, 2) : 0,
             ];
 
             // Apply sorting
@@ -619,7 +622,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving event registrations: ' . $e->getMessage(), [
+            Log::error('Error retrieving event registrations: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'user_id' => Auth::id(),
             ]);
@@ -669,7 +672,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error checking in registration: ' . $e->getMessage(), [
+            Log::error('Error checking in registration: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'registration_id' => $registration->id,
                 'user_id' => Auth::id(),
@@ -689,12 +692,12 @@ final class EventController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             $query = EventRegistration::with(['event:id,name,start_date,end_date,location,status'])
                 ->where('user_id', $user->id);
 
             // Apply filters
-            if ($request->has('status') && !empty($request->status)) {
+            if ($request->has('status') && ! empty($request->status)) {
                 $query->whereHas('event', function ($q) use ($request) {
                     $q->where('status', $request->status);
                 });
@@ -728,7 +731,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving user registrations: ' . $e->getMessage(), [
+            Log::error('Error retrieving user registrations: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
             ]);
@@ -750,7 +753,7 @@ final class EventController extends Controller
 
             // Apply role-based filtering
             $user = Auth::user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $query->where('branch_id', $userBranch->id);
@@ -765,10 +768,10 @@ final class EventController extends Controller
                 'active_events' => (clone $query)->where('status', 'active')->count(),
                 'upcoming_events' => (clone $query)->where('start_date', '>', now())->count(),
                 'past_events' => (clone $query)->where('start_date', '<=', now())->count(),
-                'total_registrations' => EventRegistration::whereIn('event_id', 
+                'total_registrations' => EventRegistration::whereIn('event_id',
                     (clone $query)->pluck('id')
                 )->count(),
-                'total_checked_in' => EventRegistration::whereIn('event_id', 
+                'total_checked_in' => EventRegistration::whereIn('event_id',
                     (clone $query)->pluck('id')
                 )->where('checked_in', true)->count(),
                 'average_attendance' => $this->calculateAverageAttendance($query),
@@ -781,7 +784,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving event statistics: ' . $e->getMessage(), [
+            Log::error('Error retrieving event statistics: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
             ]);
@@ -799,36 +802,36 @@ final class EventController extends Controller
     private function applyFilters($query, Request $request): void
     {
         // Filter by branch
-        if ($request->has('branch_id') && !empty($request->branch_id)) {
+        if ($request->has('branch_id') && ! empty($request->branch_id)) {
             $query->where('branch_id', $request->branch_id);
         }
 
         // Filter by status
-        if ($request->has('status') && !empty($request->status)) {
+        if ($request->has('status') && ! empty($request->status)) {
             $query->where('status', $request->status);
         }
 
         // Filter by type (service or event)
-        if ($request->has('type') && !empty($request->type)) {
+        if ($request->has('type') && ! empty($request->type)) {
             $query->where('type', $request->type);
         }
 
         // Filter by service type (for church services)
-        if ($request->has('service_type') && !empty($request->service_type)) {
+        if ($request->has('service_type') && ! empty($request->service_type)) {
             $query->where('service_type', $request->service_type);
         }
 
         // Filter by date range (specific dates)
-        if ($request->has('start_date') && !empty($request->start_date)) {
+        if ($request->has('start_date') && ! empty($request->start_date)) {
             $query->where('start_date', '>=', $request->start_date);
         }
 
-        if ($request->has('end_date') && !empty($request->end_date)) {
+        if ($request->has('end_date') && ! empty($request->end_date)) {
             $query->where('start_date', '<=', $request->end_date);
         }
 
         // Filter by date range (predefined periods)
-        if ($request->has('date_filter') && !empty($request->date_filter)) {
+        if ($request->has('date_filter') && ! empty($request->date_filter)) {
             $dateFilter = $request->date_filter;
             $now = now();
 
@@ -882,7 +885,7 @@ final class EventController extends Controller
         }
 
         // Handle recurring events frequency
-        if (!empty($validatedData['is_recurring']) && !empty($validatedData['frequency'])) {
+        if (! empty($validatedData['is_recurring']) && ! empty($validatedData['frequency'])) {
             $eventData['frequency'] = $validatedData['frequency'];
         } else {
             $eventData['frequency'] = 'once';
@@ -949,7 +952,7 @@ final class EventController extends Controller
             // Create the recurring instance
             $instanceData = $parentEvent->toArray();
             unset($instanceData['id'], $instanceData['created_at'], $instanceData['updated_at']);
-            
+
             $instanceData['start_date'] = $currentDate->format('Y-m-d H:i:s');
             $instanceData['end_date'] = $endDateTime ? $currentDate->copy()->addMinutes($duration)->format('Y-m-d H:i:s') : null;
             $instanceData['parent_event_id'] = $parentEvent->id;
@@ -975,12 +978,54 @@ final class EventController extends Controller
     }
 
     /**
+     * Admin event show/edit page (full edit for recurring events).
+     */
+    public function showAdmin(Request $request, Event $event)
+    {
+        $this->authorize('update', $event);
+
+        // If not recurring, we can choose to redirect back to index where modal edit is used
+        if (! $event->is_recurring) {
+            return redirect()->back()->with('info', 'Use quick edit modal for non-recurring events.');
+        }
+
+        return view('admin.events.edit', [
+            'event' => $event,
+        ]);
+    }
+
+    /**
+     * Handle full page update from admin edit view.
+     */
+    public function updateAdmin(EventRequest $request, Event $event)
+    {
+        $this->authorize('update', $event);
+
+        // Reuse existing update flow to ensure consistency
+        // The existing update() returns JsonResponse; here we adapt to web
+        $validated = $request->validated();
+
+        try {
+            // Minimal reuse: assign and save
+            $event->fill($validated);
+            $event->save();
+
+            // If recurring and fields present, optionally (re)generate instances is manual via button
+            return redirect()->route('admin.events.edit', $event)->with('status', 'Event updated.');
+        } catch (\Exception $e) {
+            \Log::error('Admin event update failed', ['event_id' => $event->id, 'error' => $e->getMessage()]);
+
+            return back()->withErrors(['update' => 'Failed to update event.'])->withInput();
+        }
+    }
+
+    /**
      * Calculate average attendance rate for events.
      */
     private function calculateAverageAttendance($query): string
     {
         $eventIds = (clone $query)->pluck('id');
-        
+
         if ($eventIds->isEmpty()) {
             return '0%';
         }
@@ -993,7 +1038,8 @@ final class EventController extends Controller
         }
 
         $percentage = round(($totalCheckedIn / $totalRegistrations) * 100, 1);
-        return $percentage . '%';
+
+        return $percentage.'%';
     }
 
     /**
@@ -1003,21 +1049,21 @@ final class EventController extends Controller
     {
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="event-' . $event->id . '-registrations.csv"',
+            'Content-Disposition' => 'attachment; filename="event-'.$event->id.'-registrations.csv"',
         ];
 
-        $callback = function() use ($registrations) {
+        $callback = function () use ($registrations) {
             $file = fopen('php://output', 'w');
-            
+
             // Add CSV headers
             fputcsv($file, [
                 'ID',
                 'Name',
-                'Email', 
+                'Email',
                 'Phone',
                 'Registration Date',
                 'Status',
-                'Check-in Time'
+                'Check-in Time',
             ]);
 
             // Add data rows
@@ -1029,7 +1075,7 @@ final class EventController extends Controller
                     $registration->user?->phone ?? $registration->phone ?? 'N/A',
                     $registration->registration_date ? $registration->registration_date->format('Y-m-d H:i:s') : 'N/A',
                     $registration->checked_in ? 'Checked In' : 'Registered',
-                    $registration->checkin_time ? $registration->checkin_time->format('Y-m-d H:i:s') : 'N/A'
+                    $registration->checkin_time ? $registration->checkin_time->format('Y-m-d H:i:s') : 'N/A',
                 ]);
             }
 
@@ -1069,9 +1115,9 @@ final class EventController extends Controller
 
         try {
             $branch = Branch::findOrFail($request->branch_id);
-            
+
             // Check authorization for this branch
-            if (!Auth::user()->isSuperAdmin() && Auth::user()->getPrimaryBranch()?->id !== $branch->id) {
+            if (! Auth::user()->isSuperAdmin() && Auth::user()->getPrimaryBranch()?->id !== $branch->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to create services for this branch.',
@@ -1091,7 +1137,7 @@ final class EventController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Error creating Sunday service: ' . $e->getMessage(), [
+            Log::error('Error creating Sunday service: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
             ]);
@@ -1134,9 +1180,9 @@ final class EventController extends Controller
 
         try {
             $branch = Branch::findOrFail($request->branch_id);
-            
+
             // Check authorization for this branch
-            if (!Auth::user()->isSuperAdmin() && Auth::user()->getPrimaryBranch()?->id !== $branch->id) {
+            if (! Auth::user()->isSuperAdmin() && Auth::user()->getPrimaryBranch()?->id !== $branch->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to create services for this branch.',
@@ -1156,7 +1202,7 @@ final class EventController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Error creating midweek service: ' . $e->getMessage(), [
+            Log::error('Error creating midweek service: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
             ]);
@@ -1188,9 +1234,9 @@ final class EventController extends Controller
 
         try {
             $branch = Branch::findOrFail($request->branch_id);
-            
+
             // Check authorization for this branch
-            if (!Auth::user()->isSuperAdmin() && Auth::user()->getPrimaryBranch()?->id !== $branch->id) {
+            if (! Auth::user()->isSuperAdmin() && Auth::user()->getPrimaryBranch()?->id !== $branch->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to view services for this branch.',
@@ -1207,7 +1253,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving branch services: ' . $e->getMessage(), [
+            Log::error('Error retrieving branch services: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
             ]);
@@ -1249,7 +1295,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error generating recurring instances: ' . $e->getMessage(), [
+            Log::error('Error generating recurring instances: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
                 'request_data' => $request->all(),
             ]);
@@ -1258,6 +1304,30 @@ final class EventController extends Controller
                 'success' => false,
                 'message' => 'Failed to generate recurring instances.',
             ], 500);
+        }
+    }
+
+    /**
+     * Admin action: generate future instances for a specific recurring event.
+     */
+    public function generateInstancesForEvent(Request $request, \App\Models\Event $event)
+    {
+        $this->authorize('update', $event);
+
+        $weeks = (int) $request->input('weeks', 12);
+        $weeks = max(1, min($weeks, 52));
+
+        try {
+            $created = $event->createRecurringInstances($weeks);
+
+            return back()->with('status', "Generated {$created} future instance(s).");
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate instances for event', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors(['generate' => 'Failed to generate instances.']);
         }
     }
 
@@ -1277,7 +1347,7 @@ final class EventController extends Controller
                 'TECi',
                 'Membership Class',
                 'LifeGroup Meeting',
-                'other'
+                'other',
             ];
 
             return response()->json([
@@ -1287,7 +1357,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving service types: ' . $e->getMessage());
+            Log::error('Error retrieving service types: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -1303,7 +1373,7 @@ final class EventController extends Controller
     {
         try {
             $user = Auth::user();
-            
+
             if ($user->isSuperAdmin()) {
                 $branches = Branch::select('id', 'name', 'venue')
                     ->orderBy('name')
@@ -1321,7 +1391,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving branches: ' . $e->getMessage(), [
+            Log::error('Error retrieving branches: '.$e->getMessage(), [
                 'user_id' => Auth::id(),
             ]);
 
@@ -1340,8 +1410,8 @@ final class EventController extends Controller
         try {
             // Check if the user owns this registration or has permission to delete it
             $user = Auth::user();
-            
-            if ($registration->user_id !== $user->id && !$user->can('view', $event)) {
+
+            if ($registration->user_id !== $user->id && ! $user->can('view', $event)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized to cancel this registration.',
@@ -1375,8 +1445,8 @@ final class EventController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error cancelling event registration: ' . $e->getMessage(), [
+
+            Log::error('Error cancelling event registration: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'registration_id' => $registration->id,
                 'user_id' => Auth::id(),
@@ -1397,7 +1467,7 @@ final class EventController extends Controller
     {
         try {
             // Validate the event is available for registration
-            if (!$event->isPublished()) {
+            if (! $event->isPublished()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'This event is not available for registration.',
@@ -1405,7 +1475,7 @@ final class EventController extends Controller
             }
 
             // Validate the event is upcoming
-            if (!$event->isUpcoming()) {
+            if (! $event->isUpcoming()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Registration is no longer available for this event.',
@@ -1447,10 +1517,10 @@ final class EventController extends Controller
             $user = User::where('email', $request->email)->first();
             $member = null;
 
-            if (!$user) {
+            if (! $user) {
                 // Create new user account
                 $password = $request->password ?? Str::random(12); // Generate random password if not provided
-                
+
                 $user = User::create([
                     'name' => $request->name,
                     'email' => $request->email,
@@ -1479,8 +1549,8 @@ final class EventController extends Controller
             } else {
                 // User exists, get their member record or create one
                 $member = $user->member;
-                
-                if (!$member) {
+
+                if (! $member) {
                     $member = Member::create([
                         'user_id' => $user->id,
                         'name' => $user->name,
@@ -1516,7 +1586,7 @@ final class EventController extends Controller
 
             // Check if user was just created
             $userWasCreated = $user->wasRecentlyCreated;
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -1525,15 +1595,15 @@ final class EventController extends Controller
                     'login_info' => [
                         'email' => $user->email,
                         'message' => $userWasCreated ? 'An account has been created for you. You can log in using your email address.' : 'Registration completed successfully.',
-                    ]
+                    ],
                 ],
                 'message' => $userWasCreated ? 'Successfully registered for the event! An account has been created for you.' : 'Successfully registered for the event!',
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error in public event registration: ' . $e->getMessage(), [
+
+            Log::error('Error in public event registration: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'request_data' => $request->all(),
                 'trace' => $e->getTraceAsString(),
@@ -1579,7 +1649,7 @@ final class EventController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error generating QR code: ' . $e->getMessage(), [
+            Log::error('Error generating QR code: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'registration_id' => $registration->id,
             ]);
@@ -1606,15 +1676,15 @@ final class EventController extends Controller
 
             // Generate QR code as PNG
             $qrCode = $registration->generateSecureQrCode(300);
-            
+
             $fileName = "ticket-{$event->id}-{$registration->id}.png";
-            
+
             return response($qrCode)
                 ->header('Content-Type', 'image/png')
                 ->header('Content-Disposition', "attachment; filename=\"{$fileName}\"");
 
         } catch (\Exception $e) {
-            Log::error('Error downloading QR code: ' . $e->getMessage(), [
+            Log::error('Error downloading QR code: '.$e->getMessage(), [
                 'event_id' => $event->id,
                 'registration_id' => $registration->id,
             ]);
@@ -1631,21 +1701,21 @@ final class EventController extends Controller
         try {
             // Validate the token if provided
             $token = $request->query('token');
-            if ($token && !$registration->verifyCheckInToken($token)) {
+            if ($token && ! $registration->verifyCheckInToken($token)) {
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => false,
                         'message' => 'Invalid check-in token.',
                     ], 403);
                 }
-                
+
                 return redirect()->route('public.events')->with('error', 'Invalid check-in token.');
             }
 
             // Check if already checked in
             if ($registration->checked_in) {
-                $message = "Welcome back! You were already checked in at " . $registration->checked_in_at->format('Y-m-d H:i:s');
-                
+                $message = 'Welcome back! You were already checked in at '.$registration->checked_in_at->format('Y-m-d H:i:s');
+
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
@@ -1657,7 +1727,7 @@ final class EventController extends Controller
                         ],
                     ]);
                 }
-                
+
                 return redirect()->route('public.events')->with('success', $message);
             }
 
@@ -1666,7 +1736,7 @@ final class EventController extends Controller
             $registration->load('event');
 
             $message = "Successfully checked in to {$registration->event->name}!";
-            
+
             Log::info('Public check-in successful', [
                 'registration_id' => $registration->id,
                 'event_id' => $registration->event_id,
@@ -1685,24 +1755,24 @@ final class EventController extends Controller
                     ],
                 ]);
             }
-            
+
             return redirect()->route('public.events')->with('success', $message);
 
         } catch (\Exception $e) {
-            Log::error('Error in public check-in: ' . $e->getMessage(), [
+            Log::error('Error in public check-in: '.$e->getMessage(), [
                 'registration_id' => $registration->id,
                 'request_data' => $request->all(),
             ]);
 
             $message = 'Failed to check in. Please try again or contact support.';
-            
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'success' => false,
                     'message' => $message,
                 ], 500);
             }
-            
+
             return redirect()->route('public.events')->with('error', $message);
         }
     }

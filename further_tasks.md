@@ -49,3 +49,4 @@ Then can be directed •⁠  ⁠Join LifeGroup
 
 Give me a detailes breadown of these tasks and how you would implement them without breaking all the working features already. 
 
+Resend key: re_24CdmAmf_852Xc9AZypiVesukMZxTWzkZ

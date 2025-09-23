@@ -127,11 +127,11 @@ final class User extends Authenticatable
     public function hasRole(string $roleName, ?int $branchId = null): bool
     {
         $query = $this->roles()->where('name', $roleName);
-        
+
         if ($branchId !== null) {
             $query->wherePivot('branch_id', $branchId);
         }
-        
+
         return $query->exists();
     }
 
@@ -209,12 +209,12 @@ final class User extends Authenticatable
     public function assignRole(string $roleName, ?int $branchId = null): void
     {
         $role = Role::where('name', $roleName)->first();
-        
-        if ($role && !$this->hasRole($roleName, $branchId)) {
+
+        if ($role && ! $this->hasRole($roleName, $branchId)) {
             $this->roles()->attach($role->id, [
                 'branch_id' => $branchId,
                 'created_at' => now(),
-                'updated_at' => now()
+                'updated_at' => now(),
             ]);
         }
     }
@@ -225,14 +225,14 @@ final class User extends Authenticatable
     public function removeRole(string $roleName, ?int $branchId = null): void
     {
         $role = Role::where('name', $roleName)->first();
-        
+
         if ($role) {
             $query = $this->roles()->where('role_id', $role->id);
-            
+
             if ($branchId !== null) {
                 $query->wherePivot('branch_id', $branchId);
             }
-            
+
             $query->detach();
         }
     }
@@ -268,12 +268,12 @@ final class User extends Authenticatable
     public function getPrimaryBranch(): ?Branch
     {
         $primaryRole = $this->getPrimaryRole();
-        
+
         if ($primaryRole) {
             $userRole = $this->roles()
                 ->where('role_id', $primaryRole->id)
                 ->first();
-                
+
             if ($userRole && $userRole->pivot->branch_id) {
                 return Branch::find($userRole->pivot->branch_id);
             }
@@ -288,6 +288,7 @@ final class User extends Authenticatable
     public function getActiveBranchId(): ?int
     {
         $primaryBranch = $this->getPrimaryBranch();
+
         return $primaryBranch?->id;
     }
 
@@ -297,5 +298,67 @@ final class User extends Authenticatable
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new \App\Notifications\ChurchPasswordResetNotification($token));
+    }
+
+    /**
+     * Get communication logs for this user.
+     */
+    public function communicationLogs(): HasMany
+    {
+        return $this->hasMany(CommunicationLog::class);
+    }
+
+    /**
+     * Get email campaign enrollments for this user.
+     */
+    public function emailCampaignEnrollments(): HasMany
+    {
+        return $this->hasMany(EmailCampaignEnrollment::class);
+    }
+
+    /**
+     * Get active email campaign enrollments.
+     */
+    public function activeCampaignEnrollments(): HasMany
+    {
+        return $this->emailCampaignEnrollments()->whereNull('completed_at');
+    }
+
+    /**
+     * Enroll user in an email campaign.
+     */
+    public function enrollInCampaign(EmailCampaign $campaign): EmailCampaignEnrollment
+    {
+        // Check if already enrolled
+        $existingEnrollment = $this->emailCampaignEnrollments()
+            ->where('campaign_id', $campaign->id)
+            ->first();
+
+        if ($existingEnrollment) {
+            return $existingEnrollment;
+        }
+
+        // Get first step
+        $firstStep = $campaign->steps()->orderBy('step_order')->first();
+
+        if (! $firstStep) {
+            throw new \Exception('Campaign has no steps defined');
+        }
+
+        return $this->emailCampaignEnrollments()->create([
+            'campaign_id' => $campaign->id,
+            'current_step' => 1,
+            'next_send_at' => now()->addDays($firstStep->delay_days),
+        ]);
+    }
+
+    /**
+     * Check if user is enrolled in a specific campaign.
+     */
+    public function isEnrolledInCampaign(EmailCampaign $campaign): bool
+    {
+        return $this->emailCampaignEnrollments()
+            ->where('campaign_id', $campaign->id)
+            ->exists();
     }
 }
