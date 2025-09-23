@@ -14,7 +14,7 @@ export default {
             fontFamily: {
                 sans: ['Inter', 'Figtree', ...defaultTheme.fontFamily.sans],
                 serif: ['Playfair Display', 'Georgia', ...defaultTheme.fontFamily.serif],
-                display: ['Montserrat', 'Inter', ...defaultTheme.fontFamily.sans],
+                display: ['Clash Display', 'Inter', ...defaultTheme.fontFamily.sans],
             },
             colors: {
                 // Church Brand Colors - Primary Green

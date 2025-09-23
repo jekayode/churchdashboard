@@ -53,13 +53,12 @@
                     <div class="relative z-10 pb-8 bg-gradient-to-br from-church-50 to-secondary-50 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
                         <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
                             <div class="sm:text-center lg:text-left">
-                                <h1 class="text-4xl tracking-tight font-extrabold text-gray-900 sm:text-5xl md:text-6xl">
-                                    <span class="block xl:inline">Welcome to</span>
-                                    <span class="block text-church-600 xl:inline">LifePointe Church</span>
+                                <h5 class="text-xs sm:text-sm font-semibold tracking-wide text-white uppercase">
+                                    Welcome to LifePointe
+                                </h5>
+                                <h1 class="mt-3 text-4xl sm:text-5xl md:text-6xl font-extrabold text-gray-900 sm:max-w-xl sm:mx-auto lg:mx-0">
+                                    We’re a resting place for the weary and a signpost for the lost
                                 </h1>
-                                <p class="mt-3 text-base text-gray-500 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
-                                    Join our community and experience God's love, grow in faith, and make a difference in the world around us.
-                                </p>
                                 <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
                                     <div class="rounded-md shadow">
                                         <a href="{{ route('public.guest-register') }}" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-church-500 hover:bg-church-600 md:py-4 md:text-lg md:px-10">

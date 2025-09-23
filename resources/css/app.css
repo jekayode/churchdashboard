@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Clash Display for headings */
+@font-face {
+    font-family: 'Clash Display';
+    src: url('/fonts/ClashDisplay-Variable.woff2') format('woff2');
+    font-weight: 100 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@layer base {
+    h1, h2 {
+        font-family: 'Clash Display', Sans-serif;
+    }
+}
