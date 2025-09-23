@@ -18,13 +18,13 @@ final class ChurchPasswordResetNotification extends ResetPassword
             return call_user_func(static::$toMailCallback, $notifiable, $this->token);
         }
 
-        return $this->buildMailMessage($this->resetUrl($notifiable));
+        return $this->buildMailMessage($this->resetUrl($notifiable), $notifiable);
     }
 
     /**
      * Get the reset password notification mail message for the given URL.
      */
-    protected function buildMailMessage($url): MailMessage
+    protected function buildMailMessage($url, $notifiable): MailMessage
     {
         $expiration = config('auth.passwords.'.config('auth.defaults.passwords').'.expire');
         
@@ -33,7 +33,7 @@ final class ChurchPasswordResetNotification extends ResetPassword
             ->view('emails.password-reset', [
                 'actionUrl' => $url,
                 'expiration' => $expiration,
-                'user' => $this->notifiable
+                'user' => $notifiable
             ]);
     }
 } 
