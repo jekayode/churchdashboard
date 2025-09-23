@@ -152,9 +152,26 @@
                                 <input x-model.debounce.400ms="filters.q" @input="load()" type="text" placeholder="Search by name or location" class="w-full rounded-lg border-gray-300"/>
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Loading State -->
+                        <div x-show="loading" class="text-center py-8">
+                            <div class="inline-flex items-center">
+                                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-church-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                Loading LifeGroups...
+                            </div>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div x-show="!loading && groups.length === 0" class="text-center py-8">
+                            <p class="text-gray-500">No LifeGroups found. Check back later!</p>
+                        </div>
+
+                        <!-- LifeGroups Grid -->
+                        <div x-show="!loading && groups.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             <template x-for="g in groups" :key="g.id">
-                                <div class="border rounded-lg p-4">
+                                <div class="border rounded-lg p-4 hover:shadow-md transition-shadow">
                                     <h3 class="font-semibold text-gray-900" x-text="g.name"></h3>
                                     <p class="text-sm text-gray-600" x-text="g.branch?.name"></p>
                                     <p class="text-sm text-gray-600" x-text="g.location"></p>
@@ -189,9 +206,26 @@
                             </select>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Loading State -->
+                    <div x-show="loading" class="text-center py-8">
+                        <div class="inline-flex items-center">
+                            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-church-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading Events...
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div x-show="!loading && events.length === 0" class="text-center py-8">
+                        <p class="text-gray-500">No events found for the selected criteria.</p>
+                    </div>
+
+                    <!-- Events Grid -->
+                    <div x-show="!loading && events.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         <template x-for="e in events" :key="e.id">
-                            <div class="border rounded-lg p-4 bg-white">
+                            <div class="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow">
                                 <h3 class="font-semibold text-gray-900" x-text="e.name"></h3>
                                 <p class="text-sm text-gray-600" x-text="e.branch?.name"></p>
                                 <p class="text-xs text-gray-500 mt-1" x-text="e.start_date + ' ' + (e.start_time || '')"></p>
@@ -222,11 +256,29 @@
             <footer class="bg-gray-900">
                 <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8" x-data="footerExpressions()" x-init="init()">
                     <h3 class="text-lg font-semibold text-white mb-6">Expressions</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    
+                    <!-- Loading State -->
+                    <div x-show="loading" class="text-center py-4">
+                        <div class="inline-flex items-center text-gray-400">
+                            <svg class="animate-spin -ml-1 mr-3 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            Loading Expressions...
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div x-show="!loading && branches.length === 0" class="text-center py-4">
+                        <p class="text-gray-400">No expressions available.</p>
+                    </div>
+
+                    <!-- Branches Grid -->
+                    <div x-show="!loading && branches.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         <template x-for="b in branches" :key="b.id">
                             <div class="text-gray-300">
                                 <h4 class="font-semibold text-white" x-text="b.name"></h4>
-                                <p class="text-sm" x-text="(b.address || '') + (b.city ? ', ' + b.city : '')"></p>
+                                <p class="text-sm" x-text="b.venue || ''"></p>
                                 <p class="text-xs text-gray-400" x-text="b.service_time ? ('Service Time: ' + b.service_time) : ''"></p>
                             </div>
                         </template>
@@ -236,13 +288,35 @@
         </div>
 
         <script>
-            // Static data functions - no API calls needed
             function lifegroups() {
                 return {
                     branches: [],
                     groups: [],
                     filters: { branch_id: '', q: '' },
-                    init() { /* Static data - no API calls */ }
+                    loading: false,
+                    async init() { 
+                        this.loading = true;
+                        await this.loadBranches(); 
+                        await this.load(); 
+                        this.loading = false;
+                    },
+                    async loadBranches() {
+                        try {
+                            const res = await fetch('/api/welcome/branches');
+                            this.branches = await res.json();
+                        } catch (error) {
+                            console.error('Error loading branches:', error);
+                        }
+                    },
+                    async load() {
+                        try {
+                            const params = new URLSearchParams(this.filters).toString();
+                            const res = await fetch(`/api/welcome/small-groups?${params}`);
+                            this.groups = await res.json();
+                        } catch (error) {
+                            console.error('Error loading small groups:', error);
+                        }
+                    }
                 }
             }
 
@@ -251,14 +325,47 @@
                     branches: [],
                     events: [],
                     filters: { branch_id: '', when: 'upcoming' },
-                    init() { /* Static data - no API calls */ }
+                    loading: false,
+                    async init() { 
+                        this.loading = true;
+                        await this.loadBranches(); 
+                        await this.load(); 
+                        this.loading = false;
+                    },
+                    async loadBranches() {
+                        try {
+                            const res = await fetch('/api/welcome/branches');
+                            this.branches = await res.json();
+                        } catch (error) {
+                            console.error('Error loading branches:', error);
+                        }
+                    },
+                    async load() {
+                        try {
+                            const params = new URLSearchParams(this.filters).toString();
+                            const res = await fetch(`/api/welcome/events?${params}`);
+                            this.events = await res.json();
+                        } catch (error) {
+                            console.error('Error loading events:', error);
+                        }
+                    }
                 }
             }
 
             function footerExpressions() {
                 return {
                     branches: [],
-                    init() { /* Static data - no API calls */ }
+                    loading: false,
+                    async init() {
+                        this.loading = true;
+                        try {
+                            const res = await fetch('/api/welcome/branches');
+                            this.branches = await res.json();
+                        } catch (error) {
+                            console.error('Error loading branches:', error);
+                        }
+                        this.loading = false;
+                    }
                 }
             }
         </script>
