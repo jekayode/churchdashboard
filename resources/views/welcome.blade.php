@@ -25,30 +25,25 @@
                                 <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-12 w-auto"/>
                             </a>
                         </div>
-                        <div class="flex items-center space-x-8">
-                            <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                Events
-                            </a>
-                            <a href="{{ route('public.lifegroups') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                LifeGroups
-                            </a>
-                            @if (Route::has('login'))
-                                @auth
-                                    <a href="{{ route('dashboard') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                        Dashboard
-                                    </a>
-                                @else
-                                    <a href="{{ route('login') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
-                                        Login
-                                    </a>
-                                    @if (Route::has('register'))
-                                        <a href="{{ route('register') }}" class="bg-secondary-600 hover:bg-secondary-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
-                                            Register
-                                        </a>
-                                    @endif
-                                @endauth
-                            @endif
-                        </div>
+                    <div class="flex items-center space-x-8">
+                        <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            Events
+                        </a>
+                        <a href="{{ route('public.lifegroups') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                            LifeGroups
+                        </a>
+                        @if (Route::has('login'))
+                            @auth
+                                <a href="{{ route('dashboard') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                                    Dashboard
+                                </a>
+                            @else
+                                <a href="{{ route('login') }}" class="bg-[#F1592A] hover:bg-[#E54A1A] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                                    Login
+                                </a>
+                            @endauth
+                        @endif
+                    </div>
                     </div>
                 </div>
             </nav>
