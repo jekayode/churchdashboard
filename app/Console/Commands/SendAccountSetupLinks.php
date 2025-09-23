@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Mail\AccountSetupMail;
 use App\Models\User;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Mail;
 use Resend\Laravel\Facades\Resend;
 
 final class SendAccountSetupLinks extends Command
@@ -33,6 +34,7 @@ final class SendAccountSetupLinks extends Command
     {
         if (! App::environment('production')) {
             $this->error('This command can only be executed in the production environment.');
+
             return self::FAILURE;
         }
 
@@ -42,6 +44,7 @@ final class SendAccountSetupLinks extends Command
 
         if (! $sendToAll && $role === '') {
             $this->error('You must specify --all or --role=<role_name>.');
+
             return self::INVALID;
         }
 
@@ -59,10 +62,11 @@ final class SendAccountSetupLinks extends Command
         $total = $usersQuery->count();
         if ($total === 0) {
             $this->info('No users matched the criteria.');
+
             return self::SUCCESS;
         }
 
-        $this->info(($isDryRun ? '[DRY RUN] ' : '') . "Preparing to send setup links to {$total} user(s).");
+        $this->info(($isDryRun ? '[DRY RUN] ' : '')."Preparing to send setup links to {$total} user(s).");
 
         if ($isDryRun) {
             return self::SUCCESS;
@@ -81,12 +85,20 @@ final class SendAccountSetupLinks extends Command
                     $token = app('auth.password.broker')->createToken($user);
                     $resetUrl = url(route('password.reset', ['token' => $token, 'email' => $user->email], false));
 
+                    // Build a shared Blade-rendered HTML using the mailable
+                    $mailable = new AccountSetupMail($user->name, $resetUrl);
+                    $html = view('emails.account-setup', [
+                        'appName' => config('app.name', 'Church Dashboard'),
+                        'recipientName' => $user->name,
+                        'resetUrl' => $resetUrl,
+                    ])->render();
+
                     if ($useResend) {
                         $response = Resend::emails()->send([
                             'from' => sprintf('%s <%s>', $fromName, $fromAddress),
                             'to' => [$user->email],
-                            'subject' => 'Set up your Church Dashboard password',
-                            'html' => $this->buildSetupEmailHtml($user->name, $resetUrl),
+                            'subject' => $mailable->subject ?? ('Set up your '.config('app.name', 'Church Dashboard').' password'),
+                            'html' => $html,
                         ]);
                         if (! empty($response->id)) {
                             $sent++;
@@ -95,14 +107,9 @@ final class SendAccountSetupLinks extends Command
                             $this->warn("Resend failed for {$user->email}");
                         }
                     } else {
-                        // Fallback to Laravel password broker notification
-                        $status = \Illuminate\Support\Facades\Password::sendResetLink(['email' => $user->email]);
-                        if ($status === \Illuminate\Support\Facades\Password::RESET_LINK_SENT) {
-                            $sent++;
-                        } else {
-                            $failed++;
-                            $this->warn("Failed to send to {$user->email}: {$status}");
-                        }
+                        // Send via Laravel Mail using the same mailable
+                        Mail::to($user->email)->send($mailable);
+                        $sent++;
                     }
                 } catch (\Throwable $e) {
                     $failed++;
@@ -116,23 +123,5 @@ final class SendAccountSetupLinks extends Command
         return $failed === 0 ? self::SUCCESS : self::FAILURE;
     }
 
-    private function buildSetupEmailHtml(string $recipientName, string $resetUrl): string
-    {
-        $appName = config('app.name', 'Church Dashboard');
-
-        return <<<HTML
-<!doctype html>
-<html>
-  <body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#111827;">
-    <h2 style="margin:0 0 12px 0;">Welcome to {$appName}</h2>
-    <p style="margin:0 0 12px 0;">Hi {$recipientName},</p>
-    <p style="margin:0 0 12px 0;">Use the button below to set your password and access your account.</p>
-    <p style="margin:0 0 24px 0;"><a href="{$resetUrl}" style="background:#2563eb;color:#fff;padding:10px 16px;border-radius:6px;text-decoration:none;">Set Your Password</a></p>
-    <p style="margin:0 0 8px 0; font-size:14px; color:#374151;">If the button does not work, copy and paste this link into your browser:</p>
-    <p style="word-break:break-all; font-size:12px; color:#374151;">{$resetUrl}</p>
-    <p style="margin-top:24px; font-size:14px; color:#374151;">Blessings,<br>{$appName} Team</p>
-  </body>
-</html>
-HTML;
-    }
+    // Shared Blade template is used; no inline HTML builder needed
 }
