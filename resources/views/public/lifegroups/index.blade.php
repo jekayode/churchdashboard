@@ -16,22 +16,51 @@
 <body class="font-sans antialiased bg-gray-50">
     <div class="min-h-screen">
         <!-- Navigation -->
-        <nav class="bg-gray-900">
+        <nav class="bg-gray-900" x-data="{ mobileMenuOpen: false }">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-20">
+                    <!-- Logo -->
                     <div class="flex items-center">
                         <a href="/" class="flex-shrink-0 flex items-center">
                             <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe" class="h-12 w-auto"/>
                         </a>
                     </div>
-                    <div class="flex items-center space-x-8">
+                    
+                    <!-- Desktop Navigation -->
+                    <div class="hidden md:flex items-center space-x-8">
                         <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                             Events
                         </a>
                         <a href="{{ route('public.lifegroups') }}" class="text-[#F1592A] hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                             LifeGroups
                         </a>
+                    </div>
+                    
+                    <!-- Login Button & Mobile Menu Button -->
+                    <div class="flex items-center space-x-4">
+                        <!-- Login Button -->
                         <a href="{{ route('login') }}" class="bg-[#F1592A] hover:bg-[#E54A1A] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Login</a>
+                        
+                        <!-- Mobile menu button -->
+                        <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
+                            <span class="sr-only">Open main menu</span>
+                            <!-- Hamburger icon -->
+                            <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Mobile Navigation Menu -->
+                <div x-show="mobileMenuOpen" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95" class="md:hidden">
+                    <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-800 rounded-lg mt-2">
+                        <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                            Events
+                        </a>
+                        <a href="{{ route('public.lifegroups') }}" class="text-[#F1592A] hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                            LifeGroups
+                        </a>
                     </div>
                 </div>
             </div>
