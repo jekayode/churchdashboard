@@ -328,14 +328,76 @@ Route::middleware(['auth', 'verified', 'role:church_member,super_admin,branch_pa
         return view('member.departments.index');
     })->name('departments');
 
+    // Member Profile (split into dedicated pages)
     Route::get('/profile', function () {
-        return view('member.profile.show');
+        return view('member.profile.details');
     })->name('profile');
+
+    Route::get('/profile/edit', function () {
+        return view('member.profile.edit');
+    })->name('profile.edit');
+
+    Route::get('/profile/security', function () {
+        return view('member.profile.security');
+    })->name('profile.security');
+
+    Route::put('/profile', [App\Http\Controllers\MemberController::class, 'updateProfile'])->name('profile.update');
+
+    // Spouse search (member session auth)
+    Route::get('/spouse-search', function (\Illuminate\Http\Request $request) {
+        $q = trim((string) $request->get('q', ''));
+        $excludeId = (int) $request->get('exclude_id', 0);
+        $branchId = (int) $request->get('branch_id', 0);
+
+        $query = \App\Models\Member::query()
+            ->select(['id', 'name'])
+            ->when($q !== '', function ($qBuilder) use ($q) {
+                $qBuilder->where(function ($w) use ($q) {
+                    $w->where('name', 'like', "%{$q}%")
+                        ->orWhere('phone', 'like', "%{$q}%");
+                });
+            })
+            ->when($excludeId > 0, fn ($qb) => $qb->where('id', '!=', $excludeId))
+            ->when($branchId > 0, fn ($qb) => $qb->where('branch_id', $branchId))
+            ->orderBy('name')
+            ->limit(25);
+
+        return $query->get();
+    })->name('spouse.search');
 
     // Profile completion routes
     Route::get('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'showProfileCompletion'])->name('profile-completion');
     Route::post('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'updateProfileCompletion'])->name('profile-completion.update');
 });
+
+// Authenticated member search endpoint (used for spouse selection) - uses web auth session
+Route::middleware(['auth'])->get('/api/members/search', function (\Illuminate\Http\Request $request) {
+    $q = trim((string) $request->get('q', ''));
+    $excludeId = (int) $request->get('exclude_id', 0);
+    $branchId = (int) $request->get('branch_id', 0);
+
+    $query = \App\Models\Member::query()
+        ->select(['id', 'name', 'first_name', 'surname', 'branch_id'])
+        ->when($q !== '', function ($qBuilder) use ($q) {
+            $qBuilder->where(function ($w) use ($q) {
+                $w->where('name', 'like', "%{$q}%")
+                    ->orWhere('first_name', 'like', "%{$q}%")
+                    ->orWhere('surname', 'like', "%{$q}%")
+                    ->orWhere('phone', 'like', "%{$q}%");
+            });
+        })
+        ->when($excludeId > 0, fn ($qb) => $qb->where('id', '!=', $excludeId))
+        ->when($branchId > 0, fn ($qb) => $qb->where('branch_id', $branchId))
+        ->orderBy('name')
+        ->limit(25);
+
+    return $query->get()->map(function ($m) {
+        return [
+            'id' => $m->id,
+            'name' => $m->name,
+        ];
+    });
+})->name('api.members.search');
 
 // Public Routes (accessible to all)
 Route::prefix('public')->name('public.')->group(function () {

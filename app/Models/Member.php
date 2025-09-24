@@ -10,10 +10,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
-final class Member extends Model
+final class Member extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -53,6 +56,7 @@ final class Member extends Model
         'consent_ip',
         'profile_completion_percentage',
         'registration_source',
+        'spouse_id',
     ];
 
     /**
@@ -73,6 +77,28 @@ final class Member extends Model
     ];
 
     /**
+     * Media Library: register conversions and collections
+     */
+    public function registerMediaConversions(?Media $media = null): void
+    {
+        $this->addMediaConversion('thumb')
+            ->width(128)
+            ->height(128)
+            ->nonQueued();
+
+        $this->addMediaConversion('medium')
+            ->width(512)
+            ->height(512)
+            ->nonQueued();
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('profile_image')->singleFile();
+        $this->addMediaCollection('couple_image')->singleFile();
+    }
+
+    /**
      * Get the user account for this member.
      */
     public function user(): BelongsTo
@@ -86,6 +112,11 @@ final class Member extends Model
     public function branch(): BelongsTo
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function spouse(): BelongsTo
+    {
+        return $this->belongsTo(Member::class, 'spouse_id');
     }
 
     /**

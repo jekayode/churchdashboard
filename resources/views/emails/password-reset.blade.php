@@ -63,6 +63,12 @@
             margin: 16px 0;
             transition: background-color 0.2s;
         }
+
+        .button a {
+            text-decoration: none;
+            color: #ffffff;
+        }
+
         .button:hover {
             background-color: #e2421a;
         }
@@ -180,7 +186,6 @@
         <!-- Header -->
         <div class="header">
             <img src="https://lifepointeng.org/wp-content/uploads/2023/10/Lifepointe-Logo-White.png" alt="LifePointe Church" class="logo">
-            <h1>LifePointe Church</h1>
         </div>
 
         <!-- Content -->

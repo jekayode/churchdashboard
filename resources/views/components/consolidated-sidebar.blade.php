@@ -348,7 +348,16 @@
             <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95" class="ml-8 mt-2 space-y-1">
                 <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Profile</a>
                 @if($isChurchMember || !$isSuperAdmin && !$isBranchPastor)
-                    <a href="{{ route('member.profile-completion') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Complete Profile</a>
+                    @php
+                        $member = Auth::user()->member;
+                        $profileComplete = $member && $member->profile_completion_percentage >= 100;
+                    @endphp
+                    @if($member)
+                        <a href="{{ route('member.profile') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">My Profile</a>
+                    @endif
+                    @if(!$profileComplete)
+                        <a href="{{ route('member.profile-completion') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Complete Profile</a>
+                    @endif
                 @endif
             </div>
         </div>

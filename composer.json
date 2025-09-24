@@ -16,7 +16,8 @@
         "maatwebsite/excel": "^3.1",
         "pragmarx/google2fa": "^8.0",
         "resend/resend-laravel": "^0.22.0",
-        "simplesoftwareio/simple-qrcode": "^4.2"
+        "simplesoftwareio/simple-qrcode": "^4.2",
+        "spatie/laravel-medialibrary": "^11"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

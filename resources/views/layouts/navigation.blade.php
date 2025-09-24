@@ -271,9 +271,20 @@
                                     {{ __('Member Profile') }}
                                 </x-dropdown-link>
                             @endif
-                        <x-dropdown-link :href="route('member.profile-completion')">
-                            {{ __('Complete Profile') }}
-                        </x-dropdown-link>
+                        @php
+                            $member = Auth::user()->member;
+                            $profileComplete = $member && $member->profile_completion_percentage >= 100;
+                        @endphp
+                        @if($member)
+                            <x-dropdown-link :href="route('member.profile')">
+                                {{ __('My Profile') }}
+                            </x-dropdown-link>
+                        @endif
+                        @if(!$profileComplete)
+                            <x-dropdown-link :href="route('member.profile-completion')">
+                                {{ __('Complete Profile') }}
+                            </x-dropdown-link>
+                        @endif
                         <x-dropdown-link :href="route('sidebar-sample')">
                             {{ __('Sidebar Sample') }}
                         </x-dropdown-link>
@@ -448,9 +459,20 @@
                             {{ __('Member Profile') }}
                         </x-responsive-nav-link>
                     @endif
-                        <x-responsive-nav-link :href="route('member.profile-completion')">
-                            {{ __('Complete Profile') }}
-                        </x-responsive-nav-link>
+                        @php
+                            $member = Auth::user()->member;
+                            $profileComplete = $member && $member->profile_completion_percentage >= 100;
+                        @endphp
+                        @if($member)
+                            <x-responsive-nav-link :href="route('member.profile')">
+                                {{ __('My Profile') }}
+                            </x-responsive-nav-link>
+                        @endif
+                        @if(!$profileComplete)
+                            <x-responsive-nav-link :href="route('member.profile-completion')">
+                                {{ __('Complete Profile') }}
+                            </x-responsive-nav-link>
+                        @endif
                         <x-responsive-nav-link :href="route('sidebar-sample')">
                             {{ __('Sidebar Sample') }}
                         </x-responsive-nav-link>

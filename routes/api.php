@@ -404,6 +404,32 @@ Route::prefix('welcome')->group(function () {
     });
 });
 
+// Authenticated member utilities
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/members/search', function (\Illuminate\Http\Request $request) {
+        $q = trim((string) $request->get('q', ''));
+        $excludeId = (int) $request->get('exclude_id', 0);
+        $branchId = (int) $request->get('branch_id', 0);
+
+        $query = \App\Models\Member::query()
+            ->select(['id', 'name', 'first_name', 'surname', 'branch_id'])
+            ->when($q !== '', function ($qBuilder) use ($q) {
+                $qBuilder->where(function ($w) use ($q) {
+                    $w->where('name', 'like', "%{$q}%")
+                        ->orWhere('first_name', 'like', "%{$q}%")
+                        ->orWhere('surname', 'like', "%{$q}%")
+                        ->orWhere('phone', 'like', "%{$q}%");
+                });
+            })
+            ->when($excludeId > 0, fn ($qb) => $qb->where('id', '!=', $excludeId))
+            ->when($branchId > 0, fn ($qb) => $qb->where('branch_id', $branchId))
+            ->orderBy('name')
+            ->limit(25);
+
+        return $query->get();
+    });
+});
+
 // Communication performance monitoring
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('communication-performance')->group(function () {

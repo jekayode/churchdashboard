@@ -5,20 +5,21 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\AdminMemberRequest;
-use App\Models\Member;
 use App\Models\Department;
+use App\Models\Member;
 use App\Models\SmallGroup;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 final class MemberController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * Get member statistics for dashboard.
      */
@@ -29,7 +30,7 @@ final class MemberController extends Controller
             $branchId = null;
 
             // For non-super admins, limit to their branch
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $branchId = $userBranch->id;
@@ -65,10 +66,11 @@ final class MemberController extends Controller
                 ->where('leadership_trainings', '!=', '')
                 ->get()
                 ->flatMap(function ($member) {
-                    $trainings = is_string($member->leadership_trainings) 
-                        ? json_decode($member->leadership_trainings, true) 
+                    $trainings = is_string($member->leadership_trainings)
+                        ? json_decode($member->leadership_trainings, true)
                         : $member->leadership_trainings;
-                    return is_array($trainings) && !empty($trainings) ? $trainings : [];
+
+                    return is_array($trainings) && ! empty($trainings) ? $trainings : [];
                 })
                 ->countBy()
                 ->toArray();
@@ -81,7 +83,7 @@ final class MemberController extends Controller
                 'volunteer_count' => $volunteerCount,
                 'teci_stats' => $teciStats,
                 'training_stats' => $trainingStats,
-                'branch_id' => $branchId
+                'branch_id' => $branchId,
             ]);
 
             return response()->json([
@@ -106,19 +108,19 @@ final class MemberController extends Controller
                         'MLCC' => $trainingStats['MLCC'] ?? 0,
                         'MLCP Basic' => $trainingStats['MLCP Basic'] ?? 0,
                         'MLCP Advanced' => $trainingStats['MLCP Advanced'] ?? 0,
-                    ]
-                ]
+                    ],
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching member statistics', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch member statistics'
+                'message' => 'Failed to fetch member statistics',
             ], 500);
         }
     }
@@ -139,17 +141,17 @@ final class MemberController extends Controller
                 'smallGroups:id,name',
                 'ledMinistries:id,name',
                 'ledDepartments:id,name',
-                'ledSmallGroups:id,name'
+                'ledSmallGroups:id,name',
             ]);
 
             // Apply branch-based filtering for non-super admins
             $user = auth()->user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $query->where('branch_id', $userBranch->id);
                 }
-                
+
                 Log::info('Member API Debug - Branch filtering', [
                     'user_id' => $user->id,
                     'is_super_admin' => $user->isSuperAdmin(),
@@ -192,6 +194,7 @@ final class MemberController extends Controller
                 $member->is_leader = $member->isLeader();
                 $member->is_volunteer = $member->isVolunteer();
                 $member->leadership_roles = $this->getLeadershipRoles($member);
+
                 return $member;
             });
 
@@ -203,7 +206,7 @@ final class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving members: ' . $e->getMessage(), [
+            Log::error('Error retrieving members: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
                 'request_data' => $request->all(),
             ]);
@@ -227,10 +230,10 @@ final class MemberController extends Controller
 
             $data = $request->validated();
             $data = $this->normalizeMemberPayload($data);
-            
+
             // For non-super admins, ensure they can only assign members to their own branch
             $user = auth()->user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $data['branch_id'] = $userBranch->id;
@@ -238,7 +241,7 @@ final class MemberController extends Controller
             }
 
             // Create user account automatically if email is provided and no user_id is set
-            if (!empty($data['email']) && empty($data['user_id'])) {
+            if (! empty($data['email']) && empty($data['user_id'])) {
                 $userData = $this->createUserAccount($data);
                 if ($userData) {
                     $data['user_id'] = $userData['user_id'];
@@ -246,13 +249,13 @@ final class MemberController extends Controller
             }
 
             $member = Member::create($data);
-            
+
             // Load relationships for response
             $member->load([
                 'branch:id,name',
                 'user:id,name,email',
                 'departments:id,name',
-                'smallGroups:id,name'
+                'smallGroups:id,name',
             ]);
 
             DB::commit();
@@ -261,20 +264,20 @@ final class MemberController extends Controller
                 'member_id' => $member->id,
                 'member_name' => $member->name,
                 'branch_id' => $member->branch_id,
-                'user_created' => !empty($userData),
+                'user_created' => ! empty($userData),
                 'created_by' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => true,
                 'data' => $member,
-                'message' => 'Member created successfully.' . (!empty($userData) ? ' User account created with temporary password.' : ''),
+                'message' => 'Member created successfully.'.(! empty($userData) ? ' User account created with temporary password.' : ''),
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error creating member: ' . $e->getMessage(), [
+
+            Log::error('Error creating member: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
                 'request_data' => $request->validated(),
             ]);
@@ -299,7 +302,7 @@ final class MemberController extends Controller
                 'user:id,name,email',
                 'departments' => function ($query) {
                     $query->with(['ministry:id,name'])
-                          ->withPivot('assigned_at');
+                        ->withPivot('assigned_at');
                 },
                 'smallGroups' => function ($query) {
                     $query->withPivot('joined_at');
@@ -311,9 +314,9 @@ final class MemberController extends Controller
                 'ledSmallGroups:id,name,description,meeting_day,meeting_time',
                 'eventRegistrations' => function ($query) {
                     $query->with(['event:id,name,start_date,location'])
-                          ->latest()
-                          ->limit(10);
-                }
+                        ->latest()
+                        ->limit(10);
+                },
             ]);
 
             // Add computed fields
@@ -329,7 +332,7 @@ final class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving member: ' . $e->getMessage(), [
+            Log::error('Error retrieving member: '.$e->getMessage(), [
                 'member_id' => $member->id,
                 'user_id' => auth()->id(),
             ]);
@@ -354,10 +357,10 @@ final class MemberController extends Controller
             $data = $request->validated();
             $data = $this->normalizeMemberPayload($data);
             $oldStatus = $member->member_status;
-            
+
             // For non-super admins, ensure they can only assign members to their own branch
             $user = auth()->user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $data['branch_id'] = $userBranch->id;
@@ -376,7 +379,7 @@ final class MemberController extends Controller
                 'branch:id,name',
                 'user:id,name,email',
                 'departments:id,name',
-                'smallGroups:id,name'
+                'smallGroups:id,name',
             ]);
 
             DB::commit();
@@ -396,8 +399,8 @@ final class MemberController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
-            Log::error('Error updating member: ' . $e->getMessage(), [
+
+            Log::error('Error updating member: '.$e->getMessage(), [
                 'member_id' => $member->id,
                 'user_id' => auth()->id(),
                 'request_data' => $request->validated(),
@@ -449,7 +452,7 @@ final class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error deleting member: ' . $e->getMessage(), [
+            Log::error('Error deleting member: '.$e->getMessage(), [
                 'member_id' => $member->id,
                 'user_id' => auth()->id(),
             ]);
@@ -475,16 +478,16 @@ final class MemberController extends Controller
 
         try {
             $departments = Department::whereIn('id', $request->department_ids)->get();
-            
+
             // Sync departments with current timestamp
             $syncData = [];
             foreach ($request->department_ids as $departmentId) {
                 $syncData[$departmentId] = ['assigned_at' => now()];
             }
-            
+
             $member->departments()->sync($syncData);
             $member->updateStatusBasedOnAssignments();
-            
+
             $member->load(['departments:id,name', 'departments.ministry:id,name']);
 
             Log::info('Member assigned to departments', [
@@ -500,7 +503,7 @@ final class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error assigning member to departments: ' . $e->getMessage(), [
+            Log::error('Error assigning member to departments: '.$e->getMessage(), [
                 'member_id' => $member->id,
                 'department_ids' => $request->department_ids,
                 'user_id' => auth()->id(),
@@ -527,13 +530,13 @@ final class MemberController extends Controller
 
         try {
             $smallGroups = SmallGroup::whereIn('id', $request->small_group_ids)->get();
-            
+
             // Sync small groups with current timestamp
             $syncData = [];
             foreach ($request->small_group_ids as $smallGroupId) {
                 $syncData[$smallGroupId] = ['joined_at' => now()];
             }
-            
+
             $member->smallGroups()->sync($syncData);
             $member->load(['smallGroups:id,name']);
 
@@ -550,7 +553,7 @@ final class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error assigning member to small groups: ' . $e->getMessage(), [
+            Log::error('Error assigning member to small groups: '.$e->getMessage(), [
                 'member_id' => $member->id,
                 'small_group_ids' => $request->small_group_ids,
                 'user_id' => auth()->id(),
@@ -590,7 +593,7 @@ final class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error updating member growth level: ' . $e->getMessage(), [
+            Log::error('Error updating member growth level: '.$e->getMessage(), [
                 'member_id' => $member->id,
                 'growth_level' => $request->growth_level,
                 'user_id' => auth()->id(),
@@ -630,7 +633,7 @@ final class MemberController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error updating member TECI progress: ' . $e->getMessage(), [
+            Log::error('Error updating member TECI progress: '.$e->getMessage(), [
                 'member_id' => $member->id,
                 'teci_status' => $request->teci_status,
                 'user_id' => auth()->id(),
@@ -682,12 +685,12 @@ final class MemberController extends Controller
         if ($request->filled('min_age') || $request->filled('max_age')) {
             $minAge = $request->get('min_age');
             $maxAge = $request->get('max_age');
-            
+
             if ($minAge) {
                 $maxDate = now()->subYears($minAge)->format('Y-m-d');
                 $query->where('date_of_birth', '<=', $maxDate);
             }
-            
+
             if ($maxAge) {
                 $minDate = now()->subYears($maxAge + 1)->format('Y-m-d');
                 $query->where('date_of_birth', '>', $minDate);
@@ -727,13 +730,13 @@ final class MemberController extends Controller
             if ($request->boolean('has_leadership_role')) {
                 $query->where(function ($q) {
                     $q->whereHas('ledMinistries')
-                      ->orWhereHas('ledDepartments')
-                      ->orWhereHas('ledSmallGroups');
+                        ->orWhereHas('ledDepartments')
+                        ->orWhereHas('ledSmallGroups');
                 });
             } else {
                 $query->whereDoesntHave('ledMinistries')
-                     ->whereDoesntHave('ledDepartments')
-                     ->whereDoesntHave('ledSmallGroups');
+                    ->whereDoesntHave('ledDepartments')
+                    ->whereDoesntHave('ledSmallGroups');
             }
         }
 
@@ -757,10 +760,10 @@ final class MemberController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('email', 'like', "%{$search}%")
-                  ->orWhere('phone', 'like', "%{$search}%")
-                  ->orWhere('occupation', 'like', "%{$search}%")
-                  ->orWhere('nearest_bus_stop', 'like', "%{$search}%");
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('occupation', 'like', "%{$search}%")
+                    ->orWhere('nearest_bus_stop', 'like', "%{$search}%");
             });
         }
     }
@@ -775,7 +778,7 @@ final class MemberController extends Controller
 
         $allowedSortFields = [
             'name', 'email', 'phone', 'date_of_birth', 'date_joined',
-            'member_status', 'growth_level', 'teci_status', 'created_at'
+            'member_status', 'growth_level', 'teci_status', 'created_at',
         ];
 
         if (in_array($sortBy, $allowedSortFields)) {
@@ -797,7 +800,7 @@ final class MemberController extends Controller
                 'type' => 'ministry',
                 'id' => $ministry->id,
                 'name' => $ministry->name,
-                'title' => 'Ministry Leader'
+                'title' => 'Ministry Leader',
             ];
         }
 
@@ -807,7 +810,7 @@ final class MemberController extends Controller
                 'id' => $department->id,
                 'name' => $department->name,
                 'title' => 'Department Leader',
-                'ministry' => $department->ministry->name ?? null
+                'ministry' => $department->ministry->name ?? null,
             ];
         }
 
@@ -816,7 +819,7 @@ final class MemberController extends Controller
                 'type' => 'small_group',
                 'id' => $smallGroup->id,
                 'name' => $smallGroup->name,
-                'title' => 'Small Group Leader'
+                'title' => 'Small Group Leader',
             ];
         }
 
@@ -835,7 +838,7 @@ final class MemberController extends Controller
             'growth_level' => ['core', 'pastor', 'growing', 'new_believer'],
             'teci_status' => [
                 'not_started', '100_level', '200_level', '300_level',
-                '400_level', '500_level', 'graduated', 'paused'
+                '400_level', '500_level', 'graduated', 'paused',
             ],
         ];
 
@@ -860,15 +863,16 @@ final class MemberController extends Controller
                     'email' => $memberData['email'],
                     'existing_user_id' => $existingUser->id,
                 ]);
+
                 return ['user_id' => $existingUser->id];
             }
 
             // Generate a temporary password
-            $tempPassword = 'Church' . rand(1000, 9999);
+            $tempPassword = 'Church'.rand(1000, 9999);
 
             // Create the user account
             $user = \App\Models\User::create([
-                'name' => trim(($memberData['first_name'] ?? '') . ' ' . ($memberData['surname'] ?? '')),
+                'name' => trim(($memberData['first_name'] ?? '').' '.($memberData['surname'] ?? '')),
                 'email' => $memberData['email'],
                 'password' => bcrypt($tempPassword),
                 'email_verified_at' => now(), // Auto-verify for church members
@@ -903,6 +907,7 @@ final class MemberController extends Controller
                 'email' => $memberData['email'] ?? 'unknown',
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -930,7 +935,7 @@ final class MemberController extends Controller
                 auth()->id()
             );
 
-            if (!$changed) {
+            if (! $changed) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Member is already in the requested status.',
@@ -994,12 +999,12 @@ final class MemberController extends Controller
         $this->authorize('viewAny', Member::class);
 
         $user = auth()->user();
-        
+
         // Build base query with branch filtering
         $query = Member::query();
-        
+
         // Apply branch filtering based on user role
-        if (!$user->isSuperAdmin()) {
+        if (! $user->isSuperAdmin()) {
             $userBranches = $user->pastoredBranches()->pluck('id');
             $query->whereIn('branch_id', $userBranches);
         } elseif ($request->filled('branch_id')) {
@@ -1018,7 +1023,7 @@ final class MemberController extends Controller
             ->where('changed_at', '>=', now()->subDays(30));
 
         // Apply branch filtering to status history
-        if (!$user->isSuperAdmin()) {
+        if (! $user->isSuperAdmin()) {
             $userBranches = $user->pastoredBranches()->pluck('id');
             $recentChangesQuery->whereHas('member', function ($q) use ($userBranches) {
                 $q->whereIn('branch_id', $userBranches);
@@ -1035,7 +1040,7 @@ final class MemberController extends Controller
 
         // Get status distribution by branch (for super admins)
         $branchDistribution = [];
-        if ($user->isSuperAdmin() && !$request->filled('branch_id')) {
+        if ($user->isSuperAdmin() && ! $request->filled('branch_id')) {
             $branchDistribution = Member::join('branches', 'members.branch_id', '=', 'branches.id')
                 ->selectRaw('branches.name as branch_name, member_status, COUNT(*) as count')
                 ->groupBy('branches.name', 'member_status')
@@ -1079,15 +1084,17 @@ final class MemberController extends Controller
         try {
             foreach ($validated['member_ids'] as $memberId) {
                 $member = Member::find($memberId);
-                
-                if (!$member) {
+
+                if (! $member) {
                     $errors[] = "Member with ID {$memberId} not found.";
+
                     continue;
                 }
 
                 // Check authorization for each member
-                if (!$user->can('update', $member)) {
+                if (! $user->can('update', $member)) {
                     $errors[] = "Not authorized to update member: {$member->name}";
+
                     continue;
                 }
 
@@ -1141,7 +1148,7 @@ final class MemberController extends Controller
     private function normalizeMemberPayload(array $data): array
     {
         $dateFields = [
-            'date_of_birth', 'anniversary', 'date_joined', 'date_attended_membership_class'
+            'date_of_birth', 'anniversary', 'date_joined', 'date_attended_membership_class',
         ];
         foreach ($dateFields as $field) {
             if (array_key_exists($field, $data) && ($data[$field] === '' || $data[$field] === null)) {
@@ -1168,7 +1175,7 @@ final class MemberController extends Controller
         }
 
         // Keep name in sync when first/surname provided
-        if (!empty($data['first_name']) || !empty($data['surname'])) {
+        if (! empty($data['first_name']) || ! empty($data['surname'])) {
             $first = trim($data['first_name'] ?? '');
             $last = trim($data['surname'] ?? '');
             $data['name'] = trim($first.' '.$last) ?: ($data['name'] ?? '');
@@ -1184,4 +1191,133 @@ final class MemberController extends Controller
 
         return $data;
     }
-} 
+
+    /**
+     * Update member profile (self-update by member).
+     */
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        $member = $user->member;
+
+        if (! $member) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No member profile found for this user.',
+            ], 404);
+        }
+
+        $request->validate([
+            'first_name' => 'nullable|string|max:255',
+            'surname' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'date_of_birth' => 'nullable|date|before:today',
+            'anniversary' => 'nullable|date',
+            'gender' => 'nullable|in:male,female',
+            'marital_status' => 'nullable|in:single,married,divorced,widowed',
+            'occupation' => 'nullable|string|max:255',
+            'home_address' => 'nullable|string|max:1000',
+            'nearest_bus_stop' => 'nullable|string|max:255',
+            'age_group' => 'nullable|string|max:20',
+            'closest_location' => 'nullable|string|max:255',
+            'prayer_request' => 'nullable|string|max:2000',
+            'additional_info' => 'nullable|string|max:2000',
+            // media + spouse
+            'profile_image' => 'nullable|image|mimes:jpeg,png,webp|max:3072',
+            'couple_image' => 'nullable|image|mimes:jpeg,png,webp|max:4096',
+            'spouse_id' => 'nullable|integer|exists:members,id|different:member_id',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Update member data
+            $member->update($request->only([
+                'first_name', 'surname', 'phone', 'date_of_birth', 'anniversary', 'gender',
+                'marital_status', 'occupation', 'home_address', 'nearest_bus_stop',
+                'age_group', 'closest_location', 'prayer_request', 'additional_info',
+            ]));
+
+            // Update the name field to keep it in sync
+            if ($request->filled('first_name') || $request->filled('surname')) {
+                $firstName = $request->get('first_name', $member->first_name);
+                $surname = $request->get('surname', $member->surname);
+                $member->name = trim($firstName.' '.$surname);
+                $member->save();
+            }
+
+            // Media uploads
+            if ($request->hasFile('profile_image')) {
+                $member->clearMediaCollection('profile_image');
+                $member->addMediaFromRequest('profile_image')->toMediaCollection('profile_image');
+            }
+            if ($request->marital_status === 'married' && $request->hasFile('couple_image')) {
+                $member->clearMediaCollection('couple_image');
+                $member->addMediaFromRequest('couple_image')->toMediaCollection('couple_image');
+            }
+
+            // Spouse link (bidirectional with safeguards)
+            if ($request->filled('spouse_id') && $request->marital_status === 'married') {
+                $spouseId = (int) $request->get('spouse_id');
+                if ($spouseId && $spouseId !== $member->id) {
+                    $spouse = Member::find($spouseId);
+                    if ($spouse) {
+                        // Always set current member's spouse
+                        $member->spouse_id = $spouse->id;
+                        $member->save();
+
+                        // Only set reverse link if spouse not already linked to another
+                        if (is_null($spouse->spouse_id) || (int) $spouse->spouse_id === (int) $member->id) {
+                            if ((int) $spouse->spouse_id !== (int) $member->id) {
+                                $spouse->spouse_id = $member->id;
+                                $spouse->save();
+                            }
+
+                            // Share couple image: copy to spouse only if spouse doesn't already have one
+                            $currentCoupleMedia = $member->getFirstMedia('couple_image');
+                            $spouseHasCouple = (bool) $spouse->getFirstMedia('couple_image');
+                            if ($currentCoupleMedia && ! $spouseHasCouple) {
+                                $currentCoupleMedia->copy($spouse, 'couple_image');
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Not married or spouse cleared: clear reverse link only if it points back to current member
+                if ($member->spouse_id) {
+                    $oldSpouse = Member::find($member->spouse_id);
+                    $member->spouse_id = null;
+                    $member->save();
+                    if ($oldSpouse && (int) $oldSpouse->spouse_id === (int) $member->id) {
+                        $oldSpouse->spouse_id = null;
+                        $oldSpouse->save();
+                    }
+                }
+            }
+
+            // Update profile completion percentage
+            $member->updateProfileCompletion();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully.',
+                'profile_completion' => $member->profile_completion_percentage,
+                'media' => [
+                    'profile' => $member->getFirstMediaUrl('profile_image', 'thumb'),
+                    'couple' => $member->getFirstMediaUrl('couple_image', 'medium'),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error updating member profile: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while updating your profile. Please try again.',
+            ], 500);
+        }
+    }
+}
