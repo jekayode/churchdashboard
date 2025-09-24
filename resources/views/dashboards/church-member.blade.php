@@ -14,7 +14,7 @@
             @endphp
 
             <!-- Welcome Section -->
-            <div class="bg-gradient-brand overflow-hidden shadow-church sm:rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-church-600 to-secondary-600 overflow-hidden shadow-church sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
                     <h3 class="text-2xl font-bold mb-2">Welcome, {{ $user->name }}!</h3>
                     <p class="text-white/90">{{ $branch?->name ?? 'Church' }} Member - Growing in Faith</p>
