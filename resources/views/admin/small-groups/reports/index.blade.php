@@ -325,12 +325,22 @@
             console.log('Admin loading reports with params:', params.toString());
             console.log('Current filters:', currentFilters);
             
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             fetch(`/api/small-group-reports?${params}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers: headers,
                 credentials: 'same-origin'
             })
                 .then(response => {
@@ -370,12 +380,22 @@
             console.log('Loading statistics with params:', params.toString());
             console.log('Current filters object:', currentFilters);
             
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             fetch(`/api/small-group-reports/statistics?${params}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers: headers,
                 credentials: 'same-origin'
             })
                 .then(response => {
@@ -414,12 +434,22 @@
         }
 
         function loadSmallGroups() {
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             fetch('/api/small-groups', {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers: headers,
                 credentials: 'same-origin'
             })
                 .then(response => response.json())
@@ -445,12 +475,23 @@
 
         function loadBranches() {
             console.log('Loading branches...');
+            
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             fetch('/api/branches', {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers: headers,
                 credentials: 'same-origin'
             })
                 .then(response => {
@@ -823,12 +864,22 @@
         function loadStatistics() {
             const params = new URLSearchParams(currentFilters);
             
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             const options = {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
+                headers: headers,
                 credentials: 'same-origin'
             };
             
