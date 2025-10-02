@@ -242,12 +242,12 @@
 
         function handleFilterChange() {
             currentFilters = {
-                period: document.getElementById('dateFilter').value,
+                date_filter: document.getElementById('dateFilter').value,
                 status: document.getElementById('statusFilter').value,
                 small_group_id: document.getElementById('groupFilter').value,
             };
             
-            if (currentFilters.period === 'custom') {
+            if (currentFilters.date_filter === 'custom') {
                 currentFilters.from_date = document.getElementById('fromDate').value;
                 currentFilters.to_date = document.getElementById('toDate').value;
             }

@@ -11,7 +11,6 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 final class SmallGroupMeetingReportController extends Controller
 {
@@ -51,9 +50,21 @@ final class SmallGroupMeetingReportController extends Controller
             $query->byStatus($request->status);
         }
 
-        if ($request->has('start_date') && $request->has('end_date')) {
-            $query->inDateRange($request->start_date, $request->end_date);
+        // Apply date filtering - handle multiple parameter names
+        $startDate = $request->get('start_date') ?: $request->get('from_date');
+        $endDate = $request->get('end_date') ?: $request->get('to_date');
+        $dateFilter = $request->get('date_filter');
+
+        if ($dateFilter === 'custom' && $startDate && $endDate) {
+            $query->inDateRange($startDate, $endDate);
+        } elseif ($dateFilter && $dateFilter !== 'custom' && $dateFilter !== 'all') {
+            [$startDate, $endDate] = $this->getDateRangeForPeriod($dateFilter);
+            $query->inDateRange($startDate, $endDate);
+        } elseif ($startDate && $endDate) {
+            // Fallback for direct date range
+            $query->inDateRange($startDate, $endDate);
         }
+        // If $dateFilter is 'all' or empty, no date filtering is applied
 
         $reports = $query->paginate($request->get('per_page', 15));
 
@@ -77,11 +88,11 @@ final class SmallGroupMeetingReportController extends Controller
     public function store(SmallGroupMeetingReportRequest $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Check if user can create reports for this small group
         $smallGroup = SmallGroup::findOrFail($request->small_group_id);
-        
-        if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+
+        if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
             // Check if user is the leader of this small group
             if ($smallGroup->leader_id !== $user->member?->id) {
                 return response()->json([
@@ -123,9 +134,9 @@ final class SmallGroupMeetingReportController extends Controller
     public function show(SmallGroupMeetingReport $report): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Check authorization
-        if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+        if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
             if ($report->smallGroup->leader_id !== $user->member?->id) {
                 return response()->json([
                     'success' => false,
@@ -148,9 +159,9 @@ final class SmallGroupMeetingReportController extends Controller
     public function update(SmallGroupMeetingReportRequest $request, SmallGroupMeetingReport $report): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Check authorization
-        if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+        if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
             if ($report->smallGroup->leader_id !== $user->member?->id) {
                 return response()->json([
                     'success' => false,
@@ -183,9 +194,9 @@ final class SmallGroupMeetingReportController extends Controller
     public function destroy(SmallGroupMeetingReport $report): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Check authorization
-        if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+        if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
             if ($report->smallGroup->leader_id !== $user->member?->id) {
                 return response()->json([
                     'success' => false,
@@ -216,9 +227,9 @@ final class SmallGroupMeetingReportController extends Controller
     public function approve(SmallGroupMeetingReport $report): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Only pastors and super admins can approve reports
-        if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+        if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to approve reports.',
@@ -253,9 +264,9 @@ final class SmallGroupMeetingReportController extends Controller
     public function reject(Request $request, SmallGroupMeetingReport $report): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Only pastors and super admins can reject reports
-        if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+        if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Unauthorized to reject reports.',
@@ -293,7 +304,7 @@ final class SmallGroupMeetingReportController extends Controller
     public function getMySmallGroups(): JsonResponse
     {
         $user = Auth::user();
-        
+
         if ($user->isSuperAdmin()) {
             // Super admins can see all groups
             $groups = SmallGroup::with('branch')->get();
@@ -331,11 +342,11 @@ final class SmallGroupMeetingReportController extends Controller
     public function getAttendanceStatistics(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         // Validate request parameters
         $request->validate([
-            'period' => 'nullable|in:week,month,quarter,year,custom,this_week,this_month,this_quarter,this_year',
-            'date_filter' => 'nullable|in:week,month,quarter,year,custom,this_week,this_month,this_quarter,this_year',
+            'period' => 'nullable|in:week,month,quarter,year,custom,this_week,this_month,this_quarter,this_year,last_month,all',
+            'date_filter' => 'nullable|in:week,month,quarter,year,custom,this_week,this_month,this_quarter,this_year,last_month,all',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'from_date' => 'nullable|date',
@@ -371,16 +382,20 @@ final class SmallGroupMeetingReportController extends Controller
         }
 
         // Apply date filtering - handle both 'period' and 'date_filter' parameter names
-        $period = $request->get('period') ?: $request->get('date_filter', 'month');
+        $period = $request->get('period') ?: $request->get('date_filter', 'this_week');
         $startDate = $request->get('start_date') ?: $request->get('from_date');
         $endDate = $request->get('end_date') ?: $request->get('to_date');
 
         if ($period === 'custom' && $startDate && $endDate) {
             $query->inDateRange($startDate, $endDate);
-        } else {
+        } elseif ($period && $period !== 'custom' && $period !== 'all') {
             [$startDate, $endDate] = $this->getDateRangeForPeriod($period);
             $query->inDateRange($startDate, $endDate);
+        } elseif ($startDate && $endDate) {
+            // Fallback for direct date range
+            $query->inDateRange($startDate, $endDate);
         }
+        // If $period is 'all' or empty, no date filtering is applied
 
         // Get statistics
         $statistics = $query->selectRaw('
@@ -405,10 +420,10 @@ final class SmallGroupMeetingReportController extends Controller
             COALESCE(SUM(converts), 0) as converts,
             COUNT(*) as meetings
         ')
-        ->groupBy('year', 'week_number', 'week_start')
-        ->orderBy('year')
-        ->orderBy('week_number')
-        ->get();
+            ->groupBy('year', 'week_number', 'week_start')
+            ->orderBy('year')
+            ->orderBy('week_number')
+            ->get();
 
         // Get top performing groups (fix duplicate issue by separating grouping from eager loading)
         $topGroupsData = $query->selectRaw('
@@ -427,6 +442,7 @@ final class SmallGroupMeetingReportController extends Controller
         // Load the relationships separately to avoid GROUP BY conflicts
         $topGroups = $topGroupsData->map(function ($item) {
             $smallGroup = SmallGroup::with('branch')->find($item->small_group_id);
+
             return (object) [
                 'small_group_id' => $item->small_group_id,
                 'total_attendance' => $item->total_attendance,
@@ -467,7 +483,7 @@ final class SmallGroupMeetingReportController extends Controller
     public function compareAttendance(Request $request): JsonResponse
     {
         $user = Auth::user();
-        
+
         $request->validate([
             'period1_start' => 'required|date',
             'period1_end' => 'required|date|after_or_equal:period1_start',
@@ -561,10 +577,11 @@ final class SmallGroupMeetingReportController extends Controller
     private function getDateRangeForPeriod(string $period): array
     {
         $now = Carbon::now();
-        
+
         return match ($period) {
             'week', 'this_week' => [$now->startOfWeek()->toDateString(), $now->endOfWeek()->toDateString()],
             'month', 'this_month' => [$now->startOfMonth()->toDateString(), $now->endOfMonth()->toDateString()],
+            'last_month' => [$now->subMonth()->startOfMonth()->toDateString(), $now->subMonth()->endOfMonth()->toDateString()],
             'quarter', 'this_quarter' => [$now->startOfQuarter()->toDateString(), $now->endOfQuarter()->toDateString()],
             'year', 'this_year' => [$now->startOfYear()->toDateString(), $now->endOfYear()->toDateString()],
             default => [$now->startOfMonth()->toDateString(), $now->endOfMonth()->toDateString()],
@@ -586,37 +603,37 @@ final class SmallGroupMeetingReportController extends Controller
     {
         $user = Auth::user();
         $period = $request->get('date_filter', 'this_week');
-        
+
         // Get current period date range
         [$currentStart, $currentEnd] = $this->getDateRangeForPeriod($period === 'this_week' ? 'week' : $period);
-        
+
         // Calculate previous period date range
         $duration = Carbon::parse($currentStart)->diffInDays(Carbon::parse($currentEnd));
         $previousStart = Carbon::parse($currentStart)->subDays($duration + 1)->toDateString();
         $previousEnd = Carbon::parse($currentStart)->subDay()->toDateString();
-        
+
         // Get current period stats
         $currentStats = $this->getPeriodStats($user, $currentStart, $currentEnd, $request);
-        
+
         // Get previous period stats
         $previousStats = $this->getPeriodStats($user, $previousStart, $previousEnd, $request);
-        
+
         // Calculate percentage changes
         $attendanceChange = $this->calculatePercentageChange(
-            $previousStats['total_attendance'] ?? 0, 
+            $previousStats['total_attendance'] ?? 0,
             $currentStats['total_attendance'] ?? 0
         );
-        
+
         $guestsChange = $this->calculatePercentageChange(
-            $previousStats['total_guests'] ?? 0, 
+            $previousStats['total_guests'] ?? 0,
             $currentStats['total_guests'] ?? 0
         );
-        
+
         $convertsChange = $this->calculatePercentageChange(
-            $previousStats['total_converts'] ?? 0, 
+            $previousStats['total_converts'] ?? 0,
             $currentStats['total_converts'] ?? 0
         );
-        
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -636,7 +653,7 @@ final class SmallGroupMeetingReportController extends Controller
     {
         $query = SmallGroupMeetingReport::byStatus('approved')
             ->inDateRange($startDate, $endDate);
-            
+
         // Apply role-based filtering
         if ($user->isSuperAdmin()) {
             if ($request->has('branch_id')) {
@@ -651,14 +668,14 @@ final class SmallGroupMeetingReportController extends Controller
             $userGroups = SmallGroup::where('leader_id', $user->member?->id)->pluck('id');
             $query->whereIn('small_group_id', $userGroups);
         }
-        
+
         $stats = $query->selectRaw('
             COALESCE(SUM(total_attendance), 0) as total_attendance,
             COALESCE(SUM(first_time_guests), 0) as total_guests,
             COALESCE(SUM(converts), 0) as total_converts,
             COUNT(*) as total_meetings
         ')->first();
-        
+
         return [
             'total_attendance' => (int) ($stats->total_attendance ?? 0),
             'total_guests' => (int) ($stats->total_guests ?? 0),
@@ -674,11 +691,11 @@ final class SmallGroupMeetingReportController extends Controller
     {
         $oldValue = (float) $oldValue;
         $newValue = (float) $newValue;
-        
+
         if ($oldValue == 0) {
             return $newValue > 0 ? 100 : 0;
         }
-        
+
         return round((($newValue - $oldValue) / $oldValue) * 100, 2);
     }
 }

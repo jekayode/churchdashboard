@@ -26,7 +26,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
                             <select id="dateFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="this_week">This Week</option>
+                                <option value="this_week" selected>This Week</option>
                                 <option value="this_month">This Month</option>
                                 <option value="last_month">Last Month</option>
                                 <option value="this_quarter">This Quarter</option>
@@ -233,6 +233,25 @@
             // Test basic API connectivity first
             testApiConnectivity();
             
+            // Initialize currentFilters with default values
+            currentFilters = {
+                date_filter: document.getElementById('dateFilter').value || 'this_week',
+                status: document.getElementById('statusFilter').value || '',
+                small_group_id: document.getElementById('groupFilter').value || '',
+            };
+            
+            const branchFilter = document.getElementById('branchFilter');
+            if (branchFilter) {
+                currentFilters.branch_id = branchFilter.value || '';
+            }
+            
+            // Remove empty filters
+            Object.keys(currentFilters).forEach(key => {
+                if (!currentFilters[key]) {
+                    delete currentFilters[key];
+                }
+            });
+            
             loadReports();
             loadSummaryStatistics();
             loadSmallGroups();
@@ -349,6 +368,7 @@
         function loadSummaryStatistics() {
             const params = new URLSearchParams(currentFilters);
             console.log('Loading statistics with params:', params.toString());
+            console.log('Current filters object:', currentFilters);
             
             fetch(`/api/small-group-reports/statistics?${params}`, {
                 headers: {
@@ -372,6 +392,13 @@
                     console.log('Statistics API response data:', data);
                     if (data.success) {
                         const stats = data.data;
+                        console.log('Updating statistics with:', {
+                            total_attendance: stats.total_attendance,
+                            total_guests: stats.total_guests,
+                            total_converts: stats.total_converts,
+                            active_groups: stats.active_groups
+                        });
+                        
                         document.getElementById('totalAttendance').textContent = stats.total_attendance || 0;
                         document.getElementById('totalGuests').textContent = stats.total_guests || 0;
                         document.getElementById('totalConverts').textContent = stats.total_converts || 0;
@@ -611,7 +638,11 @@
                 branchFilter.value = '';
             }
             
-            currentFilters = {};
+            // Reset currentFilters with default values
+            currentFilters = {
+                date_filter: 'this_week'
+            };
+            
             loadReports();
             loadSummaryStatistics();
         }
