@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\SmallGroup;
+use App\Models\User;
 
 final class SmallGroupPolicy extends BasePolicy
 {
@@ -33,7 +33,22 @@ final class SmallGroupPolicy extends BasePolicy
     public function create(User $user): bool
     {
         // Users with leadership privileges can create small groups
-        return $this->hasLeadershipPrivileges($user);
+        if ($this->hasLeadershipPrivileges($user)) {
+            return true;
+        }
+
+        // Life Groups ministers (ministry_leader of category 'life_groups') can create as well
+        $branchId = $user->getActiveBranchId();
+        if ($branchId && $user->isMinistryLeader($branchId)) {
+            $ministry = \App\Models\Ministry::where('branch_id', $branchId)
+                ->where('leader_id', optional($user->member)->id)
+                ->where('category', 'life_groups')
+                ->first();
+
+            return (bool) $ministry;
+        }
+
+        return false;
     }
 
     /**
@@ -56,9 +71,22 @@ final class SmallGroupPolicy extends BasePolicy
             return $this->belongsToSameBranch($user, $smallGroup);
         }
 
+        // Life Groups ministers (category) also allowed in-branch
+        $branchId = $user->getActiveBranchId();
+        if ($branchId && $user->isMinistryLeader($branchId)) {
+            $ministry = \App\Models\Ministry::where('branch_id', $branchId)
+                ->where('leader_id', optional($user->member)->id)
+                ->where('category', 'life_groups')
+                ->first();
+            if ($ministry) {
+                return $this->belongsToSameBranch($user, $smallGroup);
+            }
+        }
+
         // Small group leaders can update their own group
         if (isset($smallGroup->leader_id)) {
             $userMember = $user->member;
+
             return $userMember && $userMember->id === $smallGroup->leader_id;
         }
 
@@ -101,9 +129,22 @@ final class SmallGroupPolicy extends BasePolicy
         // Small group leaders can manage members for their own groups
         if (isset($smallGroup->leader_id)) {
             $userMember = $user->member;
+
             return $userMember && $userMember->id === $smallGroup->leader_id;
+        }
+
+        // Life Groups ministers can manage members for any groups in branch
+        $branchId = $user->getActiveBranchId();
+        if ($branchId && $user->isMinistryLeader($branchId)) {
+            $ministry = \App\Models\Ministry::where('branch_id', $branchId)
+                ->where('leader_id', optional($user->member)->id)
+                ->where('category', 'life_groups')
+                ->first();
+            if ($ministry) {
+                return $this->belongsToSameBranch($user, $smallGroup);
+            }
         }
 
         return false;
     }
-} 
+}

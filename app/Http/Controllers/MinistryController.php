@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\MinistryRequest;
-use App\Models\Ministry;
 use App\Models\Member;
+use App\Models\Ministry;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -27,7 +27,7 @@ final class MinistryController extends Controller
 
             // Apply branch-based filtering for non-super admins
             $user = auth()->user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $query->where('branch_id', $userBranch->id);
@@ -50,14 +50,14 @@ final class MinistryController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             }
 
             // Apply sorting
             $sortBy = $request->get('sort_by', 'name');
             $sortDirection = $request->get('sort_direction', 'asc');
-            
+
             if (in_array($sortBy, ['name', 'status', 'created_at'])) {
                 $query->orderBy($sortBy, $sortDirection);
             }
@@ -71,7 +71,7 @@ final class MinistryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving ministries: ' . $e->getMessage(), [
+            Log::error('Error retrieving ministries: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
                 'request_data' => $request->all(),
             ]);
@@ -109,7 +109,7 @@ final class MinistryController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Error creating ministry: ' . $e->getMessage(), [
+            Log::error('Error creating ministry: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
                 'request_data' => $request->validated(),
             ]);
@@ -134,7 +134,7 @@ final class MinistryController extends Controller
                 'leader:id,name,email,phone',
                 'departments' => function ($query) {
                     $query->with(['leader:id,name,email'])
-                          ->withCount(['members']);
+                        ->withCount(['members']);
                 },
             ]);
 
@@ -145,7 +145,7 @@ final class MinistryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving ministry: ' . $e->getMessage(), [
+            Log::error('Error retrieving ministry: '.$e->getMessage(), [
                 'ministry_id' => $ministry->id,
                 'user_id' => auth()->id(),
             ]);
@@ -185,7 +185,7 @@ final class MinistryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error updating ministry: ' . $e->getMessage(), [
+            Log::error('Error updating ministry: '.$e->getMessage(), [
                 'ministry_id' => $ministry->id,
                 'user_id' => auth()->id(),
                 'request_data' => $request->validated(),
@@ -233,7 +233,7 @@ final class MinistryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error deleting ministry: ' . $e->getMessage(), [
+            Log::error('Error deleting ministry: '.$e->getMessage(), [
                 'ministry_id' => $ministry->id,
                 'user_id' => auth()->id(),
             ]);
@@ -268,10 +268,15 @@ final class MinistryController extends Controller
             }
 
             $ministry->update(['leader_id' => $leader->id]);
-            
+
             // Update member status to 'minister'
             $leader->update(['member_status' => 'minister']);
-            
+
+            // Ensure role assignment exists for this branch
+            if ($leader->user) {
+                $leader->user->assignRole('ministry_leader', $ministry->branch_id);
+            }
+
             $ministry->load(['branch:id,name', 'leader:id,name,email']);
 
             Log::info('Leader assigned to ministry', [
@@ -288,7 +293,7 @@ final class MinistryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error assigning leader to ministry: ' . $e->getMessage(), [
+            Log::error('Error assigning leader to ministry: '.$e->getMessage(), [
                 'ministry_id' => $ministry->id,
                 'leader_id' => $request->leader_id,
                 'user_id' => auth()->id(),
@@ -309,7 +314,7 @@ final class MinistryController extends Controller
         Gate::authorize('assignLeader', $ministry);
 
         try {
-            if (!$ministry->leader_id) {
+            if (! $ministry->leader_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ministry does not have an assigned leader.',
@@ -318,12 +323,23 @@ final class MinistryController extends Controller
 
             $previousLeader = $ministry->leader;
             $ministry->update(['leader_id' => null]);
-            
+
             // Update previous leader's status based on remaining assignments
             if ($previousLeader) {
                 $previousLeader->updateStatusBasedOnAssignments();
+
+                // If the previous leader no longer leads any ministry in this branch, remove branch-scoped role
+                if ($previousLeader->user) {
+                    $stillLeadsInBranch = \App\Models\Ministry::where('branch_id', $ministry->branch_id)
+                        ->where('leader_id', $previousLeader->id)
+                        ->exists();
+
+                    if (! $stillLeadsInBranch) {
+                        $previousLeader->user->removeRole('ministry_leader', $ministry->branch_id);
+                    }
+                }
             }
-            
+
             $ministry->load(['branch:id,name', 'leader:id,name,email']);
 
             Log::info('Leader removed from ministry', [
@@ -339,7 +355,7 @@ final class MinistryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error removing leader from ministry: ' . $e->getMessage(), [
+            Log::error('Error removing leader from ministry: '.$e->getMessage(), [
                 'ministry_id' => $ministry->id,
                 'user_id' => auth()->id(),
             ]);
@@ -364,9 +380,9 @@ final class MinistryController extends Controller
                 ->whereNull('deleted_at');
 
             $user = auth()->user();
-            
+
             // For non-super admins, restrict to their branch
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $query->where('branch_id', $userBranch->id);
@@ -383,7 +399,7 @@ final class MinistryController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             }
 
@@ -396,7 +412,7 @@ final class MinistryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving available leaders: ' . $e->getMessage(), [
+            Log::error('Error retrieving available leaders: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
             ]);
 
@@ -406,4 +422,4 @@ final class MinistryController extends Controller
             ], 500);
         }
     }
-} 
+}

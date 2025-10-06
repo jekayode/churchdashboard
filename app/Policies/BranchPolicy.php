@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\Branch;
+use App\Models\User;
 
 final class BranchPolicy extends BasePolicy
 {
@@ -115,6 +115,17 @@ final class BranchPolicy extends BasePolicy
             return $this->belongsToSameBranch($user, $branch);
         }
 
+        // Communications ministers can manage communication settings for their branch
+        $branchId = $user->getActiveBranchId();
+        if ($branchId && $branchId === $branch->id && $user->isMinistryLeader($branchId)) {
+            $ministry = \App\Models\Ministry::where('branch_id', $branchId)
+                ->where('leader_id', optional($user->member)->id)
+                ->where('category', 'communications')
+                ->first();
+
+            return (bool) $ministry;
+        }
+
         return false;
     }
-} 
+}

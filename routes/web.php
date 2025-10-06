@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\ImpersonationController;
+use App\Http\Controllers\MinisterDashboardController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
@@ -18,6 +20,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('admin.events.edit');
     Route::put('/admin/events/{event}', [\App\Http\Controllers\EventController::class, 'updateAdmin'])
         ->name('admin.events.update');
+});
+
+// Impersonation routes (super_admin or branch_pastor)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::post('/impersonate/{user}', [ImpersonationController::class, 'start'])->name('impersonate.start');
+    Route::post('/impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
 });
 
 Route::get('/', function () {
@@ -41,6 +49,18 @@ Route::get('/dashboard', function () {
 
     return view($dashboardView);
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+// Minister dashboard (isolated)
+Route::middleware(['auth', 'verified', 'role:ministry_leader'])->group(function () {
+    Route::get('/minister/dashboard', [MinisterDashboardController::class, 'index'])->name('minister.dashboard');
+    // Communication shortcuts for ministers (reuse pastor/admin views for now)
+    Route::get('/minister/communication/settings', function () {
+        $user = Auth::user();
+        $isSuperAdmin = $user->isSuperAdmin();
+
+        return view('admin.communication.settings', compact('isSuperAdmin'));
+    })->name('minister.communication.settings');
+});
 
 // Sidebar Layout Sample Route (for testing)
 Route::get('/sidebar-sample', function () {

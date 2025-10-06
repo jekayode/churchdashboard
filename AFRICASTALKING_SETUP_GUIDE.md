@@ -94,3 +94,11 @@ If you continue to have issues:
 4. Check the Africa's Talking dashboard for any account restrictions
 
 
+
+
+
+
+
+
+
+

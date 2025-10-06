@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-sidebar-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Departments') }}
@@ -138,10 +138,16 @@
                                 </div>
 
                                 <div class="flex justify-between items-center">
-                                    <button @click="viewDepartment(department)" 
-                                            class="text-purple-600 hover:text-purple-800 text-sm font-medium">
-                                        View Details
-                                    </button>
+                                    <div class="flex items-center space-x-4">
+                                        <button @click="viewDepartment(department)" 
+                                                class="text-purple-600 hover:text-purple-800 text-sm font-medium">
+                                            View Details
+                                        </button>
+                                        <button @click="openManageMembers(department)"
+                                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                                            Manage Members
+                                        </button>
+                                    </div>
                                     <div class="flex space-x-2">
                                         <button @click="editDepartment(department)" 
                                                 class="text-gray-600 hover:text-gray-800">
@@ -328,6 +334,69 @@
             </div>
         </div>
 
+        <!-- Manage Members Modal -->
+        <div x-show="showManageMembersModal"
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+            <div class="relative top-16 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 shadow-lg rounded-md bg-white">
+                <div class="mt-1">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">Manage Members - <span x-text="manageMembersDepartment?.name"></span></h3>
+                        <button @click="showManageMembersModal=false" class="text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Available Members -->
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <h4 class="font-medium">Available Members</h4>
+                                <input type="text" x-model="memberSearch" @input="loadMembersForDepartment(manageMembersDepartment?.id)" placeholder="Search..." class="px-2 py-1 border rounded"/>
+                            </div>
+                            <div class="border rounded max-h-80 overflow-auto divide-y">
+                                <template x-for="m in availableMembers" :key="m.id">
+                                    <label class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50">
+                                        <div>
+                                            <div class="text-sm font-medium" x-text="m.name"></div>
+                                            <div class="text-xs text-gray-500" x-text="m.email"></div>
+                                        </div>
+                                        <input type="checkbox" :value="m.id" @change="toggleAvailable(m.id)" :checked="selectedAvailable.includes(m.id)"/>
+                                    </label>
+                                </template>
+                            </div>
+                            <div class="mt-3 text-right">
+                                <button @click="assignSelected()" :disabled="selectedAvailable.length===0" :class="selectedAvailable.length===0 ? 'opacity-50 cursor-not-allowed' : ''" class="px-3 py-2 bg-blue-600 text-white rounded">Add to Department</button>
+                            </div>
+                        </div>
+
+                        <!-- Current Members -->
+                        <div>
+                            <h4 class="font-medium mb-2">Current Members</h4>
+                            <div class="border rounded max-h-80 overflow-auto divide-y">
+                                <template x-for="m in currentMembers" :key="m.id">
+                                    <label class="flex items-center justify-between px-3 py-2 cursor-pointer hover:bg-gray-50">
+                                        <div>
+                                            <div class="text-sm font-medium" x-text="m.name"></div>
+                                            <div class="text-xs text-gray-500" x-text="m.email"></div>
+                                        </div>
+                                        <input type="checkbox" :value="m.id" @change="toggleCurrent(m.id)" :checked="selectedCurrent.includes(m.id)"/>
+                                    </label>
+                                </template>
+                            </div>
+                            <div class="mt-3 text-right">
+                                <button @click="removeSelected()" :disabled="selectedCurrent.length===0" :class="selectedCurrent.length===0 ? 'opacity-50 cursor-not-allowed' : ''" class="px-3 py-2 bg-red-600 text-white rounded">Remove Selected</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
         <!-- Department Details Modal -->
         <div x-show="showDetailsModal" 
              x-transition:enter="ease-out duration-300" 
@@ -406,8 +475,15 @@
                 saving: false,
                 showModal: false,
                 showDetailsModal: false,
+                showManageMembersModal: false,
                 editingDepartment: null,
                 selectedDepartment: null,
+                manageMembersDepartment: null,
+                availableMembers: [],
+                currentMembers: [],
+                selectedAvailable: [],
+                selectedCurrent: [],
+                memberSearch: '',
                 search: '',
                 branchFilter: '',
                 ministryFilter: '',
@@ -534,6 +610,12 @@
                         if (response.ok) {
                             const data = await response.json();
                             this.ministries = data.data.data || data.data;
+                            // If user is a ministry leader, select their ministry by default
+                            const myMinistry = (this.ministries || []).find(m => m.leader_id && m.leader_id === (window.authMemberId || 0));
+                            if (myMinistry) {
+                                this.ministryFilter = myMinistry.id;
+                                this.loadDepartments();
+                            }
                         }
                     } catch (error) {
                         console.error('Error loading ministries:', error);
@@ -630,6 +712,90 @@
                 viewDepartment(department) {
                     this.selectedDepartment = department;
                     this.showDetailsModal = true;
+                },
+
+                async openManageMembers(department) {
+                    this.manageMembersDepartment = department;
+                    this.showManageMembersModal = true;
+                    this.selectedAvailable = [];
+                    this.selectedCurrent = [];
+                    await this.loadMembersForDepartment(department.id);
+                },
+
+                async loadMembersForDepartment(departmentId) {
+                    // Load current members via department show API
+                    try {
+                        const resp = await fetch(`/api/departments/${departmentId}`);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            this.currentMembers = data.data.members || [];
+                        }
+                    } catch (e) { console.error(e); }
+
+                    // Load available members in branch (simple member list search endpoint)
+                    try {
+                        const params = new URLSearchParams();
+                        if (this.memberSearch) params.append('search', this.memberSearch);
+                        const branchId = this.manageMembersDepartment?.ministry?.branch_id;
+                        if (branchId) params.append('branch_id', branchId);
+                        const resp = await fetch(`/api/members?${params.toString()}`);
+                        if (resp.ok) {
+                            const data = await resp.json();
+                            const list = data.data?.data || data.data || [];
+                            // Filter out those already in department
+                            const currentIds = new Set(this.currentMembers.map(m => m.id));
+                            this.availableMembers = list.filter(m => !currentIds.has(m.id));
+                        }
+                    } catch (e) { console.error(e); }
+                },
+
+                toggleAvailable(id) {
+                    const i = this.selectedAvailable.indexOf(id);
+                    if (i > -1) this.selectedAvailable.splice(i,1); else this.selectedAvailable.push(id);
+                },
+                toggleCurrent(id) {
+                    const i = this.selectedCurrent.indexOf(id);
+                    if (i > -1) this.selectedCurrent.splice(i,1); else this.selectedCurrent.push(id);
+                },
+
+                async assignSelected() {
+                    if (!this.manageMembersDepartment || this.selectedAvailable.length === 0) return;
+                    try {
+                        const resp = await fetch(`/api/departments/${this.manageMembersDepartment.id}/assign-members`, {
+                            method: 'POST',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ member_ids: this.selectedAvailable })
+                        });
+                        if (resp.ok) {
+                            await this.loadMembersForDepartment(this.manageMembersDepartment.id);
+                            this.selectedAvailable = [];
+                            this.loadDepartments();
+                        }
+                    } catch(e) { console.error(e); }
+                },
+
+                async removeSelected() {
+                    if (!this.manageMembersDepartment || this.selectedCurrent.length === 0) return;
+                    try {
+                        const resp = await fetch(`/api/departments/${this.manageMembersDepartment.id}/remove-members`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({ member_ids: this.selectedCurrent })
+                        });
+                        if (resp.ok) {
+                            await this.loadMembersForDepartment(this.manageMembersDepartment.id);
+                            this.selectedCurrent = [];
+                            this.loadDepartments();
+                        }
+                    } catch(e) { console.error(e); }
                 },
 
                 closeModal() {
@@ -841,4 +1007,4 @@
 
 
     </script>
-</x-app-layout> 
+</x-sidebar-layout> 

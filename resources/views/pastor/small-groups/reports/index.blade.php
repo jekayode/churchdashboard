@@ -227,6 +227,25 @@
         let editingReportId = null;
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize currentFilters with default values
+            currentFilters = {
+                date_filter: document.getElementById('dateFilter').value || 'this_week',
+                status: document.getElementById('statusFilter').value || '',
+                small_group_id: document.getElementById('groupFilter').value || '',
+            };
+            
+            const branchFilter = document.getElementById('branchFilter');
+            if (branchFilter) {
+                currentFilters.branch_id = branchFilter.value || '';
+            }
+            
+            // Remove empty filters
+            Object.keys(currentFilters).forEach(key => {
+                if (!currentFilters[key]) {
+                    delete currentFilters[key];
+                }
+            });
+            
             loadReports();
             loadSummaryStatistics();
             loadSmallGroups();
@@ -274,11 +293,23 @@
                 ...currentFilters
             });
             
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             fetch(`/api/small-group-reports?${params}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
+                headers: headers,
+                credentials: 'same-origin'
             })
                 .then(response => response.json())
                 .then(data => {
@@ -302,11 +333,23 @@
         function loadSummaryStatistics() {
             const params = new URLSearchParams(currentFilters);
             
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             fetch(`/api/small-group-reports/statistics?${params}`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
+                headers: headers,
+                credentials: 'same-origin'
             })
                 .then(response => response.json())
                 .then(data => {
@@ -324,11 +367,23 @@
         }
 
         function loadSmallGroups() {
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+            const headers = {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            };
+            
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             fetch('/api/small-group-reports/my-groups', {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
+                headers: headers,
+                credentials: 'same-origin'
             })
                 .then(response => response.json())
                 .then(data => {
@@ -503,7 +558,11 @@
                 branchFilter.value = '';
             }
             
-            currentFilters = {};
+            // Reset currentFilters with default values
+            currentFilters = {
+                date_filter: 'this_week'
+            };
+            
             loadReports();
             loadSummaryStatistics();
         }
@@ -682,15 +741,24 @@
         function loadStatistics() {
             const params = new URLSearchParams(currentFilters);
             
+            // Get API token from meta tag
+            const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
             const headers = {
                 'Accept': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-Requested-With': 'XMLHttpRequest'
             };
             
+            // Use API token if available, otherwise use CSRF token
+            if (apiToken) {
+                headers['Authorization'] = `Bearer ${apiToken}`;
+            } else {
+                headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            }
+            
             Promise.all([
-                fetch(`/api/small-group-reports/statistics?${params}`, { headers }).then(r => r.json()),
-                fetch(`/api/small-group-reports/trends?${params}`, { headers }).then(r => r.json()),
-                fetch(`/api/small-group-reports/comparison?${params}`, { headers }).then(r => r.json())
+                fetch(`/api/small-group-reports/statistics?${params}`, { headers, credentials: 'same-origin' }).then(r => r.json()),
+                fetch(`/api/small-group-reports/trends?${params}`, { headers, credentials: 'same-origin' }).then(r => r.json()),
+                fetch(`/api/small-group-reports/comparison?${params}`, { headers, credentials: 'same-origin' }).then(r => r.json())
             ])
             .then(([statsData, trendsData, comparisonData]) => {
                 displayStatistics(statsData.data, trendsData.data, comparisonData.data);

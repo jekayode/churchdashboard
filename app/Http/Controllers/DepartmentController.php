@@ -25,18 +25,26 @@ final class DepartmentController extends Controller
             $query = Department::with([
                 'ministry:id,name,branch_id',
                 'ministry.branch:id,name',
-                'leader:id,name,email'
+                'leader:id,name,email',
             ])->withCount(['members']);
 
             // Apply branch-based filtering for non-super admins
             $user = auth()->user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $query->whereHas('ministry', function ($q) use ($userBranch) {
                         $q->where('branch_id', $userBranch->id);
                     });
                 }
+            }
+
+            // If ministry leader, restrict to ministries they lead
+            if ($user->isMinistryLeader() && $user->member) {
+                $leaderMemberId = $user->member->id;
+                $query->whereHas('ministry', function ($q) use ($leaderMemberId) {
+                    $q->where('leader_id', $leaderMemberId);
+                });
             }
 
             // Apply filters
@@ -61,14 +69,14 @@ final class DepartmentController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             }
 
             // Apply sorting
             $sortBy = $request->get('sort_by', 'name');
             $sortDirection = $request->get('sort_direction', 'asc');
-            
+
             if (in_array($sortBy, ['name', 'status', 'created_at'])) {
                 $query->orderBy($sortBy, $sortDirection);
             }
@@ -82,7 +90,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving departments: ' . $e->getMessage(), [
+            Log::error('Error retrieving departments: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
                 'request_data' => $request->all(),
             ]);
@@ -118,13 +126,13 @@ final class DepartmentController extends Controller
                 'data' => $department->load([
                     'ministry:id,name,branch_id',
                     'ministry.branch:id,name',
-                    'leader:id,name,email'
+                    'leader:id,name,email',
                 ]),
                 'message' => 'Department created successfully.',
             ], 201);
 
         } catch (\Exception $e) {
-            Log::error('Error creating department: ' . $e->getMessage(), [
+            Log::error('Error creating department: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
                 'request_data' => $request->validated(),
             ]);
@@ -158,7 +166,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving department: ' . $e->getMessage(), [
+            Log::error('Error retrieving department: '.$e->getMessage(), [
                 'department_id' => $department->id,
                 'user_id' => auth()->id(),
             ]);
@@ -185,7 +193,7 @@ final class DepartmentController extends Controller
             $department->load([
                 'ministry:id,name,branch_id',
                 'ministry.branch:id,name',
-                'leader:id,name,email'
+                'leader:id,name,email',
             ]);
 
             Log::info('Department updated successfully', [
@@ -202,7 +210,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error updating department: ' . $e->getMessage(), [
+            Log::error('Error updating department: '.$e->getMessage(), [
                 'department_id' => $department->id,
                 'user_id' => auth()->id(),
                 'request_data' => $request->validated(),
@@ -250,7 +258,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error deleting department: ' . $e->getMessage(), [
+            Log::error('Error deleting department: '.$e->getMessage(), [
                 'department_id' => $department->id,
                 'user_id' => auth()->id(),
             ]);
@@ -285,14 +293,19 @@ final class DepartmentController extends Controller
             }
 
             $department->update(['leader_id' => $leader->id]);
-            
+
             // Update member status to 'leader'
             $leader->update(['member_status' => 'leader']);
-            
+
+            // Ensure role assignment exists for this branch
+            if ($leader->user && $department->ministry) {
+                $leader->user->assignRole('department_leader', $department->ministry->branch_id);
+            }
+
             $department->load([
                 'ministry:id,name,branch_id',
                 'ministry.branch:id,name',
-                'leader:id,name,email'
+                'leader:id,name,email',
             ]);
 
             Log::info('Leader assigned to department', [
@@ -309,7 +322,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error assigning leader to department: ' . $e->getMessage(), [
+            Log::error('Error assigning leader to department: '.$e->getMessage(), [
                 'department_id' => $department->id,
                 'leader_id' => $request->leader_id,
                 'user_id' => auth()->id(),
@@ -330,7 +343,7 @@ final class DepartmentController extends Controller
         Gate::authorize('assignLeader', $department);
 
         try {
-            if (!$department->leader_id) {
+            if (! $department->leader_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Department does not have an assigned leader.',
@@ -339,16 +352,28 @@ final class DepartmentController extends Controller
 
             $previousLeader = $department->leader;
             $department->update(['leader_id' => null]);
-            
+
             // Update previous leader's status based on remaining assignments
             if ($previousLeader) {
                 $previousLeader->updateStatusBasedOnAssignments();
+
+                // If the previous leader no longer leads any department in this branch, remove role
+                if ($previousLeader->user && $department->ministry) {
+                    $branchId = $department->ministry->branch_id;
+                    $stillLeadsInBranch = \App\Models\Department::whereHas('ministry', function ($q) use ($branchId) {
+                        $q->where('branch_id', $branchId);
+                    })->where('leader_id', $previousLeader->id)->exists();
+
+                    if (! $stillLeadsInBranch) {
+                        $previousLeader->user->removeRole('department_leader', $branchId);
+                    }
+                }
             }
-            
+
             $department->load([
                 'ministry:id,name,branch_id',
                 'ministry.branch:id,name',
-                'leader:id,name,email'
+                'leader:id,name,email',
             ]);
 
             Log::info('Leader removed from department', [
@@ -364,7 +389,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error removing leader from department: ' . $e->getMessage(), [
+            Log::error('Error removing leader from department: '.$e->getMessage(), [
                 'department_id' => $department->id,
                 'user_id' => auth()->id(),
             ]);
@@ -390,7 +415,7 @@ final class DepartmentController extends Controller
 
         try {
             $memberIds = $request->member_ids;
-            
+
             // Attach members with timestamp
             $department->members()->syncWithoutDetaching(
                 array_fill_keys($memberIds, ['assigned_at' => now()])
@@ -404,7 +429,7 @@ final class DepartmentController extends Controller
             $department->load([
                 'ministry:id,name,branch_id',
                 'ministry.branch:id,name',
-                'members:id,name,email'
+                'members:id,name,email',
             ]);
 
             Log::info('Members assigned to department', [
@@ -421,7 +446,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error assigning members to department: ' . $e->getMessage(), [
+            Log::error('Error assigning members to department: '.$e->getMessage(), [
                 'department_id' => $department->id,
                 'member_ids' => $request->member_ids ?? [],
                 'user_id' => auth()->id(),
@@ -448,13 +473,13 @@ final class DepartmentController extends Controller
 
         try {
             $memberIds = $request->member_ids;
-            
+
             $department->members()->detach($memberIds);
 
             $department->load([
                 'ministry:id,name,branch_id',
                 'ministry.branch:id,name',
-                'members:id,name,email'
+                'members:id,name,email',
             ]);
 
             Log::info('Members removed from department', [
@@ -470,7 +495,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error removing members from department: ' . $e->getMessage(), [
+            Log::error('Error removing members from department: '.$e->getMessage(), [
                 'department_id' => $department->id,
                 'member_ids' => $request->member_ids ?? [],
                 'user_id' => auth()->id(),
@@ -496,9 +521,9 @@ final class DepartmentController extends Controller
                 ->whereNull('deleted_at');
 
             $user = auth()->user();
-            
+
             // For non-super admins, restrict to their branch
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 $userBranch = $user->getPrimaryBranch();
                 if ($userBranch) {
                     $query->where('branch_id', $userBranch->id);
@@ -515,7 +540,7 @@ final class DepartmentController extends Controller
                 $search = $request->search;
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%");
                 });
             }
 
@@ -528,7 +553,7 @@ final class DepartmentController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error retrieving available leaders: ' . $e->getMessage(), [
+            Log::error('Error retrieving available leaders: '.$e->getMessage(), [
                 'user_id' => auth()->id(),
             ]);
 
@@ -538,4 +563,4 @@ final class DepartmentController extends Controller
             ], 500);
         }
     }
-} 
+}

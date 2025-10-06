@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\Event;
+use App\Models\User;
 
 final class EventPolicy extends BasePolicy
 {
@@ -14,9 +14,9 @@ final class EventPolicy extends BasePolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->isSuperAdmin() || 
-               $user->isBranchPastor() || 
-               $user->isMinistryLeader() || 
+        return $user->isSuperAdmin() ||
+               $user->isBranchPastor() ||
+               $user->isMinistryLeader() ||
                $user->isDepartmentLeader() ||
                $user->isChurchMember();
     }
@@ -27,7 +27,7 @@ final class EventPolicy extends BasePolicy
     public function view(User $user, mixed $model): bool
     {
         $event = $model;
-        
+
         // Super admin can view all events
         if ($user->isSuperAdmin()) {
             return true;
@@ -36,20 +36,23 @@ final class EventPolicy extends BasePolicy
         // Branch pastor can view events in their branch
         if ($user->isBranchPastor()) {
             $userBranch = $user->getPrimaryBranch();
+
             return $userBranch && $userBranch->id === $event->branch_id;
         }
 
         // Ministry and department leaders can view events in their branch
         if ($user->isMinistryLeader() || $user->isDepartmentLeader()) {
             $userBranch = $user->getPrimaryBranch();
+
             return $userBranch && $userBranch->id === $event->branch_id;
         }
 
         // Church members can view active events in their branch
         if ($user->isChurchMember()) {
             $userBranch = $user->getPrimaryBranch();
-            return $userBranch && 
-                   $userBranch->id === $event->branch_id && 
+
+            return $userBranch &&
+                   $userBranch->id === $event->branch_id &&
                    $event->status === 'active';
         }
 
@@ -61,7 +64,24 @@ final class EventPolicy extends BasePolicy
      */
     public function create(User $user): bool
     {
-        return $user->isSuperAdmin() || $user->isBranchPastor();
+        // Super admin and branch pastor can create
+        if ($user->isSuperAdmin() || $user->isBranchPastor()) {
+            return true;
+        }
+
+        // Operations ministers can create events in their branch
+        // Identify if the user leads a ministry with category 'operations' in their active branch
+        $branchId = $user->getActiveBranchId();
+        if ($branchId && $user->isMinistryLeader($branchId)) {
+            $ministry = \App\Models\Ministry::where('branch_id', $branchId)
+                ->where('leader_id', optional($user->member)->id)
+                ->where('category', 'operations')
+                ->first();
+
+            return (bool) $ministry;
+        }
+
+        return false;
     }
 
     /**
@@ -70,7 +90,7 @@ final class EventPolicy extends BasePolicy
     public function update(User $user, mixed $model): bool
     {
         $event = $model;
-        
+
         // Super admin can update all events
         if ($user->isSuperAdmin()) {
             return true;
@@ -79,7 +99,21 @@ final class EventPolicy extends BasePolicy
         // Branch pastor can update events in their branch
         if ($user->isBranchPastor()) {
             $userBranch = $user->getPrimaryBranch();
+
             return $userBranch && $userBranch->id === $event->branch_id;
+        }
+
+        // Operations ministers can update events in their branch
+        $branchId = $user->getActiveBranchId();
+        if ($branchId && $user->isMinistryLeader($branchId)) {
+            $ministry = \App\Models\Ministry::where('branch_id', $branchId)
+                ->where('leader_id', optional($user->member)->id)
+                ->where('category', 'operations')
+                ->first();
+
+            if ($ministry) {
+                return $branchId === $event->branch_id;
+            }
         }
 
         return false;
@@ -91,7 +125,7 @@ final class EventPolicy extends BasePolicy
     public function delete(User $user, mixed $model): bool
     {
         $event = $model;
-        
+
         // Super admin can delete all events
         if ($user->isSuperAdmin()) {
             return true;
@@ -100,7 +134,21 @@ final class EventPolicy extends BasePolicy
         // Branch pastor can delete events in their branch
         if ($user->isBranchPastor()) {
             $userBranch = $user->getPrimaryBranch();
+
             return $userBranch && $userBranch->id === $event->branch_id;
+        }
+
+        // Operations ministers can delete events in their branch
+        $branchId = $user->getActiveBranchId();
+        if ($branchId && $user->isMinistryLeader($branchId)) {
+            $ministry = \App\Models\Ministry::where('branch_id', $branchId)
+                ->where('leader_id', optional($user->member)->id)
+                ->where('category', 'operations')
+                ->first();
+
+            if ($ministry) {
+                return $branchId === $event->branch_id;
+            }
         }
 
         return false;
@@ -128,14 +176,14 @@ final class EventPolicy extends BasePolicy
     public function register(User $user, mixed $model): bool
     {
         $event = $model;
-        
+
         // Event must be active
         if ($event->status !== 'active') {
             return false;
         }
 
         // Event must be upcoming
-        if (!$event->isUpcoming()) {
+        if (! $event->isUpcoming()) {
             return false;
         }
 
@@ -146,6 +194,7 @@ final class EventPolicy extends BasePolicy
 
         // Users can register for events in their branch or public events
         $userBranch = $user->getPrimaryBranch();
+
         return $userBranch && $userBranch->id === $event->branch_id;
     }
 
@@ -155,7 +204,7 @@ final class EventPolicy extends BasePolicy
     public function checkIn(User $user, mixed $model): bool
     {
         $event = $model;
-        
+
         // Super admin can check in for all events
         if ($user->isSuperAdmin()) {
             return true;
@@ -164,12 +213,14 @@ final class EventPolicy extends BasePolicy
         // Branch pastor can check in for events in their branch
         if ($user->isBranchPastor()) {
             $userBranch = $user->getPrimaryBranch();
+
             return $userBranch && $userBranch->id === $event->branch_id;
         }
 
         // Ministry and department leaders can check in for events in their branch
         if ($user->isMinistryLeader() || $user->isDepartmentLeader()) {
             $userBranch = $user->getPrimaryBranch();
+
             return $userBranch && $userBranch->id === $event->branch_id;
         }
 
@@ -199,4 +250,4 @@ final class EventPolicy extends BasePolicy
     {
         return $this->checkIn($user, $model);
     }
-} 
+}

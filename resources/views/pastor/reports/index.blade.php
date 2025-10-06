@@ -200,6 +200,68 @@
                     </div>
                 </div>
 
+                <!-- Small Groups Statistics -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Small Groups Statistics</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <div class="bg-indigo-50 rounded-lg p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-indigo-600">Total Attendance</p>
+                                    <p class="text-2xl font-bold text-indigo-900" id="smallGroupsTotalAttendance">0</p>
+                                </div>
+                                <div class="p-3 bg-indigo-100 rounded-full">
+                                    <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.196-2.121M9 20H4v-2a3 3 0 00-5.196-2.121m4-18a4 4 0 00-8 0 4 4 0 008 0zM8 14a3 3 0 106 0 3 3 0 00-6 0z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-emerald-50 rounded-lg p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-emerald-600">Average Attendance</p>
+                                    <p class="text-2xl font-bold text-emerald-900" id="smallGroupsAvgAttendance">0</p>
+                                </div>
+                                <div class="p-3 bg-emerald-100 rounded-full">
+                                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-amber-50 rounded-lg p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-amber-600">Total Active Groups</p>
+                                    <p class="text-2xl font-bold text-amber-900" id="smallGroupsActiveGroups">0</p>
+                                </div>
+                                <div class="p-3 bg-amber-100 rounded-full">
+                                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-rose-50 rounded-lg p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm font-medium text-rose-600">Total Guests</p>
+                                    <p class="text-2xl font-bold text-rose-900" id="smallGroupsTotalGuests">0</p>
+                                </div>
+                                <div class="p-3 bg-rose-100 rounded-full">
+                                    <svg class="w-6 h-6 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Charts Section -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <div class="bg-gray-50 p-6 rounded-lg">
@@ -1093,6 +1155,9 @@
                 if (trendData.success) {
                     updateCharts(trendData.data);
                 }
+                
+                // Load Small Groups statistics
+                await loadSmallGroupsStats(params);
             } catch (error) {
                 console.error('Error loading dashboard data for custom range:', error);
             }
@@ -1159,8 +1224,83 @@
                 } else {
                     console.error('Trend API returned error:', trendData.message);
                 }
+                
+                // Load Small Groups statistics
+                await loadSmallGroupsStats(params);
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Load Small Groups statistics
+        async function loadSmallGroupsStats(params) {
+            try {
+                console.log('Loading Small Groups statistics with params:', params.toString());
+                
+                // Get API token from meta tag
+                const apiToken = document.querySelector('meta[name="api-token"]')?.getAttribute('content');
+                const headers = {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                
+                // Use API token if available, otherwise use CSRF token
+                if (apiToken) {
+                    headers['Authorization'] = `Bearer ${apiToken}`;
+                } else {
+                    headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                }
+                
+                const response = await fetch(`/api/small-group-reports/statistics?${params}`, {
+                    headers: headers,
+                    credentials: 'same-origin'
+                });
+                
+                if (!response.ok) {
+                    console.error('Small Groups API error:', response.status, response.statusText);
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('Small Groups API response:', data);
+                
+                if (data.success) {
+                    updateSmallGroupsStats(data.data);
+                } else {
+                    console.error('Small Groups API returned error:', data.message);
+                }
+            } catch (error) {
+                console.error('Error loading Small Groups statistics:', error);
+            }
+        }
+
+        // Update Small Groups statistics display
+        function updateSmallGroupsStats(data) {
+            console.log('updateSmallGroupsStats called with data:', data);
+            
+            // Update Total Attendance
+            const totalAttendanceElement = document.getElementById('smallGroupsTotalAttendance');
+            if (totalAttendanceElement) {
+                totalAttendanceElement.textContent = data.total_attendance || '0';
+            }
+            
+            // Update Average Attendance
+            const avgAttendanceElement = document.getElementById('smallGroupsAvgAttendance');
+            if (avgAttendanceElement) {
+                const avgAttendance = data.total_reports > 0 ? Math.round(data.total_attendance / data.total_reports) : 0;
+                avgAttendanceElement.textContent = avgAttendance;
+            }
+            
+            // Update Active Groups
+            const activeGroupsElement = document.getElementById('smallGroupsActiveGroups');
+            if (activeGroupsElement) {
+                activeGroupsElement.textContent = data.active_groups || '0';
+            }
+            
+            // Update Total Guests
+            const totalGuestsElement = document.getElementById('smallGroupsTotalGuests');
+            if (totalGuestsElement) {
+                totalGuestsElement.textContent = data.total_guests || '0';
             }
         }
 

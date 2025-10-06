@@ -184,6 +184,24 @@ final class User extends Authenticatable
     }
 
     /**
+     * Check if user is a leader of any small group (optionally scoped to a branch).
+     */
+    public function isSmallGroupLeader(?int $branchId = null): bool
+    {
+        $member = $this->member;
+        if (! $member) {
+            return false;
+        }
+
+        $query = \App\Models\SmallGroup::query()->where('leader_id', $member->id);
+        if ($branchId !== null) {
+            $query->where('branch_id', $branchId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
      * Get user's branches based on roles.
      */
     public function getBranches(): BelongsToMany

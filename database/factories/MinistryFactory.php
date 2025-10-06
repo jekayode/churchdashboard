@@ -37,12 +37,13 @@ final class MinistryFactory extends Factory
             'Senior Ministry',
             'Media Ministry',
             'Hospitality Ministry',
-            'Counseling Ministry'
+            'Counseling Ministry',
         ];
 
         return [
             'name' => $this->faker->unique()->randomElement($ministryNames),
             'description' => $this->faker->paragraph(2),
+            'category' => null, // optional; tests may set
             'branch_id' => null, // Will be set explicitly in tests
             'leader_id' => null, // Will be set explicitly in tests if needed
             'created_at' => $this->faker->dateTimeBetween('-2 years', 'now'),

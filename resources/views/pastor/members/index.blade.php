@@ -586,7 +586,13 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <button onclick="viewMember(${member.id})" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
                                         <button onclick="editMember(${member.id})" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
-                                        <button onclick="deleteMember(${member.id})" class="text-red-600 hover:text-red-900">Delete</button>
+                                        <button onclick="deleteMember(${member.id})" class="text-red-600 hover:text-red-900 mr-3">Delete</button>
+                                        @if(auth()->user()->isSuperAdmin() || auth()->user()->isBranchPastor())
+                                        <form method="POST" action="{{ route('impersonate.start', ['user' => 0]) }}" class="inline" onsubmit="return impersonateSubmit(this, ${member.user_id});">
+                                            @csrf
+                                            <button type="submit" class="text-gray-600 hover:text-gray-900">Impersonate</button>
+                                        </form>
+                                        @endif
                                     </td>
                                 </tr>
                             `).join('')}
@@ -866,6 +872,12 @@
                 chevron.style.transform = 'rotate(0deg)';
                 text.textContent = 'Show Statistics';
             }
+        }
+
+        function impersonateSubmit(formEl, userId) {
+            if (!userId) { alert('No user account linked to this member.'); return false; }
+            formEl.action = formEl.action.replace('/0', '/' + userId).replace('__USER_ID__', userId);
+            return true;
         }
     </script>
 </x-sidebar-layout> 

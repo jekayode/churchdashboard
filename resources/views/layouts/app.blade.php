@@ -20,6 +20,11 @@
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+        @auth
+        <script>
+            window.authMemberId = {{ auth()->user()->member?->id ?? 'null' }};
+        </script>
+        @endauth
 
         <!-- Alpine.js -->
         <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -30,6 +35,18 @@
         <div class="min-h-screen">
            @include('layouts.navigation')
            <!--  @include('components.role-based-sidebar') -->
+
+           @if(session('impersonator_id'))
+           <div class="bg-yellow-100 border-b border-yellow-300 text-yellow-900">
+               <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
+                   <div>You are impersonating another user.</div>
+                   <form method="POST" action="{{ route('impersonate.stop') }}">
+                       @csrf
+                       <button class="text-sm underline">End impersonation</button>
+                   </form>
+               </div>
+           </div>
+           @endif
 
             <!-- Page Heading -->
             @if (isset($header))

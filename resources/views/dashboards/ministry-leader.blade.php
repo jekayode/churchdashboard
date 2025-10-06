@@ -1,9 +1,23 @@
 <x-sidebar-layout title="Ministry Leader Dashboard">
             @php
                 $user = Auth::user();
-                $branch = $user->getPrimaryBranch();
-                // Get ministries where user is the leader
-                $ministries = \App\Models\Ministry::where('leader_id', $user->id)->get();
+                $leaderMemberId = $user->member?->id;
+                // Preload ministries, their departments and members count for totals (avoids N+1)
+                $ministries = \App\Models\Ministry::query()
+                    ->with(['departments' => function ($q) {
+                        $q->withCount('members');
+                    }])
+                    ->when($leaderMemberId, fn($q) => $q->where('leader_id', $leaderMemberId))
+                    ->get();
+
+                $totalDepartments = $ministries->sum(fn ($m) => $m->departments->count());
+                $totalLeaders = $ministries->sum(fn ($m) => $m->departments->whereNotNull('leader_id')->count());
+                $totalTeamMembers = $ministries->sum(fn ($m) => $m->departments->sum('members_count'));
+                // Events are branch-scoped; count events in the branches of these ministries
+                $branchIds = $ministries->pluck('branch_id')->unique()->filter();
+                $ministryEvents = $branchIds->isNotEmpty()
+                    ? \App\Models\Event::whereIn('branch_id', $branchIds)->count()
+                    : 0;
             @endphp
 
             <!-- Welcome Section -->
@@ -16,25 +30,6 @@
 
             <!-- Ministry Overview Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- My Ministries -->
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-                                    </svg>
-                                </div>
-                            </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500">My Ministries</p>
-                                <p class="text-2xl font-semibold text-gray-900">{{ $ministries->count() }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Total Departments -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
@@ -48,30 +43,26 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-500">Total Departments</p>
-                                <p class="text-2xl font-semibold text-gray-900">
-                                    {{ $ministries->sum(function($ministry) { return \App\Models\Department::where('ministry_id', $ministry->id)->count(); }) }}
-                                </p>
+                                <p class="text-2xl font-semibold text-gray-900">{{ $totalDepartments }}</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Ministry Events -->
+                <!-- Total Leaders (department leaders) -->
                 <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                     <div class="p-6">
                         <div class="flex items-center">
                             <div class="flex-shrink-0">
                                 <div class="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
                                     <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1z"></path>
                                     </svg>
                                 </div>
                             </div>
                             <div class="ml-4">
-                                <p class="text-sm font-medium text-gray-500">Ministry Events</p>
-                                <p class="text-2xl font-semibold text-gray-900">
-                                    {{ $ministries->sum(function($ministry) { return \App\Models\Event::where('ministry_id', $ministry->id)->where('start_date', '>=', now())->count(); }) }}
-                                </p>
+                                <p class="text-sm font-medium text-gray-500">Total Leaders</p>
+                                <p class="text-2xl font-semibold text-gray-900">{{ $totalLeaders }}</p>
                             </div>
                         </div>
                     </div>
@@ -90,14 +81,26 @@
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-500">Team Members</p>
-                                <p class="text-2xl font-semibold text-gray-900">
-                                    {{ $ministries->sum(function($ministry) { 
-                                        return \App\Models\Department::where('ministry_id', $ministry->id)
-                                            ->withCount('members')
-                                            ->get()
-                                            ->sum('members_count'); 
-                                    }) }}
-                                </p>
+                                <p class="text-2xl font-semibold text-gray-900">{{ $totalTeamMembers }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ministry Events -->
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-medium text-gray-500">Ministry Events</p>
+                                <p class="text-2xl font-semibold text-gray-900">{{ $ministryEvents }}</p>
                             </div>
                         </div>
                     </div>
@@ -152,7 +155,7 @@
                     <h4 class="text-lg font-semibold text-gray-900 mb-4">Recent & Upcoming Ministry Events</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         @foreach($ministries as $ministry)
-                            @foreach(\App\Models\Event::where('ministry_id', $ministry->id)->orderBy('start_date', 'desc')->limit(2)->get() as $event)
+                            @foreach(\App\Models\Event::where('branch_id', $ministry->branch_id)->orderBy('start_date', 'desc')->limit(2)->get() as $event)
                                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                                     <div>
                                         <p class="font-medium text-gray-900">{{ $event->title }}</p>

@@ -158,6 +158,9 @@
 
                         {{-- Ministry Leader Navigation (when not Branch Pastor or Super Admin) --}}
                         @if($user->isMinistryLeader() && !$user->isBranchPastor() && !$user->isSuperAdmin())
+                            <x-nav-link :href="route('minister.dashboard')" :active="request()->routeIs('minister.dashboard')">
+                                {{ __('Minister Dashboard') }}
+                            </x-nav-link>
                             <x-nav-link :href="route('ministry.departments')" :active="request()->routeIs('ministry.departments*')">
                                 {{ __('Departments') }}
                             </x-nav-link>
@@ -170,6 +173,14 @@
                         @if($user->isDepartmentLeader() && !$user->isMinistryLeader() && !$user->isBranchPastor() && !$user->isSuperAdmin())
                             <x-nav-link :href="route('department.team')" :active="request()->routeIs('department.team*')">
                                 {{ __('My Team') }}
+                            </x-nav-link>
+                        @endif
+
+                        {{-- Small Group Leader quick link --}}
+                        @php $activeBranchId = $user->getPrimaryBranch()?->id; @endphp
+                        @if($user->isSmallGroupLeader($activeBranchId))
+                            <x-nav-link :href="route('pastor.small-groups.reports')" :active="request()->routeIs('pastor.small-groups.reports*') || request()->routeIs('member.groups.reports')">
+                                {{ __('My Group Reports') }}
                             </x-nav-link>
                         @endif
 
@@ -396,6 +407,9 @@
 
                 {{-- Mobile Ministry Leader Navigation (when not Branch Pastor or Super Admin) --}}
                 @if($user->isMinistryLeader() && !$user->isBranchPastor() && !$user->isSuperAdmin())
+                    <x-responsive-nav-link :href="route('minister.dashboard')" :active="request()->routeIs('minister.dashboard')">
+                        {{ __('Minister Dashboard') }}
+                    </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('ministry.departments')" :active="request()->routeIs('ministry.departments*')">
                         {{ __('Departments') }}
                     </x-responsive-nav-link>
