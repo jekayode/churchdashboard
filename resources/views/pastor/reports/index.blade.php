@@ -3203,6 +3203,50 @@
         let tokens = [];
         let availableEvents = [];
 
+        function toggleTokenTypeFields() {
+            const tokenType = document.querySelector('select[name="token_type"]').value;
+            const individualFields = document.getElementById('individualFields');
+            const teamFields = document.getElementById('teamFields');
+            
+            if (tokenType === 'individual') {
+                individualFields.style.display = 'block';
+                teamFields.style.display = 'none';
+                
+                // Make individual fields required
+                document.querySelector('input[name="name"]').required = true;
+                document.querySelector('input[name="email"]').required = false;
+                
+                // Make team fields not required
+                document.querySelector('input[name="team_name"]').required = false;
+            } else {
+                individualFields.style.display = 'none';
+                teamFields.style.display = 'block';
+                
+                // Make individual fields not required
+                document.querySelector('input[name="name"]').required = false;
+                document.querySelector('input[name="email"]').required = false;
+                
+                // Make team fields required
+                document.querySelector('input[name="team_name"]').required = true;
+            }
+        }
+
+        function addTeamMember() {
+            const container = document.getElementById('teamMembersContainer');
+            const newRow = document.createElement('div');
+            newRow.className = 'team-member-row flex gap-2 mb-2';
+            newRow.innerHTML = `
+                <input type="email" name="team_emails[]" placeholder="Email" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <input type="text" name="team_roles[]" placeholder="Role (e.g., Second Service Chief)" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <button type="button" onclick="removeTeamMember(this)" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Remove</button>
+            `;
+            container.appendChild(newRow);
+        }
+
+        function removeTeamMember(button) {
+            button.parentElement.remove();
+        }
+
         // Load tokens and events
         async function loadTokens() {
             try {
@@ -3304,6 +3348,19 @@
             const branchId = @json(Auth::user()->getActiveBranchId());
             if (branchId) {
                 formData.append('branch_id', branchId);
+            }
+            
+            // Clean up form data based on token type
+            const tokenType = formData.get('token_type');
+            if (tokenType === 'team') {
+                // Remove individual token fields for team tokens
+                formData.delete('name');
+                formData.delete('email');
+            } else {
+                // Remove team token fields for individual tokens
+                formData.delete('team_name');
+                formData.delete('team_emails');
+                formData.delete('team_roles');
             }
             
             try {
@@ -3530,13 +3587,44 @@
                 
                 <form id="createTokenForm">
                     <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
-                        <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Token Type *</label>
+                        <select name="token_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="toggleTokenTypeFields()">
+                            <option value="individual">Individual Token</option>
+                            <option value="team">Team Token</option>
+                        </select>
                     </div>
                     
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                        <input type="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <!-- Individual Token Fields -->
+                    <div id="individualFields">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                            <input type="text" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input type="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+                    
+                    <!-- Team Token Fields -->
+                    <div id="teamFields" style="display: none;">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Team Name *</label>
+                            <input type="text" name="team_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Team Members *</label>
+                            <div id="teamMembersContainer">
+                                <div class="team-member-row flex gap-2 mb-2">
+                                    <input type="email" name="team_emails[]" placeholder="Email" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <input type="text" name="team_roles[]" placeholder="Role (e.g., First Service Chief)" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                    <button type="button" onclick="removeTeamMember(this)" class="px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">Remove</button>
+                                </div>
+                            </div>
+                            <button type="button" onclick="addTeamMember()" class="mt-2 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Add Team Member</button>
+                        </div>
                     </div>
                     
                     <div class="mb-4">

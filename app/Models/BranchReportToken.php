@@ -18,6 +18,10 @@ final class BranchReportToken extends Model
         'token',
         'name',
         'email',
+        'team_name',
+        'team_emails',
+        'team_roles',
+        'is_team_token',
         'is_active',
         'expires_at',
         'last_used_at',
@@ -27,9 +31,12 @@ final class BranchReportToken extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_team_token' => 'boolean',
         'expires_at' => 'datetime',
         'last_used_at' => 'datetime',
         'allowed_events' => 'array',
+        'team_emails' => 'array',
+        'team_roles' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -71,6 +78,31 @@ final class BranchReportToken extends Model
             'email' => $email,
             'allowed_events' => $allowedEvents,
             'expires_at' => $expiresAt,
+            'is_team_token' => false,
+        ]);
+    }
+
+    /**
+     * Create a new team token for a branch.
+     */
+    public static function createTeamTokenForBranch(
+        int $branchId,
+        string $teamName,
+        array $teamEmails,
+        array $teamRoles,
+        ?array $allowedEvents = null,
+        ?\DateTime $expiresAt = null
+    ): self {
+        return self::create([
+            'branch_id' => $branchId,
+            'token' => self::generateToken(),
+            'name' => $teamName,
+            'team_name' => $teamName,
+            'team_emails' => $teamEmails,
+            'team_roles' => $teamRoles,
+            'allowed_events' => $allowedEvents,
+            'expires_at' => $expiresAt,
+            'is_team_token' => true,
         ]);
     }
 
@@ -127,5 +159,62 @@ final class BranchReportToken extends Model
     public function scopeForBranch($query, int $branchId)
     {
         return $query->where('branch_id', $branchId);
+    }
+
+    /**
+     * Check if this is a team token.
+     */
+    public function isTeamToken(): bool
+    {
+        return $this->is_team_token;
+    }
+
+    /**
+     * Get team members as array of email => role pairs.
+     */
+    public function getTeamMembers(): array
+    {
+        if (! $this->isTeamToken()) {
+            return [];
+        }
+
+        $members = [];
+        $emails = $this->team_emails ?? [];
+        $roles = $this->team_roles ?? [];
+
+        for ($i = 0; $i < count($emails); $i++) {
+            $members[$emails[$i]] = $roles[$i] ?? 'Team Member';
+        }
+
+        return $members;
+    }
+
+    /**
+     * Check if an email is authorized for this token.
+     */
+    public function isEmailAuthorized(string $email): bool
+    {
+        if (! $this->isTeamToken()) {
+            return $this->email === $email;
+        }
+
+        return in_array($email, $this->team_emails ?? []);
+    }
+
+    /**
+     * Get the role for a specific email.
+     */
+    public function getRoleForEmail(string $email): ?string
+    {
+        if (! $this->isTeamToken()) {
+            return $this->email === $email ? 'Token Owner' : null;
+        }
+
+        $emails = $this->team_emails ?? [];
+        $roles = $this->team_roles ?? [];
+
+        $index = array_search($email, $emails);
+
+        return $index !== false ? ($roles[$index] ?? 'Team Member') : null;
     }
 }

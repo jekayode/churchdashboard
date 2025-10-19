@@ -68,6 +68,7 @@ final class PublicReportController extends Controller
 
         // Validate the request
         $validated = $request->validate([
+            'submitter_email' => 'nullable|email',
             'event_id' => 'required|exists:events,id',
             'event_date' => 'required|date',
             'event_type' => 'required|string|max:100',
@@ -116,6 +117,23 @@ final class PublicReportController extends Controller
             ], 422);
         }
 
+        // For team tokens, validate that the submitter is authorized
+        if ($reportToken->isTeamToken()) {
+            if (empty($validated['submitter_email'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select your role to submit the report.',
+                ], 422);
+            }
+
+            if (! $reportToken->isEmailAuthorized($validated['submitter_email'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to submit reports for this team.',
+                ], 403);
+            }
+        }
+
         try {
             // Transform field names to match database schema
             $data = $this->transformReportData($validated);
@@ -131,6 +149,9 @@ final class PublicReportController extends Controller
                 'event_id' => $event->id,
                 'branch_id' => $reportToken->branch_id,
                 'token_id' => $reportToken->id,
+                'submitter_email' => $validated['submitter_email'] ?? null,
+                'submitter_role' => $reportToken->isTeamToken() ? $reportToken->getRoleForEmail($validated['submitter_email']) : 'Token Owner',
+                'is_team_token' => $reportToken->isTeamToken(),
                 'submitted_via' => 'public_link',
             ]);
 

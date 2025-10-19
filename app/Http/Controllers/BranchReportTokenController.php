@@ -50,8 +50,14 @@ final class BranchReportTokenController extends Controller
 
         $validated = $request->validate([
             'branch_id' => 'required|exists:branches,id',
-            'name' => 'required|string|max:255',
+            'token_type' => 'required|in:individual,team',
+            'name' => 'required_if:token_type,individual|string|max:255',
             'email' => 'nullable|email|max:255',
+            'team_name' => 'required_if:token_type,team|string|max:255',
+            'team_emails' => 'required_if:token_type,team|array|min:1',
+            'team_emails.*' => 'email|max:255',
+            'team_roles' => 'required_if:token_type,team|array|min:1',
+            'team_roles.*' => 'string|max:255',
             'allowed_events' => 'nullable|array',
             'allowed_events.*' => 'exists:events,id',
             'expires_at' => 'nullable|date|after:now',
@@ -68,13 +74,26 @@ final class BranchReportTokenController extends Controller
         }
 
         try {
-            $token = BranchReportToken::createForBranch(
-                (int) $validated['branch_id'],
-                $validated['name'],
-                $validated['email'] ?? null,
-                $validated['allowed_events'] ?? null,
-                $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null
-            );
+            if ($validated['token_type'] === 'team') {
+                // Create team token
+                $token = BranchReportToken::createTeamTokenForBranch(
+                    (int) $validated['branch_id'],
+                    $validated['team_name'],
+                    $validated['team_emails'],
+                    $validated['team_roles'],
+                    $validated['allowed_events'] ?? null,
+                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null
+                );
+            } else {
+                // Create individual token
+                $token = BranchReportToken::createForBranch(
+                    (int) $validated['branch_id'],
+                    $validated['name'],
+                    $validated['email'] ?? null,
+                    $validated['allowed_events'] ?? null,
+                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null
+                );
+            }
 
             Log::info('Branch report token created', [
                 'token_id' => $token->id,

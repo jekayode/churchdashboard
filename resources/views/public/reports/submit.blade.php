@@ -37,6 +37,41 @@
             <!-- Report Form -->
             <div class="bg-white shadow-lg rounded-lg p-6" x-data="reportForm()">
                 <form @submit.prevent="submitReport" class="space-y-6">
+                    <!-- Submitter Selection (for team tokens) -->
+                    @if($token->isTeamToken())
+                    <div class="border-b pb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Submitter Information</h3>
+                        <div>
+                            <label for="submitter_email" class="block text-sm font-medium text-gray-700 mb-2">
+                                Select Your Role *
+                            </label>
+                            <select id="submitter_email" x-model="formData.submitter_email" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Choose your role...</option>
+                                @foreach($token->getTeamMembers() as $email => $role)
+                                    <option value="{{ $email }}">{{ $role }} ({{ $email }})</option>
+                                @endforeach
+                            </select>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Please select your role from the team members authorized to submit reports.
+                            </p>
+                        </div>
+                    </div>
+                    @else
+                    <!-- Individual token - show submitter info -->
+                    <div class="border-b pb-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Submitter Information</h3>
+                        <div class="bg-blue-50 border border-blue-200 rounded-md p-4">
+                            <p class="text-sm text-blue-800">
+                                <strong>Token Owner:</strong> {{ $token->name }}
+                                @if($token->email)
+                                    <br><strong>Email:</strong> {{ $token->email }}
+                                @endif
+                            </p>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- Event Selection -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
@@ -318,6 +353,7 @@
             return {
                 isSubmitting: false,
                 formData: {
+                    submitter_email: '',
                     event_id: '',
                     event_date: '',
                     event_type: '',
@@ -389,6 +425,7 @@
                             this.showMessage('success', result.message);
                             // Reset form
                             this.formData = {
+                                submitter_email: '',
                                 event_id: '',
                                 event_date: '',
                                 event_type: '',
