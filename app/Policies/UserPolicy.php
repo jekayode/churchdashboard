@@ -102,9 +102,9 @@ final class UserPolicy extends BasePolicy
         }
 
         // Branch Pastors can assign roles below their level in their branch
-        if ($this->isBranchPastor($user) && 
-            !$this->isBranchPastor($model) && 
-            !$this->isSuperAdmin($model)) {
+        if ($this->isBranchPastor($user) &&
+            ! $this->isBranchPastor($model) &&
+            ! $this->isSuperAdmin($model)) {
             return $this->belongsToSameBranch($user, $model);
         }
 
@@ -148,8 +148,8 @@ final class UserPolicy extends BasePolicy
      */
     public function createReports(User $user): bool
     {
-        // Super Admins and Branch Pastors can create reports
-        return $this->hasAdminPrivileges($user);
+        // Super Admins, Branch Pastors, and Leadership roles can create reports
+        return $this->hasLeadershipPrivileges($user);
     }
 
     /**
@@ -168,7 +168,7 @@ final class UserPolicy extends BasePolicy
             if ($model === null) {
                 return true;
             }
-            
+
             // If a specific report model is provided, check branch ownership
             if (isset($model->event) && $model->event->branch_id === $user->getActiveBranchId()) {
                 return true;
@@ -194,7 +194,7 @@ final class UserPolicy extends BasePolicy
             if ($model === null) {
                 return true;
             }
-            
+
             // If a specific report model is provided, check branch ownership
             if (isset($model->event) && $model->event->branch_id === $user->getActiveBranchId()) {
                 return true;
@@ -211,4 +211,4 @@ final class UserPolicy extends BasePolicy
     {
         return $this->isSuperAdmin($user);
     }
-} 
+}
