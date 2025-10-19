@@ -388,22 +388,20 @@
                 },
 
                 init() {
-                    // Auto-populate form if there are existing reports
-                    this.autoPopulateForm();
+                    // Initialize form without auto-population
+                    // Auto-population will happen when an event is selected
                 },
 
-                autoPopulateForm() {
-                    // Check if there are existing reports
-                    if (Object.keys(existingReports).length > 0) {
-                        // Get the most recent report (first in the grouped data)
-                        const mostRecentEventId = Object.keys(existingReports)[0];
-                        const mostRecentReport = existingReports[mostRecentEventId][0];
+                autoPopulateFormForEvent(eventId) {
+                    // Check if there are existing reports for this specific event
+                    if (existingReports[eventId] && existingReports[eventId].length > 0) {
+                        // Get the most recent report for this event
+                        const mostRecentReport = existingReports[eventId][0];
                         
                         if (mostRecentReport) {
-                            console.log('Auto-populating form with existing report:', mostRecentReport);
+                            console.log('Auto-populating form with existing report for event:', eventId, mostRecentReport);
                             
                             // Populate basic fields
-                            this.formData.event_id = mostRecentReport.event_id;
                             this.formData.event_date = mostRecentReport.report_date;
                             this.formData.event_type = mostRecentReport.event_type;
                             this.formData.service_type = mostRecentReport.service_type;
@@ -432,14 +430,59 @@
                                 this.formData.second_converts = mostRecentReport.second_service_converts || 0;
                                 this.formData.second_cars = mostRecentReport.second_service_number_of_cars || 0;
                                 this.formData.second_service_notes = mostRecentReport.second_service_notes || '';
+                            } else {
+                                // Reset second service fields if not multi-service
+                                this.formData.has_second_service = false;
+                                this.formData.second_service_start_time = '';
+                                this.formData.second_service_end_time = '';
+                                this.formData.second_male_attendance = 0;
+                                this.formData.second_female_attendance = 0;
+                                this.formData.second_children_attendance = 0;
+                                this.formData.second_online_attendance = 0;
+                                this.formData.second_first_time_guests = 0;
+                                this.formData.second_converts = 0;
+                                this.formData.second_cars = 0;
+                                this.formData.second_service_notes = '';
                             }
                             
                             this.formData.notes = mostRecentReport.notes || '';
                             
                             // Show a message to the user
-                            this.showMessage('info', 'Form pre-populated with the most recent report data. You can modify any fields as needed.');
+                            this.showMessage('info', 'Form pre-populated with existing report data for this event. You can modify any fields as needed.');
                         }
+                    } else {
+                        // No existing report for this event, reset form to defaults
+                        this.resetFormToDefaults();
+                        this.showMessage('info', 'No existing report found for this event. Please fill in the form with new data.');
                     }
+                },
+
+                resetFormToDefaults() {
+                    // Reset form to default values
+                    this.formData.event_date = '';
+                    this.formData.event_type = '';
+                    this.formData.service_type = '';
+                    this.formData.start_time = '';
+                    this.formData.end_time = '';
+                    this.formData.male_attendance = 0;
+                    this.formData.female_attendance = 0;
+                    this.formData.children_attendance = 0;
+                    this.formData.online_attendance = 0;
+                    this.formData.first_time_guests = 0;
+                    this.formData.converts = 0;
+                    this.formData.cars = 0;
+                    this.formData.has_second_service = false;
+                    this.formData.second_service_start_time = '';
+                    this.formData.second_service_end_time = '';
+                    this.formData.second_male_attendance = 0;
+                    this.formData.second_female_attendance = 0;
+                    this.formData.second_children_attendance = 0;
+                    this.formData.second_online_attendance = 0;
+                    this.formData.second_first_time_guests = 0;
+                    this.formData.second_converts = 0;
+                    this.formData.second_cars = 0;
+                    this.formData.second_service_notes = '';
+                    this.formData.notes = '';
                 },
 
                 formatTime(datetimeString) {
@@ -449,7 +492,11 @@
                 },
 
                 async loadEventDetails(eventId) {
-                    if (!eventId) return;
+                    if (!eventId) {
+                        // Reset form when no event is selected
+                        this.resetFormToDefaults();
+                        return;
+                    }
                     
                     try {
                         const response = await fetch(`/public/reports/events/{{ $token->token }}`, {
@@ -465,10 +512,14 @@
                                 // Auto-populate event type and service type from the event
                                 this.formData.event_type = event.service_type || '';
                                 this.formData.service_type = event.service_type || '';
+                                
+                                // Auto-populate form with existing report data for this event
+                                this.autoPopulateFormForEvent(eventId);
                             }
                         }
                     } catch (error) {
                         console.error('Error loading event details:', error);
+                        this.showMessage('error', 'Failed to load event details. Please try again.');
                     }
                 },
 
