@@ -3426,46 +3426,48 @@
             }
         }
 
-        // Event listeners
-        const manageTokensBtn = document.getElementById('manageTokensBtn');
-        if (manageTokensBtn) {
-            manageTokensBtn.addEventListener('click', function() {
-                document.getElementById('tokenManagementModal').classList.remove('hidden');
-                loadTokens();
-                loadAvailableEvents();
-            });
-        }
+        // Token management event listeners - wrapped in DOMContentLoaded to ensure DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const manageTokensBtn = document.getElementById('manageTokensBtn');
+            if (manageTokensBtn) {
+                manageTokensBtn.addEventListener('click', function() {
+                    document.getElementById('tokenManagementModal').classList.remove('hidden');
+                    loadTokens();
+                    loadAvailableEvents();
+                });
+            }
 
-        const createNewTokenBtn = document.getElementById('createNewTokenBtn');
-        if (createNewTokenBtn) {
-            createNewTokenBtn.addEventListener('click', function() {
-                document.getElementById('createTokenModal').classList.remove('hidden');
-            });
-        }
+            const createNewTokenBtn = document.getElementById('createNewTokenBtn');
+            if (createNewTokenBtn) {
+                createNewTokenBtn.addEventListener('click', function() {
+                    document.getElementById('createTokenModal').classList.remove('hidden');
+                });
+            }
 
-        const createTokenBtn = document.getElementById('createTokenBtn');
-        if (createTokenBtn) {
-            createTokenBtn.addEventListener('click', createToken);
-        }
-        
-        const updateTokenBtn = document.getElementById('updateTokenBtn');
-        if (updateTokenBtn) {
-            updateTokenBtn.addEventListener('click', updateToken);
-        }
+            const createTokenBtn = document.getElementById('createTokenBtn');
+            if (createTokenBtn) {
+                createTokenBtn.addEventListener('click', createToken);
+            }
+            
+            const updateTokenBtn = document.getElementById('updateTokenBtn');
+            if (updateTokenBtn) {
+                updateTokenBtn.addEventListener('click', updateToken);
+            }
 
-        // Close modals
-        document.querySelectorAll('[data-modal-close]').forEach(button => {
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                console.log('Modal close button clicked');
-                const modal = this.closest('.fixed');
-                if (modal) {
-                    console.log('Hiding modal:', modal.id);
-                    modal.classList.add('hidden');
-                } else {
-                    console.log('No modal found');
-                }
+            // Close modals
+            document.querySelectorAll('[data-modal-close]').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Modal close button clicked');
+                    const modal = this.closest('.fixed');
+                    if (modal) {
+                        console.log('Hiding modal:', modal.id);
+                        modal.classList.add('hidden');
+                    } else {
+                        console.log('No modal found');
+                    }
+                });
             });
         });
     </script>

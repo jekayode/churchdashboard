@@ -3572,24 +3572,39 @@
             }
         }
 
-        // Event listeners
-        document.getElementById('manageTokensBtn').addEventListener('click', function() {
-            document.getElementById('tokenManagementModal').classList.remove('hidden');
-            loadTokens();
-            loadAvailableEvents();
-        });
+        // Token management event listeners - wrapped in DOMContentLoaded to ensure DOM is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const manageTokensBtn = document.getElementById('manageTokensBtn');
+            if (manageTokensBtn) {
+                manageTokensBtn.addEventListener('click', function() {
+                    document.getElementById('tokenManagementModal').classList.remove('hidden');
+                    loadTokens();
+                    loadAvailableEvents();
+                });
+            }
 
-        document.getElementById('createNewTokenBtn').addEventListener('click', function() {
-            document.getElementById('createTokenModal').classList.remove('hidden');
-        });
+            const createNewTokenBtn = document.getElementById('createNewTokenBtn');
+            if (createNewTokenBtn) {
+                createNewTokenBtn.addEventListener('click', function() {
+                    document.getElementById('createTokenModal').classList.remove('hidden');
+                });
+            }
 
-        document.getElementById('createTokenBtn').addEventListener('click', createToken);
-        document.getElementById('updateTokenBtn').addEventListener('click', updateToken);
+            const createTokenBtn = document.getElementById('createTokenBtn');
+            if (createTokenBtn) {
+                createTokenBtn.addEventListener('click', createToken);
+            }
 
-        // Close modals
-        document.querySelectorAll('[data-modal-close]').forEach(button => {
-            button.addEventListener('click', function() {
-                this.closest('.fixed').classList.add('hidden');
+            const updateTokenBtn = document.getElementById('updateTokenBtn');
+            if (updateTokenBtn) {
+                updateTokenBtn.addEventListener('click', updateToken);
+            }
+
+            // Close modals
+            document.querySelectorAll('[data-modal-close]').forEach(button => {
+                button.addEventListener('click', function() {
+                    this.closest('.fixed').classList.add('hidden');
+                });
             });
         });
     </script>
