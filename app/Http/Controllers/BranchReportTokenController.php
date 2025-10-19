@@ -69,7 +69,7 @@ final class BranchReportTokenController extends Controller
 
         try {
             $token = BranchReportToken::createForBranch(
-                $validated['branch_id'],
+                (int) $validated['branch_id'],
                 $validated['name'],
                 $validated['email'] ?? null,
                 $validated['allowed_events'] ?? null,
