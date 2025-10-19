@@ -45,10 +45,21 @@ final class PublicReportController extends Controller
 
         $events = $eventsQuery->get();
 
+        // Check for existing reports for this token's branch
+        $existingReports = \App\Models\EventReport::whereHas('event', function ($query) use ($reportToken) {
+            $query->where('branch_id', $reportToken->branch_id);
+        })
+        ->orderBy('report_date', 'desc')
+        ->orderBy('created_at', 'desc')
+        ->get()
+        ->groupBy('event_id')
+        ->toArray();
+
         return view('public.reports.submit', [
             'token' => $reportToken,
             'branch' => $reportToken->branch,
             'events' => $events,
+            'existingReports' => $existingReports,
         ]);
     }
 

@@ -24,7 +24,7 @@
                 </p>
             </div>
 
-            <!-- Success/Error Messages -->
+            <!-- Success/Error/Info Messages -->
             <div id="messageContainer" class="hidden mb-6">
                 <div id="successMessage" class="hidden bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
                     <strong>Success!</strong> <span id="successText"></span>
@@ -32,10 +32,13 @@
                 <div id="errorMessage" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                     <strong>Error!</strong> <span id="errorText"></span>
                 </div>
+                <div id="infoMessage" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
+                    <strong>Info:</strong> <span id="infoText"></span>
+                </div>
             </div>
 
             <!-- Report Form -->
-            <div class="bg-white shadow-lg rounded-lg p-6" x-data="reportForm()">
+            <div class="bg-white shadow-lg rounded-lg p-6" x-data="reportForm()" x-init="init()">
                 <form @submit.prevent="submitReport" class="space-y-6">
                     <!-- Submitter Selection (for team tokens) -->
                     @if($token->isTeamToken())
@@ -349,6 +352,9 @@
     </div>
 
     <script>
+        // Existing reports data for auto-population
+        const existingReports = @json($existingReports);
+        
         function reportForm() {
             return {
                 isSubmitting: false,
@@ -379,6 +385,67 @@
                     second_cars: 0,
                     second_service_notes: '',
                     notes: ''
+                },
+
+                init() {
+                    // Auto-populate form if there are existing reports
+                    this.autoPopulateForm();
+                },
+
+                autoPopulateForm() {
+                    // Check if there are existing reports
+                    if (Object.keys(existingReports).length > 0) {
+                        // Get the most recent report (first in the grouped data)
+                        const mostRecentEventId = Object.keys(existingReports)[0];
+                        const mostRecentReport = existingReports[mostRecentEventId][0];
+                        
+                        if (mostRecentReport) {
+                            console.log('Auto-populating form with existing report:', mostRecentReport);
+                            
+                            // Populate basic fields
+                            this.formData.event_id = mostRecentReport.event_id;
+                            this.formData.event_date = mostRecentReport.report_date;
+                            this.formData.event_type = mostRecentReport.event_type;
+                            this.formData.service_type = mostRecentReport.service_type;
+                            this.formData.start_time = this.formatTime(mostRecentReport.start_time);
+                            this.formData.end_time = this.formatTime(mostRecentReport.end_time);
+                            
+                            // Populate first service attendance
+                            this.formData.male_attendance = mostRecentReport.attendance_male || 0;
+                            this.formData.female_attendance = mostRecentReport.attendance_female || 0;
+                            this.formData.children_attendance = mostRecentReport.attendance_children || 0;
+                            this.formData.online_attendance = mostRecentReport.attendance_online || 0;
+                            this.formData.first_time_guests = mostRecentReport.first_time_guests || 0;
+                            this.formData.converts = mostRecentReport.converts || 0;
+                            this.formData.cars = mostRecentReport.number_of_cars || 0;
+                            
+                            // Populate second service if it exists
+                            if (mostRecentReport.is_multi_service) {
+                                this.formData.has_second_service = true;
+                                this.formData.second_service_start_time = this.formatTime(mostRecentReport.second_service_start_time);
+                                this.formData.second_service_end_time = this.formatTime(mostRecentReport.second_service_end_time);
+                                this.formData.second_male_attendance = mostRecentReport.second_service_attendance_male || 0;
+                                this.formData.second_female_attendance = mostRecentReport.second_service_attendance_female || 0;
+                                this.formData.second_children_attendance = mostRecentReport.second_service_attendance_children || 0;
+                                this.formData.second_online_attendance = mostRecentReport.second_service_attendance_online || 0;
+                                this.formData.second_first_time_guests = mostRecentReport.second_service_first_time_guests || 0;
+                                this.formData.second_converts = mostRecentReport.second_service_converts || 0;
+                                this.formData.second_cars = mostRecentReport.second_service_number_of_cars || 0;
+                                this.formData.second_service_notes = mostRecentReport.second_service_notes || '';
+                            }
+                            
+                            this.formData.notes = mostRecentReport.notes || '';
+                            
+                            // Show a message to the user
+                            this.showMessage('info', 'Form pre-populated with the most recent report data. You can modify any fields as needed.');
+                        }
+                    }
+                },
+
+                formatTime(datetimeString) {
+                    if (!datetimeString) return '';
+                    const date = new Date(datetimeString);
+                    return date.toTimeString().slice(0, 5); // HH:MM format
                 },
 
                 async loadEventDetails(eventId) {
@@ -467,20 +534,26 @@
                     const container = document.getElementById('messageContainer');
                     const successDiv = document.getElementById('successMessage');
                     const errorDiv = document.getElementById('errorMessage');
+                    const infoDiv = document.getElementById('infoMessage');
                     const successText = document.getElementById('successText');
                     const errorText = document.getElementById('errorText');
+                    const infoText = document.getElementById('infoText');
 
                     // Hide all messages first
                     successDiv.classList.add('hidden');
                     errorDiv.classList.add('hidden');
+                    infoDiv.classList.add('hidden');
                     container.classList.add('hidden');
 
                     if (type === 'success') {
                         successText.textContent = message;
                         successDiv.classList.remove('hidden');
-                    } else {
+                    } else if (type === 'error') {
                         errorText.textContent = message;
                         errorDiv.classList.remove('hidden');
+                    } else if (type === 'info') {
+                        infoText.textContent = message;
+                        infoDiv.classList.remove('hidden');
                     }
 
                     container.classList.remove('hidden');
