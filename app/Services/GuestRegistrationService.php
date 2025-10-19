@@ -51,6 +51,7 @@ final class GuestRegistrationService
                 $member = Member::create([
                     'user_id' => $user->id,
                     'branch_id' => (int) $data['branch_id'],
+                    'name' => trim($data['first_name'].' '.$data['surname']), // Add the name field
                     'first_name' => $data['first_name'],
                     'surname' => $data['surname'],
                     'email' => $data['email'],
