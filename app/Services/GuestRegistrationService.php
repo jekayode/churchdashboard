@@ -12,6 +12,10 @@ use Illuminate\Support\Str;
 
 final class GuestRegistrationService
 {
+    public function __construct(
+        private readonly EnvironmentAwareEmailService $emailService
+    ) {}
+
     /**
      * Register a new guest user and member.
      */
@@ -21,17 +25,19 @@ final class GuestRegistrationService
             return DB::transaction(function () use ($data) {
                 // Generate a random password
                 $password = Str::random(12);
-                
-                // Log password for testing purposes
-                \Log::info('Guest Registration - User Credentials', [
-                    'email' => $data['email'],
-                    'password' => $password,
-                    'name' => trim($data['first_name'] . ' ' . $data['surname'])
-                ]);
-                
+
+                // Log password for testing purposes (only in local environment)
+                if (app()->environment('local')) {
+                    \Log::info('Guest Registration - User Credentials', [
+                        'email' => $data['email'],
+                        'password' => $password,
+                        'name' => trim($data['first_name'].' '.$data['surname']),
+                    ]);
+                }
+
                 // Create user account
                 $user = User::create([
-                    'name' => trim($data['first_name'] . ' ' . $data['surname']),
+                    'name' => trim($data['first_name'].' '.$data['surname']),
                     'email' => $data['email'],
                     'phone' => $data['phone'],
                     'password' => Hash::make($password),
@@ -70,27 +76,24 @@ final class GuestRegistrationService
                 // Calculate initial profile completion
                 $member->updateProfileCompletion();
 
-                // TODO: Send welcome email with login credentials
-                // TODO: Enroll in email campaigns if configured
+                // Send welcome email with login credentials
+                $branch = $user->member->branch;
+                $this->emailService->sendWelcomeEmail(
+                    $user->email,
+                    $user->name,
+                    $password,
+                    $branch->name
+                );
 
                 return $user;
             });
         } catch (\Exception $e) {
-            \Log::error('Guest registration failed: ' . $e->getMessage(), [
+            \Log::error('Guest registration failed: '.$e->getMessage(), [
                 'data' => $data,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
             throw $e;
         }
-    }
-
-    /**
-     * Send welcome email to new guest.
-     */
-    public function sendWelcomeEmail(User $user): void
-    {
-        // TODO: Implement email sending
-        // This will be implemented in Phase 4 (Communication System)
     }
 
     /**

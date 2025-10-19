@@ -101,3 +101,4 @@ final class SendBulkEmailJob implements ShouldQueue
         ]);
     }
 }
+

@@ -91,3 +91,4 @@ final class CommunicationPerformanceController extends Controller
         ]);
     }
 }
+

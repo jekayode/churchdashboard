@@ -12,6 +12,12 @@
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-medium text-gray-900">Event Reports</h3>
                     <div class="flex gap-3">
+                        <button id="manageTokensBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                            </svg>
+                            Manage Submission Links
+                        </button>
                         <button id="exportPdfBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md flex items-center gap-2">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
@@ -3335,6 +3341,378 @@
                 });
             }
         }
+
+        // Token Management Functionality
+        let tokens = [];
+        let availableEvents = [];
+
+        // Load tokens and events
+        async function loadTokens() {
+            try {
+                const response = await fetch('/api/reports/tokens', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    tokens = data.data;
+                    renderTokensTable();
+                }
+            } catch (error) {
+                console.error('Error loading tokens:', error);
+            }
+        }
+
+        async function loadAvailableEvents() {
+            try {
+                const response = await fetch('/api/reports/tokens/available-events', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    availableEvents = data.data;
+                }
+            } catch (error) {
+                console.error('Error loading events:', error);
+            }
+        }
+
+        function renderTokensTable() {
+            const tbody = document.getElementById('tokensTableBody');
+            if (!tbody) return;
+
+            tbody.innerHTML = '';
+            
+            tokens.forEach(token => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        ${token.name}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${token.branch.name}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${token.email || 'N/A'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${token.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${token.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${token.usage_count}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${token.last_used_at ? new Date(token.last_used_at).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        ${token.expires_at ? new Date(token.expires_at).toLocaleDateString() : 'Never'}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="copyTokenUrl('${token.token}')" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                            Copy Link
+                        </button>
+                        <button onclick="editToken(${token.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                            Edit
+                        </button>
+                        <button onclick="regenerateToken(${token.id})" class="text-yellow-600 hover:text-yellow-900 mr-3">
+                            Regenerate
+                        </button>
+                        <button onclick="deleteToken(${token.id})" class="text-red-600 hover:text-red-900">
+                            Delete
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function copyTokenUrl(token) {
+            const url = `${window.location.origin}/public/reports/submit/${token}`;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('Link copied to clipboard!');
+            });
+        }
+
+        async function createToken() {
+            const form = document.getElementById('createTokenForm');
+            const formData = new FormData(form);
+            
+            try {
+                const response = await fetch('/api/reports/tokens', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Token created successfully!');
+                    document.getElementById('tokenManagementModal').classList.add('hidden');
+                    loadTokens();
+                } else {
+                    alert('Error creating token: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error creating token:', error);
+                alert('Error creating token');
+            }
+        }
+
+        async function editToken(tokenId) {
+            const token = tokens.find(t => t.id === tokenId);
+            if (!token) return;
+
+            // Populate edit form
+            document.getElementById('editTokenId').value = token.id;
+            document.getElementById('editTokenName').value = token.name;
+            document.getElementById('editTokenEmail').value = token.email || '';
+            document.getElementById('editTokenActive').checked = token.is_active;
+            document.getElementById('editTokenExpiresAt').value = token.expires_at ? token.expires_at.split('T')[0] : '';
+            
+            // Show edit modal
+            document.getElementById('editTokenModal').classList.remove('hidden');
+        }
+
+        async function updateToken() {
+            const form = document.getElementById('editTokenForm');
+            const formData = new FormData(form);
+            const tokenId = formData.get('token_id');
+            
+            try {
+                const response = await fetch(`/api/reports/tokens/${tokenId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Token updated successfully!');
+                    document.getElementById('editTokenModal').classList.add('hidden');
+                    loadTokens();
+                } else {
+                    alert('Error updating token: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error updating token:', error);
+                alert('Error updating token');
+            }
+        }
+
+        async function regenerateToken(tokenId) {
+            if (!confirm('Are you sure you want to regenerate this token? The old link will stop working.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/reports/tokens/${tokenId}/regenerate`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Token regenerated successfully!');
+                    loadTokens();
+                } else {
+                    alert('Error regenerating token: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error regenerating token:', error);
+                alert('Error regenerating token');
+            }
+        }
+
+        async function deleteToken(tokenId) {
+            if (!confirm('Are you sure you want to delete this token? This action cannot be undone.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/reports/tokens/${tokenId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Token deleted successfully!');
+                    loadTokens();
+                } else {
+                    alert('Error deleting token: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting token:', error);
+                alert('Error deleting token');
+            }
+        }
+
+        // Event listeners
+        document.getElementById('manageTokensBtn').addEventListener('click', function() {
+            document.getElementById('tokenManagementModal').classList.remove('hidden');
+            loadTokens();
+            loadAvailableEvents();
+        });
+
+        document.getElementById('createNewTokenBtn').addEventListener('click', function() {
+            document.getElementById('createTokenModal').classList.remove('hidden');
+        });
+
+        document.getElementById('createTokenBtn').addEventListener('click', createToken);
+        document.getElementById('updateTokenBtn').addEventListener('click', updateToken);
+
+        // Close modals
+        document.querySelectorAll('[data-modal-close]').forEach(button => {
+            button.addEventListener('click', function() {
+                this.closest('.fixed').classList.add('hidden');
+            });
+        });
     </script>
+
+    <!-- Token Management Modal -->
+    <div id="tokenManagementModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-6xl shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Manage Report Submission Links</h3>
+                    <button data-modal-close class="text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Create New Token Button -->
+                <div class="mb-4">
+                    <button id="createNewTokenBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md">
+                        Create New Submission Link
+                    </button>
+                </div>
+
+                <!-- Tokens Table -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Used</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expires</th>
+                                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tokensTableBody" class="bg-white divide-y divide-gray-200">
+                            <!-- Tokens will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Token Modal -->
+    <div id="createTokenModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Create New Submission Link</h3>
+                
+                <form id="createTokenForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Expires At</label>
+                        <input type="date" name="expires_at" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="flex justify-end gap-3">
+                        <button type="button" data-modal-close class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="button" id="createTokenBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Create
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Token Modal -->
+    <div id="editTokenModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Submission Link</h3>
+                
+                <form id="editTokenForm">
+                    <input type="hidden" id="editTokenId" name="token_id">
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
+                        <input type="text" id="editTokenName" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <input type="email" id="editTokenEmail" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Active</label>
+                        <input type="checkbox" id="editTokenActive" name="is_active" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Expires At</label>
+                        <input type="date" id="editTokenExpiresAt" name="expires_at" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    
+                    <div class="flex justify-end gap-3">
+                        <button type="button" data-modal-close class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="button" id="updateTokenBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                            Update
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     @endpush
 </x-sidebar-layout> 

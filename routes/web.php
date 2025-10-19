@@ -252,10 +252,6 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
         return view('member.groups.reports');
     })->name('groups.reports');
 
-    Route::get('/import-export', function () {
-        return view('admin.import-export.index');
-    })->name('import-export');
-
     // Communication Routes
     Route::prefix('communication')->name('communication.')->group(function () {
         Route::get('/settings', function () {
@@ -385,9 +381,12 @@ Route::middleware(['auth', 'verified', 'role:church_member,super_admin,branch_pa
         return $query->get();
     })->name('spouse.search');
 
-    // Profile completion routes
-    Route::get('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'showProfileCompletion'])->name('profile-completion');
-    Route::post('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'updateProfileCompletion'])->name('profile-completion.update');
+});
+
+// Profile completion routes (accessible to authenticated users)
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'showProfileCompletion'])->name('member.profile-completion');
+    Route::post('/profile-completion', [App\Http\Controllers\PublicAuthController::class, 'updateProfileCompletion'])->name('member.profile-completion.update');
 });
 
 // Authenticated member search endpoint (used for spouse selection) - uses web auth session
@@ -490,5 +489,15 @@ Route::prefix('public-api')->group(function () {
 // Public check-in routes
 Route::get('/scanner', [App\Http\Controllers\EventController::class, 'showScanner'])->name('public.scanner');
 Route::get('/check-in/{registration}', [App\Http\Controllers\EventController::class, 'publicCheckIn'])->name('public.check-in');
+
+// Public report submission routes
+Route::prefix('public/reports')->group(function () {
+    Route::get('/submit/{token}', [\App\Http\Controllers\PublicReportController::class, 'showSubmissionForm'])
+        ->name('public.reports.submit');
+    Route::post('/submit/{token}', [\App\Http\Controllers\PublicReportController::class, 'submitReport'])
+        ->name('public.reports.submit.store');
+    Route::get('/events/{token}', [\App\Http\Controllers\PublicReportController::class, 'getEvents'])
+        ->name('public.reports.events');
+});
 
 require __DIR__.'/auth.php';

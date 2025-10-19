@@ -79,3 +79,4 @@ final class SendSingleEmailJob implements ShouldQueue
         ]);
     }
 }
+

@@ -14,7 +14,6 @@ use App\Models\Ministry;
 use App\Models\Projection;
 use App\Models\SmallGroup;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
@@ -30,12 +29,12 @@ final class ImportExportService
             // Increase execution time and memory limits for large imports
             set_time_limit(config('import.timeout', 300));
             ini_set('memory_limit', config('import.memory_limit', '512M'));
-            
+
             // Validate file type
             $allowedExtensions = config('import.allowed_extensions', ['xlsx', 'xls', 'csv']);
             $extension = $file->getClientOriginalExtension();
-            
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+
+            if (! in_array(strtolower($extension), $allowedExtensions)) {
                 throw new \InvalidArgumentException('Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.');
             }
 
@@ -46,22 +45,25 @@ final class ImportExportService
 
             // Store file temporarily
             $filePath = $file->store('imports', 'local');
-            
+
             Log::info('Starting member import', [
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
-                'branch_id' => $branchId
+                'branch_id' => $branchId,
             ]);
 
             // Create import instance
             $import = new MembersImport($branchId);
-            
+
             // Execute import
             Excel::import($import, $filePath, 'local');
 
             // Get import results
             $summary = $import->getImportSummary();
-            
+
+            // Send welcome emails to imported users
+            $import->sendWelcomeEmails();
+
             // Clean up temporary file
             Storage::disk('local')->delete($filePath);
 
@@ -69,18 +71,19 @@ final class ImportExportService
                 'branch_id' => $branchId,
                 'total_processed' => $summary['total_processed'],
                 'successful' => $summary['successful_imports'],
-                'failed' => $summary['failed_imports']
+                'failed' => $summary['failed_imports'],
+                'welcome_emails_scheduled' => $summary['welcome_emails_scheduled'] ?? 0,
             ]);
 
             // Determine success based on whether there were any failures
             $success = $summary['failed_imports'] === 0;
-            $message = $success 
-                ? 'Import completed successfully' 
+            $message = $success
+                ? 'Import completed successfully'
                 : "Import completed with {$summary['failed_imports']} errors out of {$summary['total_processed']} total rows";
-            
+
             // Format error details for frontend display
             $details = null;
-            if (!$success && isset($summary['errors']) && count($summary['errors']) > 0) {
+            if (! $success && isset($summary['errors']) && count($summary['errors']) > 0) {
                 $details = $this->formatErrorDetails($summary['errors']);
             }
 
@@ -88,14 +91,14 @@ final class ImportExportService
                 'success' => $success,
                 'message' => $message,
                 'summary' => $summary,
-                'details' => $details
+                'details' => $details,
             ];
 
         } catch (\Exception $e) {
             Log::error('Member import failed', [
                 'error' => $e->getMessage(),
                 'branch_id' => $branchId,
-                'file_name' => $file->getClientOriginalName() ?? 'unknown'
+                'file_name' => $file->getClientOriginalName() ?? 'unknown',
             ]);
 
             // Clean up file if it exists
@@ -105,8 +108,8 @@ final class ImportExportService
 
             return [
                 'success' => false,
-                'message' => 'Import failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()]
+                'message' => 'Import failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -120,8 +123,8 @@ final class ImportExportService
             // Validate file type
             $allowedExtensions = ['xlsx', 'xls', 'csv'];
             $extension = $file->getClientOriginalExtension();
-            
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+
+            if (! in_array(strtolower($extension), $allowedExtensions)) {
                 throw new \InvalidArgumentException('Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.');
             }
 
@@ -132,22 +135,22 @@ final class ImportExportService
 
             // Store file temporarily
             $filePath = $file->store('imports', 'local');
-            
+
             Log::info('Starting ministry import', [
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
-                'branch_id' => $branchId
+                'branch_id' => $branchId,
             ]);
 
             // Create import instance
             $import = new \App\Imports\MinistriesImport($branchId);
-            
+
             // Execute import
             Excel::import($import, $filePath, 'local');
 
             // Get import results
             $summary = $import->getImportSummary();
-            
+
             // Clean up temporary file
             Storage::disk('local')->delete($filePath);
 
@@ -155,20 +158,20 @@ final class ImportExportService
                 'branch_id' => $branchId,
                 'total_processed' => $summary['total_processed'],
                 'successful' => $summary['successful_imports'],
-                'failed' => $summary['failed_imports']
+                'failed' => $summary['failed_imports'],
             ]);
 
             return [
                 'success' => true,
                 'message' => 'Import completed successfully',
-                'summary' => $summary
+                'summary' => $summary,
             ];
 
         } catch (\Exception $e) {
             Log::error('Ministry import failed', [
                 'error' => $e->getMessage(),
                 'branch_id' => $branchId,
-                'file_name' => $file->getClientOriginalName() ?? 'unknown'
+                'file_name' => $file->getClientOriginalName() ?? 'unknown',
             ]);
 
             // Clean up file if it exists
@@ -178,8 +181,8 @@ final class ImportExportService
 
             return [
                 'success' => false,
-                'message' => 'Import failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()]
+                'message' => 'Import failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -193,8 +196,8 @@ final class ImportExportService
             // Validate file type
             $allowedExtensions = ['xlsx', 'xls', 'csv'];
             $extension = $file->getClientOriginalExtension();
-            
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+
+            if (! in_array(strtolower($extension), $allowedExtensions)) {
                 throw new \InvalidArgumentException('Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.');
             }
 
@@ -205,22 +208,22 @@ final class ImportExportService
 
             // Store file temporarily
             $filePath = $file->store('imports', 'local');
-            
+
             Log::info('Starting department import', [
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
-                'branch_id' => $branchId
+                'branch_id' => $branchId,
             ]);
 
             // Create import instance
             $import = new \App\Imports\DepartmentsImport($branchId);
-            
+
             // Execute import
             Excel::import($import, $filePath, 'local');
 
             // Get import results
             $summary = $import->getImportSummary();
-            
+
             // Clean up temporary file
             Storage::disk('local')->delete($filePath);
 
@@ -228,20 +231,20 @@ final class ImportExportService
                 'branch_id' => $branchId,
                 'total_processed' => $summary['total_processed'],
                 'successful' => $summary['successful_imports'],
-                'failed' => $summary['failed_imports']
+                'failed' => $summary['failed_imports'],
             ]);
 
             return [
                 'success' => true,
                 'message' => 'Import completed successfully',
-                'summary' => $summary
+                'summary' => $summary,
             ];
 
         } catch (\Exception $e) {
             Log::error('Department import failed', [
                 'error' => $e->getMessage(),
                 'branch_id' => $branchId,
-                'file_name' => $file->getClientOriginalName() ?? 'unknown'
+                'file_name' => $file->getClientOriginalName() ?? 'unknown',
             ]);
 
             // Clean up file if it exists
@@ -251,8 +254,8 @@ final class ImportExportService
 
             return [
                 'success' => false,
-                'message' => 'Import failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()]
+                'message' => 'Import failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -266,12 +269,12 @@ final class ImportExportService
             // Increase execution time and memory limits for large imports
             set_time_limit(300); // 5 minutes
             ini_set('memory_limit', '512M');
-            
+
             // Validate file type
             $allowedExtensions = ['xlsx', 'xls', 'csv'];
             $extension = $file->getClientOriginalExtension();
-            
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+
+            if (! in_array(strtolower($extension), $allowedExtensions)) {
                 throw new \InvalidArgumentException('Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.');
             }
 
@@ -282,22 +285,22 @@ final class ImportExportService
 
             // Store file temporarily
             $filePath = $file->store('imports', 'local');
-            
+
             Log::info('Starting event reports import', [
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
-                'branch_id' => $branchId
+                'branch_id' => $branchId,
             ]);
 
             // Create import instance
             $import = new \App\Imports\EventReportsImport($branchId);
-            
+
             // Execute import
             Excel::import($import, $filePath, 'local');
 
             // Get import results
             $summary = $import->getImportSummary();
-            
+
             // Clean up temporary file
             Storage::disk('local')->delete($filePath);
 
@@ -305,18 +308,18 @@ final class ImportExportService
                 'branch_id' => $branchId,
                 'total_processed' => $summary['total_processed'],
                 'successful' => $summary['successful_imports'],
-                'failed' => $summary['failed_imports']
+                'failed' => $summary['failed_imports'],
             ]);
 
             // Determine success based on whether there were any failures
             $success = $summary['failed_imports'] === 0;
-            $message = $success 
-                ? 'Import completed successfully' 
+            $message = $success
+                ? 'Import completed successfully'
                 : "Import completed with {$summary['failed_imports']} errors out of {$summary['total_processed']} total rows";
-            
+
             // Format error details for frontend display
             $details = null;
-            if (!$success && isset($summary['errors']) && count($summary['errors']) > 0) {
+            if (! $success && isset($summary['errors']) && count($summary['errors']) > 0) {
                 $details = $this->formatErrorDetails($summary['errors']);
             }
 
@@ -324,14 +327,14 @@ final class ImportExportService
                 'success' => $success,
                 'message' => $message,
                 'summary' => $summary,
-                'details' => $details
+                'details' => $details,
             ];
 
         } catch (\Exception $e) {
             Log::error('Event reports import failed', [
                 'error' => $e->getMessage(),
                 'branch_id' => $branchId,
-                'file_name' => $file->getClientOriginalName() ?? 'unknown'
+                'file_name' => $file->getClientOriginalName() ?? 'unknown',
             ]);
 
             // Clean up file if it exists
@@ -341,8 +344,8 @@ final class ImportExportService
 
             return [
                 'success' => false,
-                'message' => 'Import failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()]
+                'message' => 'Import failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -356,8 +359,8 @@ final class ImportExportService
             // Validate file type
             $allowedExtensions = ['xlsx', 'xls', 'csv'];
             $extension = $file->getClientOriginalExtension();
-            
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+
+            if (! in_array(strtolower($extension), $allowedExtensions)) {
                 throw new \InvalidArgumentException('Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.');
             }
 
@@ -368,22 +371,22 @@ final class ImportExportService
 
             // Store file temporarily
             $filePath = $file->store('imports', 'local');
-            
+
             Log::info('Starting small group import', [
                 'file_name' => $file->getClientOriginalName(),
                 'file_size' => $file->getSize(),
-                'branch_id' => $branchId
+                'branch_id' => $branchId,
             ]);
 
             // Create import instance
             $import = new \App\Imports\SmallGroupsImport($branchId);
-            
+
             // Execute import
             Excel::import($import, $filePath, 'local');
 
             // Get import results
             $summary = $import->getImportSummary();
-            
+
             // Clean up temporary file
             Storage::disk('local')->delete($filePath);
 
@@ -391,20 +394,20 @@ final class ImportExportService
                 'branch_id' => $branchId,
                 'total_processed' => $summary['total_processed'],
                 'successful' => $summary['successful_imports'],
-                'failed' => $summary['failed_imports']
+                'failed' => $summary['failed_imports'],
             ]);
 
             return [
                 'success' => true,
                 'message' => 'Import completed successfully',
-                'summary' => $summary
+                'summary' => $summary,
             ];
 
         } catch (\Exception $e) {
             Log::error('Small group import failed', [
                 'error' => $e->getMessage(),
                 'branch_id' => $branchId,
-                'file_name' => $file->getClientOriginalName() ?? 'unknown'
+                'file_name' => $file->getClientOriginalName() ?? 'unknown',
             ]);
 
             // Clean up file if it exists
@@ -414,8 +417,8 @@ final class ImportExportService
 
             return [
                 'success' => false,
-                'message' => 'Import failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()]
+                'message' => 'Import failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -428,17 +431,17 @@ final class ImportExportService
         try {
             Log::info('Starting member export', [
                 'branch_id' => $branchId,
-                'filters' => $filters
+                'filters' => $filters,
             ]);
 
             // Create export instance
             $export = new MembersExport($branchId, $filters);
-            
+
             // Generate filename
             $filename = MembersExport::getExportFilename($branchId, $filters);
-            
+
             // Store export file
-            $filePath = 'exports/' . $filename;
+            $filePath = 'exports/'.$filename;
             Excel::store($export, $filePath, 'public');
 
             // Get export summary
@@ -447,7 +450,7 @@ final class ImportExportService
             Log::info('Member export completed', [
                 'branch_id' => $branchId,
                 'filename' => $filename,
-                'total_members' => $summary['total_members']
+                'total_members' => $summary['total_members'],
             ]);
 
             return [
@@ -456,20 +459,20 @@ final class ImportExportService
                 'filename' => $filename,
                 'file_path' => $filePath,
                 'download_url' => Storage::disk('public')->url($filePath),
-                'summary' => $summary
+                'summary' => $summary,
             ];
 
         } catch (\Exception $e) {
             Log::error('Member export failed', [
                 'error' => $e->getMessage(),
                 'branch_id' => $branchId,
-                'filters' => $filters
+                'filters' => $filters,
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Export failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()]
+                'message' => 'Export failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -677,15 +680,15 @@ final class ImportExportService
             }
 
             // Apply date filters
-            if (!empty($filters['start_date'])) {
+            if (! empty($filters['start_date'])) {
                 $query->whereDate('event_date', '>=', $filters['start_date']);
             }
 
-            if (!empty($filters['end_date'])) {
+            if (! empty($filters['end_date'])) {
                 $query->whereDate('event_date', '<=', $filters['end_date']);
             }
 
-            if (!empty($filters['event_type'])) {
+            if (! empty($filters['event_type'])) {
                 $query->where('event_type', $filters['event_type']);
             }
 
@@ -799,11 +802,11 @@ final class ImportExportService
 
         // Convert to array format expected by Excel
         $arrayData = [];
-        
+
         if ($data->isNotEmpty()) {
             // Add headers
             $arrayData[] = array_keys($data->first());
-            
+
             // Add data rows
             foreach ($data as $row) {
                 $arrayData[] = array_values($row);
@@ -811,7 +814,8 @@ final class ImportExportService
         }
 
         // Create simple Excel export
-        Excel::store(new class($arrayData) implements \Maatwebsite\Excel\Concerns\FromArray {
+        Excel::store(new class($arrayData) implements \Maatwebsite\Excel\Concerns\FromArray
+        {
             private array $data;
 
             public function __construct(array $data)
@@ -835,7 +839,7 @@ final class ImportExportService
     {
         $timestamp = now()->format('Y-m-d_H-i-s');
         $branchSuffix = $branchId ? "_branch-{$branchId}" : '';
-        
+
         return "{$entityType}_export{$branchSuffix}_{$timestamp}.xlsx";
     }
 
@@ -876,7 +880,7 @@ final class ImportExportService
                     'marital_status' => 'married',
                     'occupation' => 'Software Engineer',
                     'nearest_bus_stop' => 'Central Station',
-                    'leadership_trainings' => 'ELP,MLCC'
+                    'leadership_trainings' => 'ELP,MLCC',
                 ],
                 [
                     'first_name' => 'Jane',
@@ -892,7 +896,7 @@ final class ImportExportService
                     'marital_status' => 'engaged',
                     'occupation' => 'Teacher',
                     'nearest_bus_stop' => 'School Junction',
-                    'leadership_trainings' => 'ELP'
+                    'leadership_trainings' => 'ELP',
                 ],
                 [
                     'first_name' => 'Michael',
@@ -908,7 +912,7 @@ final class ImportExportService
                     'marital_status' => 'married',
                     'occupation' => 'Pastor',
                     'nearest_bus_stop' => 'Church Avenue',
-                    'leadership_trainings' => 'ELP,MLCC,PLI'
+                    'leadership_trainings' => 'ELP,MLCC,PLI',
                 ],
                 [
                     'first_name' => 'Sarah',
@@ -924,7 +928,7 @@ final class ImportExportService
                     'marital_status' => 'in_a_relationship',
                     'occupation' => 'Nurse',
                     'nearest_bus_stop' => 'Hospital Stop',
-                    'leadership_trainings' => ''
+                    'leadership_trainings' => '',
                 ],
                 [
                     'first_name' => 'David',
@@ -940,7 +944,7 @@ final class ImportExportService
                     'marital_status' => 'separated',
                     'occupation' => 'Accountant',
                     'nearest_bus_stop' => 'Business District',
-                    'leadership_trainings' => 'ELP'
+                    'leadership_trainings' => 'ELP',
                 ],
                 [
                     'first_name' => 'Mary',
@@ -956,37 +960,38 @@ final class ImportExportService
                     'marital_status' => 'widowed',
                     'occupation' => 'Retired',
                     'nearest_bus_stop' => 'Senior Center',
-                    'leadership_trainings' => 'ELP,MLCC'
-                ]
+                    'leadership_trainings' => 'ELP,MLCC',
+                ],
             ];
 
             // Create filename with timestamp
-            $filename = 'member_import_template_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-            $filePath = 'exports/' . $filename;
-            $fullPath = storage_path('app/public/' . $filePath);
+            $filename = 'member_import_template_'.now()->format('Y-m-d_H-i-s').'.xlsx';
+            $filePath = 'exports/'.$filename;
+            $fullPath = storage_path('app/public/'.$filePath);
 
             // Ensure directory exists
             $directory = dirname($fullPath);
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
             // Create Excel file
-            $export = new class($data) implements 
-                \Maatwebsite\Excel\Concerns\FromCollection,
-                \Maatwebsite\Excel\Concerns\WithHeadings
+            $export = new class($data) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings
             {
                 private array $data;
 
-                public function __construct($data) {
+                public function __construct($data)
+                {
                     $this->data = $data;
                 }
 
-                public function collection() {
+                public function collection()
+                {
                     return collect($this->data);
                 }
 
-                public function headings(): array {
+                public function headings(): array
+                {
                     return [
                         'First Name',
                         'Last Name',
@@ -1001,7 +1006,7 @@ final class ImportExportService
                         'Marital Status',
                         'Occupation',
                         'Nearest Bus Stop',
-                        'Leadership Trainings'
+                        'Leadership Trainings',
                     ];
                 }
             };
@@ -1012,14 +1017,15 @@ final class ImportExportService
                 'success' => true,
                 'file_path' => $filePath,
                 'filename' => 'member_import_template.xlsx',
-                'message' => 'Template generated successfully'
+                'message' => 'Template generated successfully',
             ];
 
         } catch (\Exception $e) {
             Log::error('Member template generation failed', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to generate member import template'
+                'message' => 'Failed to generate member import template',
             ];
         }
     }
@@ -1037,7 +1043,7 @@ final class ImportExportService
                     'leader_name' => 'John Leader',
                     'leader_email' => 'john.leader@example.com',
                     'leader_phone' => '+1234567890',
-                    'status' => 'active'
+                    'status' => 'active',
                 ],
                 [
                     'name' => 'Music Ministry',
@@ -1045,44 +1051,45 @@ final class ImportExportService
                     'leader_name' => 'Jane Musician',
                     'leader_email' => 'jane.musician@example.com',
                     'leader_phone' => '+1234567891',
-                    'status' => 'active'
-                ]
+                    'status' => 'active',
+                ],
             ];
 
             // Create filename with timestamp
-            $filename = 'ministry_import_template_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-            $filePath = 'exports/' . $filename;
-            $fullPath = storage_path('app/public/' . $filePath);
+            $filename = 'ministry_import_template_'.now()->format('Y-m-d_H-i-s').'.xlsx';
+            $filePath = 'exports/'.$filename;
+            $fullPath = storage_path('app/public/'.$filePath);
 
             // Ensure directory exists
             $directory = dirname($fullPath);
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
             // Create Excel file
-            $export = new class($data) implements 
-                \Maatwebsite\Excel\Concerns\FromCollection,
-                \Maatwebsite\Excel\Concerns\WithHeadings
+            $export = new class($data) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings
             {
                 private array $data;
 
-                public function __construct($data) {
+                public function __construct($data)
+                {
                     $this->data = $data;
                 }
 
-                public function collection() {
+                public function collection()
+                {
                     return collect($this->data);
                 }
 
-                public function headings(): array {
+                public function headings(): array
+                {
                     return [
                         'Name',
                         'Description',
                         'Leader Name',
                         'Leader Email',
                         'Leader Phone',
-                        'Status'
+                        'Status',
                     ];
                 }
             };
@@ -1093,14 +1100,15 @@ final class ImportExportService
                 'success' => true,
                 'file_path' => $filePath,
                 'filename' => 'ministry_import_template.xlsx',
-                'message' => 'Template generated successfully'
+                'message' => 'Template generated successfully',
             ];
 
         } catch (\Exception $e) {
             Log::error('Ministry template generation failed', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to generate ministry import template'
+                'message' => 'Failed to generate ministry import template',
             ];
         }
     }
@@ -1118,7 +1126,7 @@ final class ImportExportService
                     'ministry_name' => 'Music Ministry',
                     'leader_name' => 'David Worship',
                     'leader_email' => 'david.worship@example.com',
-                    'leader_phone' => '+1234567892'
+                    'leader_phone' => '+1234567892',
                 ],
                 [
                     'name' => 'Sound Team',
@@ -1126,44 +1134,45 @@ final class ImportExportService
                     'ministry_name' => 'Music Ministry',
                     'leader_name' => 'Sarah Sound',
                     'leader_email' => 'sarah.sound@example.com',
-                    'leader_phone' => '+1234567893'
-                ]
+                    'leader_phone' => '+1234567893',
+                ],
             ];
 
             // Create filename with timestamp
-            $filename = 'department_import_template_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-            $filePath = 'exports/' . $filename;
-            $fullPath = storage_path('app/public/' . $filePath);
+            $filename = 'department_import_template_'.now()->format('Y-m-d_H-i-s').'.xlsx';
+            $filePath = 'exports/'.$filename;
+            $fullPath = storage_path('app/public/'.$filePath);
 
             // Ensure directory exists
             $directory = dirname($fullPath);
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
             // Create Excel file
-            $export = new class($data) implements 
-                \Maatwebsite\Excel\Concerns\FromCollection,
-                \Maatwebsite\Excel\Concerns\WithHeadings
+            $export = new class($data) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings
             {
                 private array $data;
 
-                public function __construct($data) {
+                public function __construct($data)
+                {
                     $this->data = $data;
                 }
 
-                public function collection() {
+                public function collection()
+                {
                     return collect($this->data);
                 }
 
-                public function headings(): array {
+                public function headings(): array
+                {
                     return [
                         'Name',
                         'Description',
                         'Ministry Name',
                         'Leader Name',
                         'Leader Email',
-                        'Leader Phone'
+                        'Leader Phone',
                     ];
                 }
             };
@@ -1174,14 +1183,15 @@ final class ImportExportService
                 'success' => true,
                 'file_path' => $filePath,
                 'filename' => 'department_import_template.xlsx',
-                'message' => 'Template generated successfully'
+                'message' => 'Template generated successfully',
             ];
 
         } catch (\Exception $e) {
             Log::error('Department template generation failed', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to generate department import template'
+                'message' => 'Failed to generate department import template',
             ];
         }
     }
@@ -1253,21 +1263,22 @@ final class ImportExportService
             ];
 
             // Create anonymous class for export
-            $export = new class($sampleData) implements 
-                \Maatwebsite\Excel\Concerns\FromCollection,
-                \Maatwebsite\Excel\Concerns\WithHeadings
+            $export = new class($sampleData) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings
             {
                 private $data;
-                
-                public function __construct($data) {
+
+                public function __construct($data)
+                {
                     $this->data = $data;
                 }
-                
-                public function collection() {
+
+                public function collection()
+                {
                     return collect($this->data);
                 }
-                
-                public function headings(): array {
+
+                public function headings(): array
+                {
                     return [
                         'Event Type',
                         'Service Type',
@@ -1298,13 +1309,13 @@ final class ImportExportService
             };
 
             // Generate filename
-            $filename = 'event_reports_import_template_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-            $filePath = 'exports/' . $filename;
-            $fullPath = storage_path('app/public/' . $filePath);
+            $filename = 'event_reports_import_template_'.now()->format('Y-m-d_H-i-s').'.xlsx';
+            $filePath = 'exports/'.$filename;
+            $fullPath = storage_path('app/public/'.$filePath);
 
             // Ensure directory exists
             $directory = dirname($fullPath);
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
@@ -1315,17 +1326,17 @@ final class ImportExportService
                 'success' => true,
                 'file_path' => $filePath,
                 'filename' => 'event_reports_import_template.xlsx',
-                'message' => 'Template generated successfully'
+                'message' => 'Template generated successfully',
             ];
 
         } catch (\Exception $e) {
             Log::error('Event reports template generation failed', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return [
                 'success' => false,
-                'message' => 'Failed to generate template: ' . $e->getMessage()
+                'message' => 'Failed to generate template: '.$e->getMessage(),
             ];
         }
     }
@@ -1346,7 +1357,7 @@ final class ImportExportService
                     'leader_name' => 'Mike Leader',
                     'leader_email' => 'mike.leader@example.com',
                     'leader_phone' => '+1234567894',
-                    'status' => 'active'
+                    'status' => 'active',
                 ],
                 [
                     'name' => 'Couples Group',
@@ -1357,37 +1368,38 @@ final class ImportExportService
                     'leader_name' => 'Lisa Leader',
                     'leader_email' => 'lisa.leader@example.com',
                     'leader_phone' => '+1234567895',
-                    'status' => 'active'
-                ]
+                    'status' => 'active',
+                ],
             ];
 
             // Create filename with timestamp
-            $filename = 'small_group_import_template_' . now()->format('Y-m-d_H-i-s') . '.xlsx';
-            $filePath = 'exports/' . $filename;
-            $fullPath = storage_path('app/public/' . $filePath);
+            $filename = 'small_group_import_template_'.now()->format('Y-m-d_H-i-s').'.xlsx';
+            $filePath = 'exports/'.$filename;
+            $fullPath = storage_path('app/public/'.$filePath);
 
             // Ensure directory exists
             $directory = dirname($fullPath);
-            if (!is_dir($directory)) {
+            if (! is_dir($directory)) {
                 mkdir($directory, 0755, true);
             }
 
             // Create Excel file
-            $export = new class($data) implements 
-                \Maatwebsite\Excel\Concerns\FromCollection,
-                \Maatwebsite\Excel\Concerns\WithHeadings
+            $export = new class($data) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings
             {
                 private array $data;
 
-                public function __construct($data) {
+                public function __construct($data)
+                {
                     $this->data = $data;
                 }
 
-                public function collection() {
+                public function collection()
+                {
                     return collect($this->data);
                 }
 
-                public function headings(): array {
+                public function headings(): array
+                {
                     return [
                         'Name',
                         'Description',
@@ -1397,7 +1409,7 @@ final class ImportExportService
                         'Leader Name',
                         'Leader Email',
                         'Leader Phone',
-                        'Status'
+                        'Status',
                     ];
                 }
             };
@@ -1408,14 +1420,15 @@ final class ImportExportService
                 'success' => true,
                 'file_path' => $filePath,
                 'filename' => 'small_group_import_template.xlsx',
-                'message' => 'Template generated successfully'
+                'message' => 'Template generated successfully',
             ];
 
         } catch (\Exception $e) {
             Log::error('Small group template generation failed', ['error' => $e->getMessage()]);
+
             return [
                 'success' => false,
-                'message' => 'Failed to generate small group import template'
+                'message' => 'Failed to generate small group import template',
             ];
         }
     }
@@ -1429,34 +1442,34 @@ final class ImportExportService
             // Basic file validation
             $allowedExtensions = ['xlsx', 'xls', 'csv'];
             $extension = $file->getClientOriginalExtension();
-            
-            if (!in_array(strtolower($extension), $allowedExtensions)) {
+
+            if (! in_array(strtolower($extension), $allowedExtensions)) {
                 return [
                     'valid' => false,
-                    'errors' => ['Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.']
+                    'errors' => ['Invalid file type. Only Excel (.xlsx, .xls) and CSV files are allowed.'],
                 ];
             }
 
             if ($file->getSize() > 10 * 1024 * 1024) {
                 return [
                     'valid' => false,
-                    'errors' => ['File size too large. Maximum file size is 10MB.']
+                    'errors' => ['File size too large. Maximum file size is 10MB.'],
                 ];
             }
 
             // Store file temporarily for validation
             $filePath = $file->store('temp', 'local');
-            
+
             // Read first few rows to validate structure
             $data = Excel::toArray([], $filePath, 'local')[0] ?? [];
-            
+
             // Clean up
             Storage::disk('local')->delete($filePath);
 
             if (empty($data)) {
                 return [
                     'valid' => false,
-                    'errors' => ['File appears to be empty or corrupted.']
+                    'errors' => ['File appears to be empty or corrupted.'],
                 ];
             }
 
@@ -1465,10 +1478,10 @@ final class ImportExportService
             $requiredHeaders = ['name', 'email', 'phone', 'gender'];
             $missingHeaders = array_diff($requiredHeaders, $headers);
 
-            if (!empty($missingHeaders)) {
+            if (! empty($missingHeaders)) {
                 return [
                     'valid' => false,
-                    'errors' => ['Missing required columns: ' . implode(', ', $missingHeaders)]
+                    'errors' => ['Missing required columns: '.implode(', ', $missingHeaders)],
                 ];
             }
 
@@ -1478,14 +1491,14 @@ final class ImportExportService
                 'preview' => [
                     'total_rows' => count($data) - 1, // Exclude header row
                     'headers' => $headers,
-                    'sample_data' => array_slice($data, 1, 5) // First 5 data rows
-                ]
+                    'sample_data' => array_slice($data, 1, 5), // First 5 data rows
+                ],
             ];
 
         } catch (\Exception $e) {
             return [
                 'valid' => false,
-                'errors' => ['File validation failed: ' . $e->getMessage()]
+                'errors' => ['File validation failed: '.$e->getMessage()],
             ];
         }
     }
@@ -1510,13 +1523,13 @@ final class ImportExportService
 
             Log::info('Export cleanup completed', [
                 'deleted_files' => $deletedCount,
-                'cutoff_days' => $daysOld
+                'cutoff_days' => $daysOld,
             ]);
 
             return [
                 'success' => true,
                 'message' => "Cleaned up {$deletedCount} old export files",
-                'deleted_count' => $deletedCount
+                'deleted_count' => $deletedCount,
             ];
 
         } catch (\Exception $e) {
@@ -1524,8 +1537,8 @@ final class ImportExportService
 
             return [
                 'success' => false,
-                'message' => 'Cleanup failed: ' . $e->getMessage(),
-                'errors' => [$e->getMessage()]
+                'message' => 'Cleanup failed: '.$e->getMessage(),
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -1544,10 +1557,10 @@ final class ImportExportService
             $row = $error['row'] ?? 'unknown';
             $message = $error['message'] ?? 'Unknown error';
             $type = $error['type'] ?? 'error';
-            
+
             $formattedErrors[] = "Row {$row}: {$message}";
         }
 
         return implode("\n", $formattedErrors);
     }
-} 
+}

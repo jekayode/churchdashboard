@@ -254,6 +254,16 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/global-ministry-monthly', [ReportingController::class, 'getGlobalMinistryMonthlyReport']);
         Route::get('/global-ministry-monthly/all-branches', [ReportingController::class, 'getAllBranchesGlobalMinistryReport']);
         Route::post('/export', [ReportingController::class, 'exportReports']);
+
+        // Branch Report Tokens Management
+        Route::prefix('tokens')->group(function () {
+            Route::get('/', [\App\Http\Controllers\BranchReportTokenController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\BranchReportTokenController::class, 'store']);
+            Route::get('/available-events', [\App\Http\Controllers\BranchReportTokenController::class, 'getAvailableEvents']);
+            Route::put('/{token}', [\App\Http\Controllers\BranchReportTokenController::class, 'update']);
+            Route::delete('/{token}', [\App\Http\Controllers\BranchReportTokenController::class, 'destroy']);
+            Route::post('/{token}/regenerate', [\App\Http\Controllers\BranchReportTokenController::class, 'regenerate']);
+        });
     });
 
     // Communication API routes

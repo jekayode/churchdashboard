@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Imports;
 
+use App\Jobs\SendBulkWelcomeEmailsJob;
 use App\Models\Branch;
 use App\Models\Member;
 use App\Models\Role;
@@ -12,24 +13,28 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Concerns\SkipsOnFailure;
 use Maatwebsite\Excel\Concerns\ToCollection;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
-use Maatwebsite\Excel\Concerns\WithValidation;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\SkipsOnFailure;
-use Carbon\Carbon;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
+use Maatwebsite\Excel\Concerns\WithValidation;
 
-final class MembersImport implements ToCollection, WithHeadingRow, WithValidation, WithBatchInserts, WithChunkReading, SkipsOnFailure
+final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInserts, WithChunkReading, WithHeadingRow, WithValidation
 {
     use \Maatwebsite\Excel\Concerns\Importable;
 
     private int $branchId;
+
     private array $errors = [];
+
     private array $successes = [];
+
     private int $successCount = 0;
+
     private int $failureCount = 0;
+
+    private array $usersForWelcomeEmails = [];
 
     public function __construct(int $branchId)
     {
@@ -43,11 +48,11 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
     {
         // Disable query log for better performance
         \DB::disableQueryLog();
-        
+
         foreach ($rows as $index => $row) {
             try {
                 $this->processRow($row->toArray(), $index + 2); // +2 for header and 0-index
-                
+
                 // Free memory periodically
                 if (($index + 1) % 50 === 0) {
                     gc_collect_cycles();
@@ -57,7 +62,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
                 $this->failureCount++;
             }
         }
-        
+
         // Re-enable query log
         \DB::enableQueryLog();
     }
@@ -69,24 +74,25 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
     {
         // Clean and validate data
         $data = $this->cleanRowData($row);
-        
+
         $validator = Validator::make($data, $this->getRowValidationRules());
-        
+
         if ($validator->fails()) {
             foreach ($validator->errors()->all() as $error) {
                 $this->addError($rowNumber, 'validation', $error);
             }
             $this->failureCount++;
+
             return;
         }
 
         // Check if member already exists (by email if provided, otherwise by name and phone)
         // Use select to optimize query performance
         $existingMember = null;
-        
-        if (!empty($data['email'])) {
+
+        if (! empty($data['email'])) {
             $existingMember = Member::select('id')->where('email', $data['email'])->first();
-        } elseif (!empty($data['phone'])) {
+        } elseif (! empty($data['phone'])) {
             $existingMember = Member::select('id')
                 ->where('name', $data['name'])
                 ->where('phone', $data['phone'])
@@ -97,14 +103,15 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             $identifier = $data['email'] ?? $data['name'];
             $this->addError($rowNumber, 'duplicate', "Member already exists: {$identifier}");
             $this->failureCount++;
+
             return;
         }
 
         // Create or find user account (only if email is provided)
         $user = $this->createOrFindUser($data);
-        
+
         // Note: user can be null if no email is provided, which is acceptable
-        
+
         // Create member record
         $memberData = $this->prepareMemberData($data, $user?->id);
         $member = Member::create($memberData);
@@ -112,7 +119,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
         // Assign member role to user (only if user account exists)
         if ($user) {
             $memberRole = Role::where('name', 'church_member')->first();
-            if ($memberRole && !$user->roles()->where('role_id', $memberRole->id)->exists()) {
+            if ($memberRole && ! $user->roles()->where('role_id', $memberRole->id)->exists()) {
                 $user->assignRole('church_member', $member->branch_id);
             }
         }
@@ -124,7 +131,15 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             'email' => $member->email,
             'name' => $member->name,
         ];
-        
+
+        // Add user to welcome email list if user account was created
+        if ($user) {
+            $this->usersForWelcomeEmails[] = [
+                'user_id' => $user->id,
+                'temporary_password' => $this->getTemporaryPassword($user),
+            ];
+        }
+
         Log::info('Member imported successfully', [
             'member_id' => $member->id,
             'email' => $member->email,
@@ -138,7 +153,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
     private function cleanRowData(array $row): array
     {
         $cleanData = [];
-        
+
         // Map column headers to database fields
         $fieldMap = [
             'name' => ['name', 'full_name', 'member_name'],
@@ -172,14 +187,14 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
 
         foreach ($fieldMap as $dbField => $possibleHeaders) {
             foreach ($possibleHeaders as $header) {
-                if (isset($row[$header]) && !empty($row[$header])) {
+                if (isset($row[$header]) && ! empty($row[$header])) {
                     $value = $row[$header];
-                    
+
                     // Convert phone numbers to string
                     if ($dbField === 'phone') {
                         $value = (string) $value;
                     }
-                    
+
                     $cleanData[$dbField] = trim($value);
                     break;
                 }
@@ -187,20 +202,20 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
         }
 
         // Handle combining first_name and last_name into name if name is not already set
-        if (!isset($cleanData['name']) && (isset($cleanData['first_name']) || isset($cleanData['last_name']))) {
+        if (! isset($cleanData['name']) && (isset($cleanData['first_name']) || isset($cleanData['last_name']))) {
             $firstName = trim($cleanData['first_name'] ?? '');
             $lastName = trim($cleanData['last_name'] ?? '');
-            
+
             if ($firstName || $lastName) {
-                $cleanData['name'] = trim($firstName . ' ' . $lastName);
+                $cleanData['name'] = trim($firstName.' '.$lastName);
             }
         }
-        
+
         // Remove first_name and last_name since we only need the combined name
         unset($cleanData['first_name'], $cleanData['last_name']);
 
         // Parse leadership trainings if present
-        if (isset($row['leadership_trainings']) && !empty($row['leadership_trainings'])) {
+        if (isset($row['leadership_trainings']) && ! empty($row['leadership_trainings'])) {
             $trainings = explode(',', $row['leadership_trainings']);
             $cleanData['leadership_trainings'] = array_map('trim', $trainings);
         }
@@ -213,7 +228,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
         // Normalize marital status
         if (isset($cleanData['marital_status'])) {
             $status = strtolower($cleanData['marital_status']);
-            $cleanData['marital_status'] = match($status) {
+            $cleanData['marital_status'] = match ($status) {
                 'married', 'wed' => 'married',
                 'single', 'unmarried' => 'single',
                 'divorced' => 'divorced',
@@ -232,7 +247,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             }
         }
 
-        return array_filter($cleanData, fn($value) => !is_null($value) && $value !== '');
+        return array_filter($cleanData, fn ($value) => ! is_null($value) && $value !== '');
     }
 
     /**
@@ -242,6 +257,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
     {
         try {
             $date = \Carbon\Carbon::parse($dateString);
+
             return $date->format('Y-m-d');
         } catch (\Exception $e) {
             return null;
@@ -293,18 +309,18 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
         if (empty($data['email'])) {
             return null;
         }
-        
+
         // Check if user already exists (optimize query)
         $user = User::select('id', 'email')->where('email', $data['email'])->first();
-        
+
         if ($user) {
             return $user;
         }
 
         // Create new user account
         try {
-            $password = 'Church' . rand(1000, 9999);
-            
+            $password = $this->generateTemporaryPassword();
+
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -312,6 +328,9 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
                 'password' => Hash::make($password),
                 'email_verified_at' => now(), // Auto-verify church members
             ]);
+
+            // Store the temporary password for welcome email
+            $user->temporary_password = $password;
 
             Log::info('User account created for member import', [
                 'user_id' => $user->id,
@@ -325,6 +344,7 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
                 'email' => $data['email'],
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -335,24 +355,24 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
     private function prepareMemberData(array $data, ?int $userId): array
     {
         $branchId = $this->branchId;
-        
+
         // If no branch ID provided, try to find by name
-        if (!$branchId && isset($data['branch_name'])) {
+        if (! $branchId && isset($data['branch_name'])) {
             $branch = Branch::where('name', 'like', "%{$data['branch_name']}%")->first();
             $branchId = $branch?->id;
         }
 
         // Default to first branch if none found
-        if (!$branchId) {
+        if (! $branchId) {
             $branchId = Branch::first()?->id;
         }
 
         // Handle first_name and surname
         $firstName = $data['first_name'] ?? null;
         $surname = $data['last_name'] ?? null;
-        
+
         // If name is provided but first_name/surname are not, try to split
-        if (!$firstName && !$surname && isset($data['name'])) {
+        if (! $firstName && ! $surname && isset($data['name'])) {
             $nameParts = explode(' ', trim($data['name']), 2);
             $firstName = $nameParts[0] ?? null;
             $surname = $nameParts[1] ?? null;
@@ -532,10 +552,68 @@ final class MembersImport implements ToCollection, WithHeadingRow, WithValidatio
             'total_processed' => count($this->successes) + count($this->errors),
             'successful_imports' => count($this->successes),
             'failed_imports' => count($this->errors),
-            'success_rate' => count($this->successes) > 0 ? 
+            'success_rate' => count($this->successes) > 0 ?
                 round((count($this->successes) / (count($this->successes) + count($this->errors))) * 100, 2) : 0,
             'errors' => $this->errors,
-            'successes' => $this->successes
+            'successes' => $this->successes,
+            'welcome_emails_scheduled' => count($this->usersForWelcomeEmails),
         ];
     }
-} 
+
+    /**
+     * Generate a secure temporary password.
+     */
+    private function generateTemporaryPassword(): string
+    {
+        return 'Church'.rand(1000, 9999);
+    }
+
+    /**
+     * Get the temporary password for a user (stored during creation).
+     */
+    private function getTemporaryPassword(User $user): string
+    {
+        return $user->temporary_password ?? $this->generateTemporaryPassword();
+    }
+
+    /**
+     * Send welcome emails to all imported users.
+     */
+    public function sendWelcomeEmails(): void
+    {
+        if (empty($this->usersForWelcomeEmails)) {
+            Log::info('No welcome emails to send - no users were created during import');
+
+            return;
+        }
+
+        try {
+            $branch = Branch::find($this->branchId);
+            if (! $branch) {
+                Log::error('Branch not found for welcome emails', ['branch_id' => $this->branchId]);
+
+                return;
+            }
+
+            // Dispatch bulk welcome email job
+            SendBulkWelcomeEmailsJob::dispatch(
+                $branch,
+                $this->usersForWelcomeEmails,
+                5, // Process 5 emails at a time
+                30 // 30 seconds between batches
+            );
+
+            Log::info('Welcome emails scheduled for imported members', [
+                'branch_id' => $this->branchId,
+                'users_count' => count($this->usersForWelcomeEmails),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to schedule welcome emails', [
+                'branch_id' => $this->branchId,
+                'users_count' => count($this->usersForWelcomeEmails),
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+}
