@@ -59,8 +59,24 @@ final class BranchReportTokenController extends Controller
 
         $user = auth()->user();
 
+        // Debug logging
+        Log::info('Token creation attempt', [
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'requested_branch_id' => $validated['branch_id'],
+            'user_active_branch_id' => $user->getActiveBranchId(),
+            'is_super_admin' => $user->isSuperAdmin(),
+        ]);
+
         // Check if user has access to this branch
         if (! $user->isSuperAdmin() && $user->getActiveBranchId() !== $validated['branch_id']) {
+            Log::warning('Branch access denied', [
+                'user_id' => $user->id,
+                'requested_branch_id' => $validated['branch_id'],
+                'user_active_branch_id' => $user->getActiveBranchId(),
+                'is_super_admin' => $user->isSuperAdmin(),
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'You do not have permission to create tokens for this branch.',
