@@ -141,8 +141,22 @@ final class PublicReportController extends Controller
             // Set the reported_by to a system user or the branch pastor
             $data['reported_by'] = $reportToken->branch->pastor_id ?? 1; // Fallback to user ID 1 if no pastor
 
-            // Create the report
-            $report = $this->reportingService->createEventReport($data);
+            // Check if a report already exists for this event/date/reporter
+            $existingReport = \App\Models\EventReport::where('event_id', $data['event_id'])
+                ->where('report_date', $data['report_date'])
+                ->where('reported_by', $data['reported_by'])
+                ->first();
+
+            if ($existingReport) {
+                // Update existing report
+                $existingReport->update($data);
+                $report = $existingReport;
+                $isUpdate = true;
+            } else {
+                // Create new report
+                $report = $this->reportingService->createEventReport($data);
+                $isUpdate = false;
+            }
 
             Log::info('Public report submitted successfully', [
                 'report_id' => $report->id,
@@ -153,15 +167,19 @@ final class PublicReportController extends Controller
                 'submitter_role' => $reportToken->isTeamToken() ? $reportToken->getRoleForEmail($validated['submitter_email']) : 'Token Owner',
                 'is_team_token' => $reportToken->isTeamToken(),
                 'submitted_via' => 'public_link',
+                'action' => $isUpdate ? 'updated' : 'created',
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Report submitted successfully! Thank you for your submission.',
+                'message' => $isUpdate
+                    ? 'Report updated successfully! Thank you for your submission.'
+                    : 'Report submitted successfully! Thank you for your submission.',
                 'data' => [
                     'report_id' => $report->id,
                     'event_name' => $event->name,
                     'report_date' => $validated['event_date'],
+                    'action' => $isUpdate ? 'updated' : 'created',
                 ],
             ], 201);
 
