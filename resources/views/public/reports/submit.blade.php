@@ -402,7 +402,7 @@
                             console.log('Auto-populating form with existing report for event:', eventId, mostRecentReport);
                             
                             // Populate basic fields
-                            this.formData.event_date = mostRecentReport.report_date;
+                            this.formData.event_date = this.formatDate(mostRecentReport.report_date);
                             this.formData.event_type = mostRecentReport.event_type;
                             this.formData.service_type = mostRecentReport.service_type;
                             this.formData.start_time = this.formatTime(mostRecentReport.start_time);
@@ -491,6 +491,20 @@
                     return date.toTimeString().slice(0, 5); // HH:MM format
                 },
 
+                formatDate(dateString) {
+                    if (!dateString) return '';
+                    // Handle both YYYY-MM-DD format and ISO datetime strings
+                    const date = new Date(dateString);
+                    if (isNaN(date.getTime())) {
+                        // If it's already in YYYY-MM-DD format, return as is
+                        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+                            return dateString;
+                        }
+                        return '';
+                    }
+                    return date.toISOString().slice(0, 10); // YYYY-MM-DD format
+                },
+
                 async loadEventDetails(eventId) {
                     if (!eventId) {
                         // Reset form when no event is selected
@@ -512,6 +526,11 @@
                                 // Auto-populate event type and service type from the event
                                 this.formData.event_type = event.service_type || '';
                                 this.formData.service_type = event.service_type || '';
+                                
+                                // Set default event date to today if no existing report
+                                if (!existingReports[eventId] || existingReports[eventId].length === 0) {
+                                    this.formData.event_date = this.formatDate(new Date().toISOString());
+                                }
                                 
                                 // Auto-populate form with existing report data for this event
                                 this.autoPopulateFormForEvent(eventId);
