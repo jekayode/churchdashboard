@@ -3300,6 +3300,12 @@
             const form = document.getElementById('createTokenForm');
             const formData = new FormData(form);
             
+            // Add branch_id to the form data
+            const branchId = @json(Auth::user()->getActiveBranchId());
+            if (branchId) {
+                formData.append('branch_id', branchId);
+            }
+            
             try {
                 const response = await fetch('/api/reports/tokens', {
                     method: 'POST',
@@ -3314,6 +3320,7 @@
                 
                 if (data.success) {
                     alert('Token created successfully!');
+                    document.getElementById('createTokenModal').classList.add('hidden');
                     document.getElementById('tokenManagementModal').classList.add('hidden');
                     loadTokens();
                 } else {

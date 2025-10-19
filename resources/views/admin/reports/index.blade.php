@@ -3346,6 +3346,36 @@
         let tokens = [];
         let availableEvents = [];
 
+        async function populateCreateTokenBranchSelector() {
+            try {
+                const response = await fetch('/api/branches', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const branchSelect = document.querySelector('#createTokenForm select[name="branch_id"]');
+                    if (branchSelect) {
+                        // Clear existing options except the first one
+                        branchSelect.innerHTML = '<option value="">Select a branch...</option>';
+                        
+                        data.data.forEach(branch => {
+                            const option = document.createElement('option');
+                            option.value = branch.id;
+                            option.textContent = `${branch.name}${branch.venue ? ' - ' + branch.venue : ''}`;
+                            branchSelect.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading branches for token creation:', error);
+            }
+        }
+
         // Load tokens and events
         async function loadTokens() {
             try {
@@ -3446,6 +3476,13 @@
             const form = document.getElementById('createTokenForm');
             const formData = new FormData(form);
             
+            // For super admin, branch_id comes from the form
+            // For regular users, use their active branch
+            const branchId = formData.get('branch_id') || @json(Auth::user()->getActiveBranchId());
+            if (branchId) {
+                formData.set('branch_id', branchId);
+            }
+            
             try {
                 const response = await fetch('/api/reports/tokens', {
                     method: 'POST',
@@ -3460,6 +3497,7 @@
                 
                 if (data.success) {
                     alert('Token created successfully!');
+                    document.getElementById('createTokenModal').classList.add('hidden');
                     document.getElementById('tokenManagementModal').classList.add('hidden');
                     loadTokens();
                 } else {
@@ -3587,6 +3625,7 @@
             if (createNewTokenBtn) {
                 createNewTokenBtn.addEventListener('click', function() {
                     document.getElementById('createTokenModal').classList.remove('hidden');
+                    populateCreateTokenBranchSelector();
                 });
             }
 
@@ -3660,6 +3699,13 @@
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Create New Submission Link</h3>
                 
                 <form id="createTokenForm">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Branch *</label>
+                        <select name="branch_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">Select a branch...</option>
+                        </select>
+                    </div>
+                    
                     <div class="mb-4">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Name *</label>
                         <input type="text" name="name" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
