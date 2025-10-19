@@ -47,13 +47,11 @@ final class GuestRegistrationService
                 // Assign public_user role
                 $user->assignRole('public_user', (int) $data['branch_id']);
 
-                // Create member record
-                $member = Member::create([
+                // Create member record with fallback for missing columns
+                $memberData = [
                     'user_id' => $user->id,
                     'branch_id' => (int) $data['branch_id'],
-                    'name' => trim($data['first_name'].' '.$data['surname']), // Add the name field
-                    'first_name' => $data['first_name'],
-                    'surname' => $data['surname'],
+                    'name' => trim($data['first_name'].' '.$data['surname']),
                     'email' => $data['email'],
                     'phone' => $data['phone'],
                     'gender' => $data['gender'] ?? null,
@@ -72,7 +70,22 @@ final class GuestRegistrationService
                     'registration_source' => 'guest-form',
                     'member_status' => 'visitor',
                     'date_joined' => now(),
-                ]);
+                ];
+
+                // Add first_name and surname only if columns exist
+                try {
+                    // Test if first_name column exists
+                    DB::select('SELECT first_name FROM members LIMIT 0');
+                    $memberData['first_name'] = $data['first_name'];
+                    $memberData['surname'] = $data['surname'];
+                } catch (\Exception $e) {
+                    // Column doesn't exist, skip it
+                    \Log::warning('first_name/surname columns not available, using name field only', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                $member = Member::create($memberData);
 
                 // Calculate initial profile completion
                 $member->updateProfileCompletion();
