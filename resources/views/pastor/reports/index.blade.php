@@ -84,6 +84,34 @@
                     <h3 class="text-lg font-semibold text-gray-900">Dashboard Overview - {{ Auth::user()->getPrimaryBranch()?->name ?? 'Your Branch' }}</h3>
                 </div>
 
+                <!-- Projection Cards -->
+                <div class="mb-8">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">Current Year Projections</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6" id="projectionCards">
+                        <!-- Projection cards will be loaded dynamically -->
+                    </div>
+                    
+                    <!-- Quarter Comparison Table -->
+                    <div class="mt-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Quarterly Performance Comparison</h4>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200" id="quarterComparisonTable">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quarter</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Converts</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200" id="quarterComparisonBody">
+                                    <!-- Quarter data will be loaded dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Statistics Cards -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
                     <div class="bg-blue-50 rounded-lg p-6">
@@ -823,6 +851,7 @@
             loadEventTypes();
             loadEvents();
             loadTrendData();
+            loadProjectionData();
             
             // Event listeners
             setupEventListeners();
@@ -1239,6 +1268,152 @@
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
             }
+        }
+
+        // Load projection data for dashboard cards and quarter comparison
+        async function loadProjectionData() {
+            try {
+                const branchId = @json(Auth::user()->getActiveBranchId());
+                
+                console.log('Loading projection data for branch:', branchId);
+                
+                // Load current year projection (the one marked as current year)
+                const projectionResponse = await fetch(`/api/projections?branch_id=${branchId}&current_year=true&is_global=false`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                if (projectionResponse.ok) {
+                    const projectionData = await projectionResponse.json();
+                    if (projectionData.success && projectionData.data.data.length > 0) {
+                        const projection = projectionData.data.data[0];
+                        updateProjectionCards(projection);
+                        
+                        // Load performance data for quarter comparison using the projection year
+                        const performanceResponse = await fetch(`/api/performance/branch?branch_id=${branchId}&year=${projection.year}`, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            credentials: 'same-origin'
+                        });
+                        
+                        if (performanceResponse.ok) {
+                            const performanceData = await performanceResponse.json();
+                            if (performanceData.success) {
+                                updateQuarterComparisonTable(performanceData.data.quarters);
+                            }
+                        }
+                    } else {
+                        showNoProjectionMessage();
+                    }
+                } else {
+                    showNoProjectionMessage();
+                }
+                
+            } catch (error) {
+                console.error('Error loading projection data:', error);
+                showNoProjectionMessage();
+            }
+        }
+
+        // Update projection cards with data
+        function updateProjectionCards(projection) {
+            const cardsContainer = document.getElementById('projectionCards');
+            
+            const metrics = [
+                { key: 'attendance_target', label: 'Attendance Target', color: 'blue', icon: '👥' },
+                { key: 'converts_target', label: 'Converts Target', color: 'green', icon: '✝️' },
+                { key: 'leaders_target', label: 'Leaders Target', color: 'purple', icon: '👑' },
+                { key: 'volunteers_target', label: 'Volunteers Target', color: 'orange', icon: '🤝' },
+                { key: 'guests_target', label: 'Guests Target', color: 'indigo', icon: '🎯' }
+            ];
+            
+            cardsContainer.innerHTML = '';
+            
+            metrics.forEach(metric => {
+                const value = projection[metric.key] || 0;
+                const card = document.createElement('div');
+                card.className = `bg-${metric.color}-50 rounded-lg p-4 border border-${metric.color}-200`;
+                card.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-${metric.color}-600">${metric.label}</p>
+                            <p class="text-xl font-bold text-${metric.color}-900">${value.toLocaleString()}</p>
+                        </div>
+                        <div class="text-2xl">${metric.icon}</div>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
+            });
+        }
+
+        // Show message when no projection exists
+        function showNoProjectionMessage() {
+            const cardsContainer = document.getElementById('projectionCards');
+            cardsContainer.innerHTML = `
+                <div class="col-span-full bg-gray-50 rounded-lg p-6 text-center">
+                    <div class="text-gray-500 mb-2">
+                        <svg class="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-1">No Projections Set</h3>
+                    <p class="text-gray-600 mb-4">Create a projection for ${new Date().getFullYear()} to track your branch's performance.</p>
+                    <a href="/pastor/projections" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Create Projection
+                    </a>
+                </div>
+            `;
+        }
+
+        // Update quarter comparison table
+        function updateQuarterComparisonTable(quarters) {
+            const tbody = document.getElementById('quarterComparisonBody');
+            tbody.innerHTML = '';
+            
+            quarters.forEach(quarter => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${quarter.quarter}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div class="flex items-center">
+                            <span class="font-medium">${quarter.current.attendance.toLocaleString()}</span>
+                            <span class="ml-2 text-xs ${quarter.delta.attendance >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                (${quarter.delta.attendance >= 0 ? '+' : ''}${quarter.delta.attendance}%)
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500">vs ${quarter.previous.attendance.toLocaleString()} last year</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div class="flex items-center">
+                            <span class="font-medium">${quarter.current.guests.toLocaleString()}</span>
+                            <span class="ml-2 text-xs ${quarter.delta.guests >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                (${quarter.delta.guests >= 0 ? '+' : ''}${quarter.delta.guests}%)
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500">vs ${quarter.previous.guests.toLocaleString()} last year</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <div class="flex items-center">
+                            <span class="font-medium">${quarter.current.converts.toLocaleString()}</span>
+                            <span class="ml-2 text-xs ${quarter.delta.converts >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                (${quarter.delta.converts >= 0 ? '+' : ''}${quarter.delta.converts}%)
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500">vs ${quarter.previous.converts.toLocaleString()} last year</div>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
         }
 
         // Load Small Groups statistics

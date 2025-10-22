@@ -18,9 +18,10 @@ final class ProjectionSeeder extends Seeder
     {
         // Get all branches
         $branches = Branch::all();
-        
+
         if ($branches->isEmpty()) {
             $this->command->warn('No branches found. Please run BranchSeeder first.');
+
             return;
         }
 
@@ -34,7 +35,7 @@ final class ProjectionSeeder extends Seeder
         }
 
         $currentYear = now()->year;
-        
+
         // Create projections for each branch
         foreach ($branches as $branch) {
             // Create current year projection (approved)
@@ -43,6 +44,7 @@ final class ProjectionSeeder extends Seeder
                 ->create([
                     'branch_id' => $branch->id,
                     'year' => $currentYear,
+                    'is_global' => false,
                     'is_current_year' => true,
                     'status' => 'approved',
                     'created_by' => $branch->pastor_id ?? User::factory()->create()->id,
@@ -64,6 +66,7 @@ final class ProjectionSeeder extends Seeder
                 ->create([
                     'branch_id' => $branch->id,
                     'year' => $currentYear + 1,
+                    'is_global' => false,
                     'is_current_year' => false,
                     'created_by' => $branch->pastor_id ?? User::factory()->create()->id,
                 ]);
@@ -74,19 +77,21 @@ final class ProjectionSeeder extends Seeder
                 ->create([
                     'branch_id' => $branch->id,
                     'year' => $currentYear - 1,
+                    'is_global' => false,
                     'is_current_year' => false,
                     'created_by' => $branch->pastor_id ?? User::factory()->create()->id,
                     'approved_by' => $superAdmins->isNotEmpty() ? $superAdmins->random()->id : null,
                     'approved_at' => now()->subYear()->addDays(rand(1, 30)),
                 ]);
 
-            // Occasionally create a rejected projection
+            // Occasionally create a rejected projection for a different year
             if (rand(1, 3) === 1) {
                 Projection::factory()
                     ->rejected()
                     ->create([
                         'branch_id' => $branch->id,
-                        'year' => $currentYear + 1,
+                        'year' => $currentYear + 2, // Use a different year to avoid conflicts
+                        'is_global' => false,
                         'is_current_year' => false,
                         'created_by' => $branch->pastor_id ?? User::factory()->create()->id,
                         'rejection_reason' => collect([
@@ -107,6 +112,7 @@ final class ProjectionSeeder extends Seeder
                     ->create([
                         'branch_id' => $branch->id,
                         'year' => $year,
+                        'is_global' => false,
                         'is_current_year' => false,
                         'created_by' => $branch->pastor_id ?? User::factory()->create()->id,
                         'approved_by' => $superAdmins->isNotEmpty() ? $superAdmins->random()->id : null,
@@ -116,7 +122,7 @@ final class ProjectionSeeder extends Seeder
         }
 
         $this->command->info('Projection seeder completed successfully!');
-        $this->command->info('Created projections for ' . $branches->count() . ' branches.');
-        $this->command->info('Generated data for years ' . ($currentYear - 3) . ' to ' . ($currentYear + 1) . '.');
+        $this->command->info('Created projections for '.$branches->count().' branches.');
+        $this->command->info('Generated data for years '.($currentYear - 3).' to '.($currentYear + 1).'.');
     }
 }

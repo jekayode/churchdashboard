@@ -87,7 +87,7 @@ final class Event extends Model
      */
     protected $appends = [
         'start_date_time',
-        'end_date_time', 
+        'end_date_time',
         'type',
         'total_registrations',
         'registrations_count',
@@ -116,6 +116,14 @@ final class Event extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(EventReport::class);
+    }
+
+    /**
+     * Get the report tokens for this event.
+     */
+    public function reportTokens(): HasMany
+    {
+        return $this->hasMany(BranchReportToken::class);
     }
 
     /**
@@ -328,6 +336,7 @@ final class Event extends Model
         }
 
         $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
         return $days[$this->day_of_week] ?? null;
     }
 
@@ -336,11 +345,11 @@ final class Event extends Model
      */
     public function getFormattedServiceTimeAttribute(): ?string
     {
-        if (!$this->service_time) {
+        if (! $this->service_time) {
             return null;
         }
 
-        return $this->service_time instanceof \Carbon\Carbon 
+        return $this->service_time instanceof \Carbon\Carbon
             ? $this->service_time->format('g:i A')
             : date('g:i A', strtotime($this->service_time));
     }
@@ -350,22 +359,22 @@ final class Event extends Model
      */
     public function generateRecurringInstances(int $weeksAhead = 12): array
     {
-        if (!$this->is_recurring || $this->day_of_week === null) {
+        if (! $this->is_recurring || $this->day_of_week === null) {
             return [];
         }
 
         $instances = [];
         $startDate = now()->startOfWeek(); // Start from beginning of current week
-        
+
         for ($i = 0; $i < $weeksAhead; $i++) {
             $instanceDate = $startDate->copy()->addWeeks($i)->addDays($this->day_of_week);
-            
+
             // Combine date with service time
             if ($this->service_time) {
-                $serviceTime = $this->service_time instanceof \Carbon\Carbon 
-                    ? $this->service_time 
+                $serviceTime = $this->service_time instanceof \Carbon\Carbon
+                    ? $this->service_time
                     : \Carbon\Carbon::createFromFormat('H:i:s', $this->service_time);
-                
+
                 $instanceDateTime = $instanceDate->copy()
                     ->setHour($serviceTime->hour)
                     ->setMinute($serviceTime->minute)
@@ -426,7 +435,7 @@ final class Event extends Model
                 ->where('start_date', $instanceData['start_date'])
                 ->exists();
 
-            if (!$exists) {
+            if (! $exists) {
                 Event::create($instanceData);
                 $created++;
             }
@@ -449,7 +458,7 @@ final class Event extends Model
     public function getServiceTimesAttribute(): array
     {
         $times = [];
-        
+
         if ($this->service_time) {
             $times[] = [
                 'name' => $this->service_name ?? 'Service',
@@ -457,7 +466,7 @@ final class Event extends Model
                 'end' => $this->service_end_time,
             ];
         }
-        
+
         if ($this->has_multiple_services && $this->second_service_time) {
             $times[] = [
                 'name' => $this->second_service_name ?? 'Second Service',
@@ -465,7 +474,38 @@ final class Event extends Model
                 'end' => $this->second_service_end_time,
             ];
         }
-        
+
         return $times;
+    }
+
+    /**
+     * Get or create a report submission URL for this event.
+     */
+    public function getReportSubmissionUrl(): string
+    {
+        // Check if there's already an active token for this event
+        $existingToken = $this->reportTokens()
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->first();
+
+        if ($existingToken) {
+            return $existingToken->getSubmissionUrl();
+        }
+
+        // Create a new token for this event
+        $token = BranchReportToken::createForBranch(
+            $this->branch_id,
+            "Report Link for {$this->name}",
+            null,
+            null,
+            null,
+            $this->id
+        );
+
+        return $token->getSubmissionUrl();
     }
 }

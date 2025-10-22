@@ -16,8 +16,11 @@ final class ProjectionControllerTest extends TestCase
     use RefreshDatabase, WithFaker;
 
     private User $superAdmin;
+
     private User $branchPastor;
+
     private User $regularUser;
+
     private Branch $branch;
 
     protected function setUp(): void
@@ -88,7 +91,7 @@ final class ProjectionControllerTest extends TestCase
     {
         // Create projection for pastor's branch
         $ownProjection = Projection::factory()->create(['branch_id' => $this->branch->id]);
-        
+
         // Create projection for another branch
         $otherProjection = Projection::factory()->create();
 
@@ -96,7 +99,7 @@ final class ProjectionControllerTest extends TestCase
             ->getJson('/api/projections');
 
         $response->assertOk();
-        
+
         $projections = $response->json('data.data');
         $this->assertCount(1, $projections);
         $this->assertEquals($ownProjection->id, $projections[0]['id']);
@@ -217,7 +220,7 @@ final class ProjectionControllerTest extends TestCase
             ->postJson('/api/projections', $data);
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['branch_id']);
+            ->assertJsonValidationErrors(['year']);
     }
 
     /** @test */
@@ -555,7 +558,7 @@ final class ProjectionControllerTest extends TestCase
     {
         $data = [
             'branch_id' => $this->branch->id,
-            'year' => 2042, // Use unique year
+            'year' => now()->year + 1, // Use unique year
             // Missing required targets
         ];
 
@@ -576,7 +579,7 @@ final class ProjectionControllerTest extends TestCase
     {
         $data = [
             'branch_id' => $this->branch->id,
-            'year' => 2043, // Use unique year
+            'year' => now()->year + 2, // Use unique year
             'attendance_target' => 0, // Invalid - min is 1
             'converts_target' => -1, // Invalid - min is 0
             'leaders_target' => 10,
@@ -598,12 +601,12 @@ final class ProjectionControllerTest extends TestCase
     {
         $testYear = 2036;
         $testBranch = Branch::factory()->create();
-        
+
         Projection::factory()->create([
             'branch_id' => $testBranch->id,
             'year' => $testYear,
         ]);
-        
+
         Projection::factory()->create([
             'branch_id' => $testBranch->id,
             'year' => $testYear + 1,
@@ -613,7 +616,7 @@ final class ProjectionControllerTest extends TestCase
             ->getJson("/api/projections?year={$testYear}");
 
         $response->assertOk();
-        
+
         $projections = $response->json('data.data');
         $this->assertCount(1, $projections);
         $this->assertEquals($testYear, $projections[0]['year']);
@@ -630,7 +633,7 @@ final class ProjectionControllerTest extends TestCase
             ->getJson('/api/projections?status=approved');
 
         $response->assertOk();
-        
+
         $projections = $response->json('data.data');
         $this->assertCount(1, $projections);
         $this->assertEquals('approved', $projections[0]['status']);
@@ -640,10 +643,10 @@ final class ProjectionControllerTest extends TestCase
     public function can_filter_projections_by_current_year(): void
     {
         $testBranch = Branch::factory()->create();
-        Projection::factory()->currentYear()->create(['branch_id' => $testBranch->id, 'year' => 2040]);
+        Projection::factory()->currentYear()->create(['branch_id' => $testBranch->id, 'year' => now()->year + 3]);
         Projection::factory()->create([
             'branch_id' => $testBranch->id,
-            'year' => 2041,
+            'year' => now()->year + 4,
             'is_current_year' => false,
         ]);
 
@@ -651,9 +654,228 @@ final class ProjectionControllerTest extends TestCase
             ->getJson('/api/projections?is_current_year=1');
 
         $response->assertOk();
-        
+
         $projections = $response->json('data.data');
         $this->assertCount(1, $projections);
         $this->assertTrue($projections[0]['is_current_year']);
     }
-} 
+
+    /** @test */
+    public function super_admin_can_create_global_projection(): void
+    {
+        $data = [
+            'year' => now()->year + 5,
+            'attendance_target' => 1000,
+            'converts_target' => 100,
+            'leaders_target' => 50,
+            'volunteers_target' => 150,
+            'is_global' => true,
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->postJson('/api/projections/global', $data);
+
+        $response->assertCreated()
+            ->assertJsonFragment([
+                'success' => true,
+                'message' => 'Global projection created successfully.',
+            ]);
+
+        $this->assertDatabaseHas('projections', [
+            'year' => now()->year + 5,
+            'is_global' => true,
+            'branch_id' => null,
+            'attendance_target' => 1000,
+            'created_by' => $this->superAdmin->id,
+        ]);
+    }
+
+    /** @test */
+    public function super_admin_can_update_existing_global_projection(): void
+    {
+        // Create existing global projection
+        $existingProjection = Projection::factory()->create([
+            'year' => now()->year + 6,
+            'is_global' => true,
+            'branch_id' => null,
+            'attendance_target' => 500,
+        ]);
+
+        $data = [
+            'year' => now()->year + 6,
+            'attendance_target' => 1200,
+            'converts_target' => 120,
+            'leaders_target' => 60,
+            'volunteers_target' => 180,
+            'is_global' => true,
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->postJson('/api/projections/global', $data);
+
+        $response->assertOk()
+            ->assertJsonFragment([
+                'success' => true,
+                'message' => 'Global projection updated successfully.',
+            ]);
+
+        $this->assertDatabaseHas('projections', [
+            'id' => $existingProjection->id,
+            'attendance_target' => 1200,
+            'converts_target' => 120,
+        ]);
+    }
+
+    /** @test */
+    public function branch_pastor_cannot_create_global_projection(): void
+    {
+        $data = [
+            'year' => now()->year + 7,
+            'attendance_target' => 1000,
+            'converts_target' => 100,
+            'leaders_target' => 50,
+            'volunteers_target' => 150,
+            'is_global' => true,
+        ];
+
+        $response = $this->actingAs($this->branchPastor)
+            ->postJson('/api/projections/global', $data);
+
+        $response->assertForbidden();
+    }
+
+    /** @test */
+    public function can_filter_projections_by_global_flag(): void
+    {
+        $testBranch = Branch::factory()->create();
+
+        // Create branch-specific projection
+        Projection::factory()->create([
+            'branch_id' => $testBranch->id,
+            'year' => now()->year + 8,
+            'is_global' => false,
+        ]);
+
+        // Create global projection
+        Projection::factory()->create([
+            'year' => now()->year + 9,
+            'is_global' => true,
+            'branch_id' => null,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->getJson('/api/projections?is_global=true');
+
+        $response->assertOk();
+
+        $projections = $response->json('data.data');
+        $this->assertCount(1, $projections);
+        $this->assertTrue($projections[0]['is_global']);
+        $this->assertNull($projections[0]['branch_id']);
+    }
+
+    /** @test */
+    public function can_filter_projections_by_branch_specific_flag(): void
+    {
+        $testBranch = Branch::factory()->create();
+
+        // Create branch-specific projection
+        Projection::factory()->create([
+            'branch_id' => $testBranch->id,
+            'year' => now()->year + 10,
+            'is_global' => false,
+        ]);
+
+        // Create global projection
+        Projection::factory()->create([
+            'year' => now()->year + 8,
+            'is_global' => true,
+            'branch_id' => null,
+        ]);
+
+        $response = $this->actingAs($this->superAdmin)
+            ->getJson('/api/projections?is_global=false');
+
+        $response->assertOk();
+
+        $projections = $response->json('data.data');
+        $this->assertCount(1, $projections);
+        $this->assertFalse($projections[0]['is_global']);
+        $this->assertNotNull($projections[0]['branch_id']);
+    }
+
+    /** @test */
+    public function cannot_create_duplicate_global_projection_for_same_year(): void
+    {
+        // Create existing global projection
+        Projection::factory()->create([
+            'year' => now()->year + 9,
+            'is_global' => true,
+            'branch_id' => null,
+        ]);
+
+        $data = [
+            'year' => now()->year + 9,
+            'attendance_target' => 1000,
+            'converts_target' => 100,
+            'leaders_target' => 50,
+            'volunteers_target' => 150,
+            'is_global' => true,
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->postJson('/api/projections/global', $data);
+
+        // Should update existing instead of creating duplicate
+        $response->assertOk();
+
+        // Should only have one global projection for this year
+        $this->assertDatabaseCount('projections', 1);
+    }
+
+    /** @test */
+    public function global_projection_validation_requires_all_targets(): void
+    {
+        $data = [
+            'year' => now()->year + 10,
+            'is_global' => true,
+            // Missing required targets
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->postJson('/api/projections/global', $data);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors([
+                'attendance_target',
+                'converts_target',
+                'leaders_target',
+                'volunteers_target',
+            ]);
+    }
+
+    /** @test */
+    public function global_projection_automatically_sets_branch_id_to_null(): void
+    {
+        $data = [
+            'year' => now()->year + 1,
+            'attendance_target' => 1000,
+            'converts_target' => 100,
+            'leaders_target' => 50,
+            'volunteers_target' => 150,
+            'is_global' => true,
+            'branch_id' => $this->branch->id, // This should be overridden
+        ];
+
+        $response = $this->actingAs($this->superAdmin)
+            ->postJson('/api/projections/global', $data);
+
+        $response->assertCreated();
+
+        $this->assertDatabaseHas('projections', [
+            'year' => now()->year + 1,
+            'is_global' => true,
+            'branch_id' => null, // Should be null even though we passed branch_id
+        ]);
+    }
+}

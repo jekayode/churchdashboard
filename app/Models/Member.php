@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -367,23 +368,83 @@ final class Member extends Model implements HasMedia
     }
 
     /**
-     * Log status change to history.
+     * Get the guest follow-ups for this member.
      */
-    private function logStatusChange(
-        ?string $previousStatus,
-        string $newStatus,
-        ?string $reason = null,
-        ?string $notes = null,
-        ?int $changedBy = null
-    ): void {
-        MemberStatusHistory::create([
-            'member_id' => $this->id,
-            'changed_by' => $changedBy ?? auth()->id() ?? 1,
-            'previous_status' => $previousStatus,
-            'new_status' => $newStatus,
-            'reason' => $reason,
-            'notes' => $notes,
-            'changed_at' => now(),
-        ]);
+    public function followUps(): HasMany
+    {
+        return $this->hasMany(GuestFollowUp::class);
+    }
+
+    /**
+     * Get the guest prayer requests for this member.
+     */
+    public function prayerRequests(): HasMany
+    {
+        return $this->hasMany(GuestPrayerRequest::class);
+    }
+
+    /**
+     * Get the guest membership pipeline for this member.
+     */
+    public function membershipPipeline(): HasOne
+    {
+        return $this->hasOne(GuestMembershipPipeline::class);
+    }
+
+    /**
+     * Scope to get only guest members.
+     */
+    public function scopeGuests($query)
+    {
+        return $query->where('member_status', 'visitor')
+            ->where('registration_source', 'guest-form');
+    }
+
+    /**
+     * Scope to get recent guests.
+     */
+    public function scopeRecentGuests($query, int $days = 7)
+    {
+        return $query->guests()->where('created_at', '>=', now()->subDays($days));
+    }
+
+    /**
+     * Scope to get guests by branch.
+     */
+    public function scopeGuestsByBranch($query, int $branchId)
+    {
+        return $query->guests()->where('branch_id', $branchId);
+    }
+
+    /**
+     * Scope to get guests by staying intention.
+     */
+    public function scopeGuestsByStayingIntention($query, string $intention)
+    {
+        return $query->guests()->where('staying_intention', $intention);
+    }
+
+    /**
+     * Check if this member is a guest.
+     */
+    public function isGuest(): bool
+    {
+        return $this->member_status === 'visitor' && $this->registration_source === 'guest-form';
+    }
+
+    /**
+     * Check if this guest has high membership interest.
+     */
+    public function hasHighMembershipInterest(): bool
+    {
+        return $this->staying_intention === 'yes-for-sure';
+    }
+
+    /**
+     * Check if this guest has a prayer request.
+     */
+    public function hasPrayerRequest(): bool
+    {
+        return ! empty($this->prayer_request);
     }
 }

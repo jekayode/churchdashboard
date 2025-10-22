@@ -92,11 +92,17 @@ final class GuestRegistrationService
 
                 // Send welcome email with login credentials
                 $branch = $user->member->branch;
+
+                // Generate password reset token and URL for easy password setup
+                $token = app('auth.password.broker')->createToken($user);
+                $resetUrl = url(route('password.reset', ['token' => $token, 'email' => $user->email], false));
+
                 $this->emailService->sendWelcomeEmail(
                     $user->email,
                     $user->name,
                     $password,
-                    $branch->name
+                    $branch->name,
+                    $resetUrl
                 );
 
                 return $user;

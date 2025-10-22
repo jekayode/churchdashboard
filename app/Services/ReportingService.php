@@ -5,17 +5,16 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Branch;
-use App\Models\EventReport;
+use App\Models\Department;
 use App\Models\Event;
+use App\Models\EventReport;
 use App\Models\Member;
+use App\Models\Ministry;
 use App\Models\SmallGroup;
 use App\Models\SmallGroupMeetingReport;
-use App\Models\Department;
-use App\Models\Ministry;
-use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 final class ReportingService
 {
@@ -26,10 +25,10 @@ final class ReportingService
     {
         $cacheKey = "dashboard_stats_{$branchId}_{$period}";
         $cacheTags = ['dashboard_stats', "branch_{$branchId}", 'event_reports', 'members'];
-        
+
         return Cache::remember($cacheKey, 3600, function () use ($branchId, $period) {
             $dateRange = $this->getDateRange($period);
-            
+
             return [
                 'members' => $this->getMemberStatistics($branchId, $dateRange),
                 'events' => $this->getEventStatistics($branchId, $dateRange),
@@ -49,17 +48,17 @@ final class ReportingService
     {
         $cacheKey = "dashboard_stats_custom_{$branchId}_{$dateRange['start']}_{$dateRange['end']}";
         $cacheTags = ['dashboard_stats', "branch_{$branchId}", 'event_reports', 'members'];
-        
+
         return Cache::remember($cacheKey, 1800, function () use ($branchId, $dateRange) {
             // Convert string dates to Carbon instances
             $start = Carbon::parse($dateRange['start'])->startOfDay();
             $end = Carbon::parse($dateRange['end'])->endOfDay();
-            
+
             $dateRangeCarbon = [
                 'start' => $start,
                 'end' => $end,
             ];
-            
+
             return [
                 'members' => $this->getMemberStatistics($branchId, $dateRangeCarbon),
                 'events' => $this->getEventStatistics($branchId, $dateRangeCarbon),
@@ -81,7 +80,7 @@ final class ReportingService
         $stats2 = $this->getPeriodStatistics($branchId, $period2);
 
         $percentages = $this->calculatePercentageChanges($stats1, $stats2);
-        
+
         $result = [
             'period1' => $stats1,
             'period2' => $stats2,
@@ -123,21 +122,21 @@ final class ReportingService
             });
 
         // Apply filters
-        if (!empty($filters['event_type'])) {
+        if (! empty($filters['event_type'])) {
             $baseQuery->where('event_type', $filters['event_type']);
         }
 
         // Apply date filters - prioritize explicit dates over period
-        if (!empty($filters['date_from']) && !empty($filters['date_to'])) {
+        if (! empty($filters['date_from']) && ! empty($filters['date_to'])) {
             // Use explicit date range
             $baseQuery->whereBetween('report_date', [$filters['date_from'], $filters['date_to']]);
-        } elseif (!empty($filters['date_from'])) {
+        } elseif (! empty($filters['date_from'])) {
             // Only start date provided
             $baseQuery->where('report_date', '>=', $filters['date_from']);
-        } elseif (!empty($filters['date_to'])) {
+        } elseif (! empty($filters['date_to'])) {
             // Only end date provided
             $baseQuery->where('report_date', '<=', $filters['date_to']);
-        } elseif (!empty($filters['period'])) {
+        } elseif (! empty($filters['period'])) {
             // Use period-based date range only if no explicit dates provided
             $dateRange = $this->getDateRange($filters['period']);
             $baseQuery->whereBetween('report_date', [$dateRange['start'], $dateRange['end']]);
@@ -163,7 +162,7 @@ final class ReportingService
     {
         $year = $year ?? now()->year;
         $month = $month ?? now()->month;
-        
+
         $startDate = Carbon::create($year, $month, 1);
         $endDate = $startDate->copy()->endOfMonth();
 
@@ -198,7 +197,7 @@ final class ReportingService
     public function createEventReport(array $data): EventReport
     {
         // Validate event type
-        if (isset($data['event_type']) && !in_array($data['event_type'], EventReport::EVENT_TYPES)) {
+        if (isset($data['event_type']) && ! in_array($data['event_type'], EventReport::EVENT_TYPES)) {
             throw new \InvalidArgumentException('Invalid event type provided.');
         }
 
@@ -211,15 +210,15 @@ final class ReportingService
     public function updateEventReport(EventReport $report, array $data): EventReport
     {
         // Validate event type
-        if (isset($data['event_type']) && !in_array($data['event_type'], EventReport::EVENT_TYPES)) {
+        if (isset($data['event_type']) && ! in_array($data['event_type'], EventReport::EVENT_TYPES)) {
             throw new \InvalidArgumentException('Invalid event type provided.');
         }
 
         $report->update($data);
-        
+
         // Clear related cache
         $this->clearCacheForBranch($report->event->branch_id ?? null);
-        
+
         return $report;
     }
 
@@ -229,7 +228,7 @@ final class ReportingService
     private function getMemberStatistics(?int $branchId, array $dateRange): array
     {
         $query = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId));
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId));
 
         return [
             'total' => $query->count(),
@@ -248,7 +247,7 @@ final class ReportingService
     private function getEventStatistics(?int $branchId, array $dateRange): array
     {
         $query = Event::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']]);
 
         return [
@@ -270,7 +269,7 @@ final class ReportingService
         try {
             $query = EventReport::query()
                 ->when($branchId, function ($q) use ($branchId) {
-                    $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                    $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
                 })
                 ->where('event_type', 'Sunday Service')  // Only include Sunday Service events for stats cards
                 ->whereBetween('report_date', [$dateRange['start'], $dateRange['end']]);
@@ -282,10 +281,6 @@ final class ReportingService
                 SUM(attendance_female + COALESCE(second_service_attendance_female, 0)) as total_female,
                 SUM(attendance_children + COALESCE(second_service_attendance_children, 0)) as total_children,
                 SUM(COALESCE(attendance_online, 0) + COALESCE(second_service_attendance_online, 0)) as total_online,
-                SUM(attendance_male + attendance_female + attendance_children + 
-                    COALESCE(second_service_attendance_male, 0) + 
-                    COALESCE(second_service_attendance_female, 0) + 
-                    COALESCE(second_service_attendance_children, 0)) as total_attendance,
                 SUM(COALESCE(first_time_guests, 0) + COALESCE(second_service_first_time_guests, 0)) as total_guests,
                 SUM(COALESCE(converts, 0) + COALESCE(second_service_converts, 0)) as total_converts,
                 AVG(attendance_male + attendance_female + attendance_children + 
@@ -303,12 +298,14 @@ final class ReportingService
                 ->first();
 
             $reportCount = (int) ($aggregated->report_count ?? 0);
-            $totalAttendance = (int) ($aggregated->total_attendance ?? 0);
             $totalMale = (int) ($aggregated->total_male ?? 0);
             $totalFemale = (int) ($aggregated->total_female ?? 0);
             $totalChildren = (int) ($aggregated->total_children ?? 0);
             $totalOnline = (int) ($aggregated->total_online ?? 0);
-            
+
+            // Calculate total attendance from individual totals (fixes Laravel query builder issue)
+            $totalAttendance = $totalMale + $totalFemale + $totalChildren;
+
             // Ensure numeric values for averages
             $avgAttendance = (float) ($aggregated->avg_attendance ?? 0);
             $sundayAvg = (float) ($sundayStats->sunday_avg ?? 0);
@@ -343,9 +340,9 @@ final class ReportingService
                 'branch_id' => $branchId,
                 'date_range' => $dateRange,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Return default structure to prevent frontend errors
             return [
                 'total_attendance' => 0,
@@ -370,7 +367,7 @@ final class ReportingService
         try {
             // Use database aggregation for better performance
             $groupStats = SmallGroup::query()
-                ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+                ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
                 ->selectRaw('
                     COUNT(*) as total_groups,
                     COUNT(CASE WHEN status = "active" THEN 1 END) as active_groups
@@ -380,14 +377,14 @@ final class ReportingService
             // Get total membership using join aggregation
             $membershipCount = DB::table('small_groups')
                 ->join('member_small_groups', 'small_groups.id', '=', 'member_small_groups.small_group_id')
-                ->when($branchId, fn($q) => $q->where('small_groups.branch_id', $branchId))
+                ->when($branchId, fn ($q) => $q->where('small_groups.branch_id', $branchId))
                 ->distinct('member_small_groups.member_id')
                 ->count();
 
             // Get meeting reports statistics
             $meetingStats = SmallGroupMeetingReport::query()
                 ->when($branchId, function ($q) use ($branchId) {
-                    $q->whereHas('smallGroup', fn($sg) => $sg->where('branch_id', $branchId));
+                    $q->whereHas('smallGroup', fn ($sg) => $sg->where('branch_id', $branchId));
                 })
                 ->whereBetween('meeting_date', [$dateRange['start'], $dateRange['end']])
                 ->selectRaw('AVG(total_attendance) as avg_attendance')
@@ -403,9 +400,9 @@ final class ReportingService
             \Log::error('Error calculating small group statistics', [
                 'branch_id' => $branchId,
                 'date_range' => $dateRange,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return [
                 'total_groups' => 0,
                 'total_membership' => 0,
@@ -424,7 +421,7 @@ final class ReportingService
             // Use single aggregated query for ministry and department leaders
             $leaderStats = DB::table('ministries')
                 ->leftJoin('departments', 'ministries.id', '=', 'departments.ministry_id')
-                ->when($branchId, fn($q) => $q->where('ministries.branch_id', $branchId))
+                ->when($branchId, fn ($q) => $q->where('ministries.branch_id', $branchId))
                 ->selectRaw('
                     COUNT(CASE WHEN ministries.leader_id IS NOT NULL THEN 1 END) as ministry_leaders,
                     COUNT(CASE WHEN departments.leader_id IS NOT NULL THEN 1 END) as department_leaders
@@ -435,7 +432,7 @@ final class ReportingService
             $volunteers = DB::table('member_departments')
                 ->join('departments', 'member_departments.department_id', '=', 'departments.id')
                 ->join('ministries', 'departments.ministry_id', '=', 'ministries.id')
-                ->when($branchId, fn($q) => $q->where('ministries.branch_id', $branchId))
+                ->when($branchId, fn ($q) => $q->where('ministries.branch_id', $branchId))
                 ->distinct('member_departments.member_id')
                 ->count();
 
@@ -452,9 +449,9 @@ final class ReportingService
             \Log::error('Error calculating leadership statistics', [
                 'branch_id' => $branchId,
                 'date_range' => $dateRange,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return [
                 'ministry_leaders' => 0,
                 'department_leaders' => 0,
@@ -488,7 +485,7 @@ final class ReportingService
             $eventTypeData = DB::table('event_reports')
                 ->when($branchId, function ($q) use ($branchId) {
                     $q->join('events', 'event_reports.event_id', '=', 'events.id')
-                      ->where('events.branch_id', $branchId);
+                        ->where('events.branch_id', $branchId);
                 })
                 ->whereBetween('report_date', [$dateRange['start'], $dateRange['end']])
                 ->selectRaw('
@@ -524,9 +521,9 @@ final class ReportingService
             \Log::error('Error generating trend data', [
                 'branch_id' => $branchId,
                 'date_range' => $dateRange,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return [
                 'attendance_by_event_type' => [],
                 'weekly_sunday_breakdown' => [],
@@ -542,37 +539,37 @@ final class ReportingService
         try {
             $startDate = Carbon::parse($dateRange['start']);
             $endDate = Carbon::parse($dateRange['end']);
-            
+
             // Generate all weeks in the date range first to ensure proper ordering
             $allWeeks = [];
             $currentWeekStart = $startDate->copy()->startOfWeek();
             $weekNumber = 1;
-            
+
             while ($currentWeekStart->lte($endDate)) {
                 $currentWeekEnd = $currentWeekStart->copy()->endOfWeek();
-                
+
                 // Ensure we don't go beyond the end date
                 if ($currentWeekEnd->gt($endDate)) {
                     $currentWeekEnd = $endDate->copy();
                 }
-                
+
                 $allWeeks[] = [
                     'week_start' => $currentWeekStart->copy(),
                     'week_end' => $currentWeekEnd->copy(),
                     'week_number' => $weekNumber,
-                    'label' => 'Week ' . $weekNumber,
-                    'date_label' => $currentWeekStart->format('M j') . ' - ' . $currentWeekEnd->format('j'),
+                    'label' => 'Week '.$weekNumber,
+                    'date_label' => $currentWeekStart->format('M j').' - '.$currentWeekEnd->format('j'),
                 ];
-                
+
                 $currentWeekStart->addWeek();
                 $weekNumber++;
             }
-            
+
             // Get actual attendance data from database
             $weeklyReports = DB::table('event_reports')
                 ->when($branchId, function ($q) use ($branchId) {
                     $q->join('events', 'event_reports.event_id', '=', 'events.id')
-                      ->where('events.branch_id', $branchId);
+                        ->where('events.branch_id', $branchId);
                 })
                 ->where('event_type', 'Sunday Service')
                 ->whereBetween('report_date', [$startDate, $endDate])
@@ -594,7 +591,7 @@ final class ReportingService
             foreach ($allWeeks as $week) {
                 $weekAttendance = 0;
                 $weekReportsCount = 0;
-                
+
                 // Find reports that fall within this week
                 foreach ($weeklyReports as $report) {
                     $reportDate = Carbon::parse($report->report_date);
@@ -603,7 +600,7 @@ final class ReportingService
                         $weekReportsCount += (int) $report->reports_count;
                     }
                 }
-                
+
                 $weeklyData[] = [
                     'week' => $week['label'],
                     'label' => $week['date_label'],
@@ -619,9 +616,9 @@ final class ReportingService
             \Log::error('Error generating weekly Sunday service breakdown', [
                 'branch_id' => $branchId,
                 'date_range' => $dateRange,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
-            
+
             return [];
         }
     }
@@ -641,11 +638,11 @@ final class ReportingService
     {
         $cacheKey = "global_ministry_report_{$branchId}_{$year}_{$month}";
         $cacheTags = ['global_ministry_reports', "branch_{$branchId}", 'event_reports', 'members'];
-        
+
         return Cache::remember($cacheKey, 3600, function () use ($branchId, $year, $month) {
             $startDate = Carbon::create($year, $month, 1)->startOfDay();
             $endDate = $startDate->copy()->endOfMonth()->endOfDay();
-            
+
             return [
                 'report_info' => [
                     'year' => $year,
@@ -667,7 +664,7 @@ final class ReportingService
                 'teci_enrollment' => $this->getTeciEnrollmentData($branchId),
                 'highest_attendance_event' => $this->getHighestAttendanceEventForPeriod($branchId, [
                     'start' => $startDate,
-                    'end' => $endDate
+                    'end' => $endDate,
                 ]),
             ];
         });
@@ -680,11 +677,11 @@ final class ReportingService
     {
         $cacheKey = "global_ministry_report_all_branches_{$year}_{$month}";
         $cacheTags = ['global_ministry_reports', 'all_branches', 'event_reports', 'members'];
-        
+
         return Cache::remember($cacheKey, 3600, function () use ($year, $month) {
             // Get all branches
             $branches = \App\Models\Branch::all();
-            
+
             $branchReports = [];
             $totals = [
                 'sunday_service_attendance' => 0,
@@ -704,12 +701,12 @@ final class ReportingService
                 'teci_current_enrollment' => 0,
                 'teci_pending_graduation' => 0,
             ];
-            
+
             foreach ($branches as $branch) {
                 $branchReport = $this->getGlobalMinistryMonthlyReport($branch->id, $year, $month);
                 $branchReport['branch_name'] = $branch->name;
                 $branchReports[] = $branchReport;
-                
+
                 // Accumulate totals
                 $totals['sunday_service_attendance'] += $branchReport['sunday_service_attendance']['monthly_average'];
                 $totals['guest_attraction'] += $branchReport['guest_attraction']['total_guests'];
@@ -728,7 +725,7 @@ final class ReportingService
                 $totals['teci_current_enrollment'] += $branchReport['teci_enrollment']['current_enrollment'];
                 $totals['teci_pending_graduation'] += $branchReport['teci_enrollment']['pending_graduation'];
             }
-            
+
             return [
                 'report_info' => [
                     'year' => $year,
@@ -749,7 +746,7 @@ final class ReportingService
     private function getDateRange(string $period): array
     {
         $now = now();
-        
+
         return match ($period) {
             'week' => [
                 'start' => $now->copy()->startOfWeek(),
@@ -789,7 +786,7 @@ final class ReportingService
     {
         $query = EventReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->whereBetween('report_date', [$period['start'], $period['end']]);
 
@@ -824,7 +821,10 @@ final class ReportingService
     private function calculatePercentageChanges(array $stats1, array $stats2): array
     {
         $calculate = function ($old, $new) {
-            if ($old == 0) return $new > 0 ? 100 : 0;
+            if ($old == 0) {
+                return $new > 0 ? 100 : 0;
+            }
+
             return round((($new - $old) / $old) * 100, 2);
         };
 
@@ -843,25 +843,29 @@ final class ReportingService
     private function getReportsSummary($reports): array
     {
         $reportCount = $reports->count();
-        
+
         // Calculate gender totals
         $totalMale = $reports->sum(function ($report) {
             $genderTotals = $report->combined_totals_by_gender;
+
             return $genderTotals['male'] ?? 0;
         });
-        
+
         $totalFemale = $reports->sum(function ($report) {
             $genderTotals = $report->combined_totals_by_gender;
+
             return $genderTotals['female'] ?? 0;
         });
-        
+
         $totalChildren = $reports->sum(function ($report) {
             $genderTotals = $report->combined_totals_by_gender;
+
             return $genderTotals['children'] ?? 0;
         });
 
         $totalOnline = $reports->sum(function ($report) {
             $genderTotals = $report->combined_totals_by_gender;
+
             return $genderTotals['online'] ?? 0;
         });
 
@@ -896,12 +900,14 @@ final class ReportingService
         $highest = $reports->sortByDesc(function ($report) {
             return $report->combined_total_attendance;
         })->first();
-        
-        if (!$highest) return null;
+
+        if (! $highest) {
+            return null;
+        }
 
         // Use the correct event field (name instead of title)
         $eventName = $highest->event->name ?? 'Unknown Event';
-        
+
         // For recurring events or if name is generic, create a more descriptive name
         if ($eventName === 'Sunday Service' || $eventName === 'Midweek Service') {
             // Use event_type if it's different from the base name, otherwise add date context
@@ -910,7 +916,7 @@ final class ReportingService
             } else {
                 // Add date context for better identification
                 $date = $highest->report_date;
-                $eventName = $eventName . ' (' . $date->format('M j, Y') . ')';
+                $eventName = $eventName.' ('.$date->format('M j, Y').')';
             }
         }
 
@@ -929,12 +935,12 @@ final class ReportingService
     {
         $query = EventReport::with('event')
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->whereBetween('report_date', [$period['start'], $period['end']]);
 
         $reports = $query->get();
-        
+
         return $this->getHighestAttendanceEvent($reports);
     }
 
@@ -945,6 +951,7 @@ final class ReportingService
     {
         $totals = $reports->reduce(function ($carry, $report) {
             $gender = $report->combined_totals_by_gender;
+
             return [
                 'attendance' => $carry['attendance'] + $report->combined_total_attendance,
                 'male' => $carry['male'] + $gender['male'],
@@ -964,10 +971,12 @@ final class ReportingService
     private function calculateMonthlyAverages($reports): array
     {
         $count = $reports->count();
-        if ($count === 0) return ['attendance' => 0, 'male' => 0, 'female' => 0, 'children' => 0];
+        if ($count === 0) {
+            return ['attendance' => 0, 'male' => 0, 'female' => 0, 'children' => 0];
+        }
 
         $totals = $this->calculateMonthlyTotals($reports);
-        
+
         return [
             'attendance' => round($totals['attendance'] / $count, 2),
             'male' => round($totals['male'] / $count, 2),
@@ -982,7 +991,7 @@ final class ReportingService
     private function getSundayServiceStats($reports): array
     {
         $sundayReports = $reports->where('event_type', 'Sunday Service');
-        
+
         return [
             'count' => $sundayReports->count(),
             'average_attendance' => $sundayReports->avg('combined_total_attendance'),
@@ -1012,15 +1021,15 @@ final class ReportingService
     {
         $weeks = [];
         $current = $startDate->copy()->startOfWeek();
-        
+
         while ($current->lte($endDate)) {
             $weekEnd = $current->copy()->endOfWeek();
             if ($weekEnd->gt($endDate)) {
                 $weekEnd = $endDate->copy();
             }
-            
+
             $weekReports = $reports->whereBetween('report_date', [$current->format('Y-m-d'), $weekEnd->format('Y-m-d')]);
-            
+
             $weeks[] = [
                 'week_start' => $current->format('Y-m-d'),
                 'week_end' => $weekEnd->format('Y-m-d'),
@@ -1028,10 +1037,10 @@ final class ReportingService
                 'events_count' => $weekReports->count(),
                 'average_attendance' => $weekReports->avg('combined_total_attendance') ?? 0,
             ];
-            
+
             $current->addWeek();
         }
-        
+
         return $weeks;
     }
 
@@ -1043,11 +1052,11 @@ final class ReportingService
         try {
             // Clear specific cache keys for the branch
             $periods = ['week', 'month', 'quarter', 'year'];
-            
+
             foreach ($periods as $period) {
                 Cache::forget("dashboard_stats_{$branchId}_{$period}");
             }
-            
+
             // Clear global ministry report cache keys
             $currentYear = now()->year;
             for ($year = $currentYear - 1; $year <= $currentYear + 1; $year++) {
@@ -1055,18 +1064,18 @@ final class ReportingService
                     Cache::forget("global_ministry_report_{$branchId}_{$year}_{$month}");
                 }
             }
-            
+
             // Clear all branches report cache
             for ($year = $currentYear - 1; $year <= $currentYear + 1; $year++) {
                 for ($month = 1; $month <= 12; $month++) {
                     Cache::forget("all_branches_global_ministry_report_{$year}_{$month}");
                 }
             }
-            
+
         } catch (\Exception $e) {
             \Log::warning('Cache clearing failed for branch', [
                 'branch_id' => $branchId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -1078,7 +1087,7 @@ final class ReportingService
     {
         $query = EventReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->where('event_type', 'Sunday Service')
             ->whereBetween('report_date', [$startDate, $endDate]);
@@ -1107,7 +1116,7 @@ final class ReportingService
     {
         $totalGuests = EventReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->whereBetween('report_date', [$startDate, $endDate])
             ->sum(DB::raw('first_time_guests + COALESCE(second_service_first_time_guests, 0)'));
@@ -1124,7 +1133,7 @@ final class ReportingService
     {
         $totalConverts = EventReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->whereBetween('report_date', [$startDate, $endDate])
             ->sum(DB::raw('converts + COALESCE(second_service_converts, 0)'));
@@ -1141,7 +1150,7 @@ final class ReportingService
     {
         // Count members who attended membership class during this period
         $count = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->whereBetween('date_attended_membership_class', [$startDate, $endDate])
             ->whereNotNull('date_attended_membership_class')
             ->count();
@@ -1158,7 +1167,7 @@ final class ReportingService
     {
         // Count members who completed membership class and became active members during this period
         $count = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->whereBetween('date_attended_membership_class', [$startDate, $endDate])
             ->whereNotNull('date_attended_membership_class')
             ->where('member_status', '!=', 'visitor')
@@ -1176,7 +1185,7 @@ final class ReportingService
     {
         // Count members who graduated from TECi during this period
         $count = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->where('teci_status', 'graduated')
             ->whereBetween('updated_at', [$startDate, $endDate])
             ->count();
@@ -1192,7 +1201,7 @@ final class ReportingService
     private function getSmallGroupsData(?int $branchId, Carbon $startDate, Carbon $endDate): array
     {
         $smallGroupsQuery = SmallGroup::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->where('status', 'active');
 
         $totalGroups = $smallGroupsQuery->count();
@@ -1200,7 +1209,7 @@ final class ReportingService
 
         $avgAttendance = SmallGroupMeetingReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('smallGroup', fn($sg) => $sg->where('branch_id', $branchId));
+                $q->whereHas('smallGroup', fn ($sg) => $sg->where('branch_id', $branchId));
             })
             ->whereBetween('meeting_date', [$startDate, $endDate])
             ->avg('total_attendance') ?? 0;
@@ -1218,7 +1227,7 @@ final class ReportingService
     private function getGSquadVolunteers(?int $branchId): array
     {
         $count = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->whereIn('member_status', ['volunteer', 'leader', 'minister'])
             ->count();
 
@@ -1233,17 +1242,17 @@ final class ReportingService
     private function getLeadershipData(?int $branchId): array
     {
         $leaders = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->where('member_status', 'leader')
             ->count();
 
         $ministers = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->where('member_status', 'minister')
             ->count();
 
         $volunteers = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->where('member_status', 'volunteer')
             ->count();
 
@@ -1263,7 +1272,7 @@ final class ReportingService
         // Count baptism events during the period
         $babyDedication = EventReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->where('event_type', 'Baby Dedication')
             ->whereBetween('report_date', [$startDate, $endDate])
@@ -1271,7 +1280,7 @@ final class ReportingService
 
         $waterBaptism = EventReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->where('event_type', 'Water Baptism')
             ->whereBetween('report_date', [$startDate, $endDate])
@@ -1279,7 +1288,7 @@ final class ReportingService
 
         $holyGhostBaptism = EventReport::query()
             ->when($branchId, function ($q) use ($branchId) {
-                $q->whereHas('event', fn($eq) => $eq->where('branch_id', $branchId));
+                $q->whereHas('event', fn ($eq) => $eq->where('branch_id', $branchId));
             })
             ->where('event_type', 'Holy Ghost Baptism')
             ->whereBetween('report_date', [$startDate, $endDate])
@@ -1298,12 +1307,12 @@ final class ReportingService
     private function getTeciEnrollmentData(?int $branchId): array
     {
         $currentEnrollment = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->where('teci_status', 'enrolled')
             ->count();
 
         $pendingGraduation = Member::query()
-            ->when($branchId, fn($q) => $q->where('branch_id', $branchId))
+            ->when($branchId, fn ($q) => $q->where('branch_id', $branchId))
             ->whereIn('teci_status', ['enrolled', 'in_progress'])
             ->count();
 
@@ -1312,4 +1321,4 @@ final class ReportingService
             'pending_graduation' => $pendingGraduation,
         ];
     }
-} 
+}

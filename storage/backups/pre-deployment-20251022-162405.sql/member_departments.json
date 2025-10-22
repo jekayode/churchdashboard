@@ -1,0 +1,202 @@
+[
+    {
+        "id": 1,
+        "member_id": 10,
+        "department_id": 57,
+        "assigned_at": "2025-09-22 07:11:29",
+        "created_at": "2025-09-22 07:11:29",
+        "updated_at": "2025-09-22 07:11:29"
+    },
+    {
+        "id": 2,
+        "member_id": 135,
+        "department_id": 71,
+        "assigned_at": "2025-10-06 21:18:28",
+        "created_at": "2025-10-06 21:18:28",
+        "updated_at": "2025-10-06 21:18:28"
+    },
+    {
+        "id": 3,
+        "member_id": 196,
+        "department_id": 72,
+        "assigned_at": "2025-10-06 21:21:38",
+        "created_at": "2025-10-06 21:21:38",
+        "updated_at": "2025-10-06 21:21:38"
+    },
+    {
+        "id": 4,
+        "member_id": 140,
+        "department_id": 72,
+        "assigned_at": "2025-10-06 21:21:38",
+        "created_at": "2025-10-06 21:21:38",
+        "updated_at": "2025-10-06 21:21:38"
+    },
+    {
+        "id": 5,
+        "member_id": 170,
+        "department_id": 72,
+        "assigned_at": "2025-10-06 21:21:38",
+        "created_at": "2025-10-06 21:21:38",
+        "updated_at": "2025-10-06 21:21:38"
+    },
+    {
+        "id": 6,
+        "member_id": 97,
+        "department_id": 72,
+        "assigned_at": "2025-10-06 21:22:09",
+        "created_at": "2025-10-06 21:22:09",
+        "updated_at": "2025-10-06 21:22:09"
+    },
+    {
+        "id": 7,
+        "member_id": 298,
+        "department_id": 70,
+        "assigned_at": "2025-10-06 21:23:19",
+        "created_at": "2025-10-06 21:23:19",
+        "updated_at": "2025-10-06 21:23:19"
+    },
+    {
+        "id": 8,
+        "member_id": 274,
+        "department_id": 69,
+        "assigned_at": "2025-10-06 21:24:53",
+        "created_at": "2025-10-06 21:24:53",
+        "updated_at": "2025-10-06 21:24:53"
+    },
+    {
+        "id": 9,
+        "member_id": 120,
+        "department_id": 63,
+        "assigned_at": "2025-10-06 21:46:31",
+        "created_at": "2025-10-06 21:46:31",
+        "updated_at": "2025-10-06 21:46:31"
+    },
+    {
+        "id": 10,
+        "member_id": 336,
+        "department_id": 63,
+        "assigned_at": "2025-10-06 21:46:59",
+        "created_at": "2025-10-06 21:46:59",
+        "updated_at": "2025-10-06 21:46:59"
+    },
+    {
+        "id": 11,
+        "member_id": 336,
+        "department_id": 68,
+        "assigned_at": "2025-10-06 21:49:21",
+        "created_at": "2025-10-06 21:49:21",
+        "updated_at": "2025-10-06 21:49:21"
+    },
+    {
+        "id": 13,
+        "member_id": 251,
+        "department_id": 67,
+        "assigned_at": "2025-10-06 21:50:09",
+        "created_at": "2025-10-06 21:50:09",
+        "updated_at": "2025-10-06 21:50:09"
+    },
+    {
+        "id": 14,
+        "member_id": 103,
+        "department_id": 64,
+        "assigned_at": "2025-10-06 21:51:04",
+        "created_at": "2025-10-06 21:51:04",
+        "updated_at": "2025-10-06 21:51:04"
+    },
+    {
+        "id": 15,
+        "member_id": 74,
+        "department_id": 63,
+        "assigned_at": "2025-10-06 22:13:28",
+        "created_at": "2025-10-06 22:13:28",
+        "updated_at": "2025-10-06 22:13:28"
+    },
+    {
+        "id": 16,
+        "member_id": 92,
+        "department_id": 63,
+        "assigned_at": "2025-10-06 22:13:56",
+        "created_at": "2025-10-06 22:13:56",
+        "updated_at": "2025-10-06 22:13:56"
+    },
+    {
+        "id": 17,
+        "member_id": 254,
+        "department_id": 63,
+        "assigned_at": "2025-10-06 22:14:18",
+        "created_at": "2025-10-06 22:14:18",
+        "updated_at": "2025-10-06 22:14:18"
+    },
+    {
+        "id": 18,
+        "member_id": 103,
+        "department_id": 63,
+        "assigned_at": "2025-10-06 22:16:22",
+        "created_at": "2025-10-06 22:16:22",
+        "updated_at": "2025-10-06 22:16:22"
+    },
+    {
+        "id": 19,
+        "member_id": 72,
+        "department_id": 58,
+        "assigned_at": "2025-10-07 09:46:25",
+        "created_at": "2025-10-07 09:46:25",
+        "updated_at": "2025-10-07 09:46:25"
+    },
+    {
+        "id": 20,
+        "member_id": 277,
+        "department_id": 58,
+        "assigned_at": "2025-10-07 09:46:25",
+        "created_at": "2025-10-07 09:46:25",
+        "updated_at": "2025-10-07 09:46:25"
+    },
+    {
+        "id": 21,
+        "member_id": 169,
+        "department_id": 58,
+        "assigned_at": "2025-10-07 09:46:25",
+        "created_at": "2025-10-07 09:46:25",
+        "updated_at": "2025-10-07 09:46:25"
+    },
+    {
+        "id": 22,
+        "member_id": 298,
+        "department_id": 58,
+        "assigned_at": "2025-10-07 09:46:25",
+        "created_at": "2025-10-07 09:46:25",
+        "updated_at": "2025-10-07 09:46:25"
+    },
+    {
+        "id": 23,
+        "member_id": 135,
+        "department_id": 58,
+        "assigned_at": "2025-10-07 09:46:25",
+        "created_at": "2025-10-07 09:46:25",
+        "updated_at": "2025-10-07 09:46:25"
+    },
+    {
+        "id": 24,
+        "member_id": 294,
+        "department_id": 58,
+        "assigned_at": "2025-10-07 09:46:25",
+        "created_at": "2025-10-07 09:46:25",
+        "updated_at": "2025-10-07 09:46:25"
+    },
+    {
+        "id": 25,
+        "member_id": 174,
+        "department_id": 58,
+        "assigned_at": "2025-10-07 09:46:25",
+        "created_at": "2025-10-07 09:46:25",
+        "updated_at": "2025-10-07 09:46:25"
+    },
+    {
+        "id": 26,
+        "member_id": 154,
+        "department_id": 50,
+        "assigned_at": "2025-10-07 11:44:27",
+        "created_at": "2025-10-07 11:44:27",
+        "updated_at": "2025-10-07 11:44:27"
+    }
+]

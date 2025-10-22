@@ -15,6 +15,7 @@ final class BranchReportToken extends Model
 
     protected $fillable = [
         'branch_id',
+        'event_id',
         'token',
         'name',
         'email',
@@ -50,6 +51,14 @@ final class BranchReportToken extends Model
     }
 
     /**
+     * Get the event this token is for (if event-specific).
+     */
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
+
+    /**
      * Generate a unique token.
      */
     public static function generateToken(): string
@@ -69,10 +78,12 @@ final class BranchReportToken extends Model
         string $name,
         ?string $email = null,
         ?array $allowedEvents = null,
-        ?\DateTime $expiresAt = null
+        ?\DateTime $expiresAt = null,
+        ?int $eventId = null
     ): self {
         return self::create([
             'branch_id' => $branchId,
+            'event_id' => $eventId,
             'token' => self::generateToken(),
             'name' => $name,
             'email' => $email,
@@ -91,10 +102,12 @@ final class BranchReportToken extends Model
         array $teamEmails,
         array $teamRoles,
         ?array $allowedEvents = null,
-        ?\DateTime $expiresAt = null
+        ?\DateTime $expiresAt = null,
+        ?int $eventId = null
     ): self {
         return self::create([
             'branch_id' => $branchId,
+            'event_id' => $eventId,
             'token' => self::generateToken(),
             'name' => $teamName,
             'team_name' => $teamName,
@@ -216,5 +229,21 @@ final class BranchReportToken extends Model
         $index = array_search($email, $emails);
 
         return $index !== false ? ($roles[$index] ?? 'Team Member') : null;
+    }
+
+    /**
+     * Check if this token is event-specific.
+     */
+    public function isEventSpecific(): bool
+    {
+        return $this->event_id !== null;
+    }
+
+    /**
+     * Scope to get tokens for a specific event.
+     */
+    public function scopeForEvent($query, int $eventId)
+    {
+        return $query->where('event_id', $eventId);
     }
 }

@@ -20,21 +20,41 @@ final class Projection extends Model
      */
     protected $fillable = [
         'branch_id',
+        'is_global',
         'year',
         'attendance_target',
+        'weekly_avg_attendance_target',
+        'guests_target',
+        'lifegroups_target',
+        'lifegroups_memberships_target',
+        'lifegroups_weekly_avg_attendance_target',
         'converts_target',
         'leaders_target',
         'volunteers_target',
         'quarterly_breakdown',
         'monthly_breakdown',
         'quarterly_attendance',
+        'quarterly_weekly_avg_attendance',
+        'quarterly_guests',
+        'quarterly_weekly_avg_guests',
         'quarterly_converts',
+        'quarterly_weekly_avg_converts',
         'quarterly_leaders',
         'quarterly_volunteers',
+        'quarterly_lifegroups',
+        'quarterly_lifegroups_memberships',
+        'quarterly_lifegroups_weekly_avg_attendance',
         'quarterly_actual_attendance',
+        'quarterly_actual_weekly_avg_attendance',
+        'quarterly_actual_guests',
+        'quarterly_actual_weekly_avg_guests',
         'quarterly_actual_converts',
+        'quarterly_actual_weekly_avg_converts',
         'quarterly_actual_leaders',
         'quarterly_actual_volunteers',
+        'quarterly_actual_lifegroups',
+        'quarterly_actual_lifegroups_memberships',
+        'quarterly_actual_lifegroups_weekly_avg_attendance',
         'status',
         'approved_by',
         'approved_at',
@@ -56,13 +76,28 @@ final class Projection extends Model
         'quarterly_breakdown' => 'array',
         'monthly_breakdown' => 'array',
         'quarterly_attendance' => 'array',
+        'quarterly_weekly_avg_attendance' => 'array',
+        'quarterly_guests' => 'array',
+        'quarterly_weekly_avg_guests' => 'array',
         'quarterly_converts' => 'array',
+        'quarterly_weekly_avg_converts' => 'array',
         'quarterly_leaders' => 'array',
         'quarterly_volunteers' => 'array',
+        'quarterly_lifegroups' => 'array',
+        'quarterly_lifegroups_memberships' => 'array',
+        'quarterly_lifegroups_weekly_avg_attendance' => 'array',
         'quarterly_actual_attendance' => 'array',
+        'quarterly_actual_weekly_avg_attendance' => 'array',
+        'quarterly_actual_guests' => 'array',
+        'quarterly_actual_weekly_avg_guests' => 'array',
         'quarterly_actual_converts' => 'array',
+        'quarterly_actual_weekly_avg_converts' => 'array',
         'quarterly_actual_leaders' => 'array',
         'quarterly_actual_volunteers' => 'array',
+        'quarterly_actual_lifegroups' => 'array',
+        'quarterly_actual_lifegroups_memberships' => 'array',
+        'quarterly_actual_lifegroups_weekly_avg_attendance' => 'array',
+        'is_global' => 'boolean',
         'is_current_year' => 'boolean',
         'submitted_at' => 'datetime',
         'approved_at' => 'datetime',
@@ -161,6 +196,22 @@ final class Projection extends Model
     }
 
     /**
+     * Scope to get global projections.
+     */
+    public function scopeGlobal($query)
+    {
+        return $query->where('is_global', true);
+    }
+
+    /**
+     * Scope to get branch-specific projections.
+     */
+    public function scopeBranchSpecific($query)
+    {
+        return $query->where('is_global', false);
+    }
+
+    /**
      * Check if projection is approved.
      */
     public function isApproved(): bool
@@ -190,6 +241,14 @@ final class Projection extends Model
     public function isDraft(): bool
     {
         return $this->status === 'draft';
+    }
+
+    /**
+     * Check if projection is global.
+     */
+    public function isGlobal(): bool
+    {
+        return $this->is_global === true;
     }
 
     /**
@@ -255,14 +314,20 @@ final class Projection extends Model
      */
     public function setAsCurrentYear(): bool
     {
-        if (!$this->isApproved()) {
+        if (! $this->isApproved()) {
             return false;
         }
 
-        // Unset all other current year projections for this branch
-        static::where('branch_id', $this->branch_id)
-            ->where('id', '!=', $this->id)
-            ->update(['is_current_year' => false]);
+        // Unset all other current year projections for this scope (branch or global)
+        $query = self::where('id', '!=', $this->id);
+
+        if ($this->isGlobal()) {
+            $query->where('is_global', true);
+        } else {
+            $query->where('branch_id', $this->branch_id);
+        }
+
+        $query->update(['is_current_year' => false]);
 
         return $this->update(['is_current_year' => true]);
     }

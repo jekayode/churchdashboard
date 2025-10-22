@@ -273,6 +273,159 @@
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                         </div>
                     </div>
+                    
+                    <!-- Additional Fields Row -->
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 mt-6">
+                        <div>
+                            <label for="weekly_avg_attendance_target" class="block text-sm font-medium text-gray-700">Weekly Avg Attendance</label>
+                            <input type="number" id="weekly_avg_attendance_target" name="weekly_avg_attendance_target" min="0" max="10000"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="guests_target" class="block text-sm font-medium text-gray-700">Guests Target</label>
+                            <input type="number" id="guests_target" name="guests_target" min="0" max="1000"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="lifegroups_target" class="block text-sm font-medium text-gray-700">LifeGroups Target</label>
+                            <input type="number" id="lifegroups_target" name="lifegroups_target" min="0" max="500"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="lifegroups_memberships_target" class="block text-sm font-medium text-gray-700">LifeGroups Memberships</label>
+                            <input type="number" id="lifegroups_memberships_target" name="lifegroups_memberships_target" min="0" max="2000"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+
+                        <div>
+                            <label for="lifegroups_weekly_avg_attendance_target" class="block text-sm font-medium text-gray-700">LifeGroups Weekly Avg</label>
+                            <input type="number" id="lifegroups_weekly_avg_attendance_target" name="lifegroups_weekly_avg_attendance_target" min="0" max="2000"
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                        </div>
+                </div>
+
+                <!-- Quarterly Breakdown Section -->
+                <div class="mt-8">
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="text-md font-medium text-gray-900">Quarterly Breakdown</h4>
+                        <button type="button" onclick="autoDistributeTargets()" 
+                                class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            Auto Distribute Targets
+                        </button>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-4">
+                        <!-- Q1 -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h5 class="text-sm font-medium text-gray-900 mb-3">Q1</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Attendance</label>
+                                    <input type="number" id="q1_attendance" name="quarters[attendance][0]" min="0" max="10000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Converts</label>
+                                    <input type="number" id="q1_converts" name="quarters[converts][0]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Leaders</label>
+                                    <input type="number" id="q1_leaders" name="quarters[leaders][0]" min="0" max="500"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Volunteers</label>
+                                    <input type="number" id="q1_volunteers" name="quarters[volunteers][0]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q2 -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h5 class="text-sm font-medium text-gray-900 mb-3">Q2</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Attendance</label>
+                                    <input type="number" id="q2_attendance" name="quarters[attendance][1]" min="0" max="10000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Converts</label>
+                                    <input type="number" id="q2_converts" name="quarters[converts][1]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Leaders</label>
+                                    <input type="number" id="q2_leaders" name="quarters[leaders][1]" min="0" max="500"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Volunteers</label>
+                                    <input type="number" id="q2_volunteers" name="quarters[volunteers][1]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q3 -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h5 class="text-sm font-medium text-gray-900 mb-3">Q3</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Attendance</label>
+                                    <input type="number" id="q3_attendance" name="quarters[attendance][2]" min="0" max="10000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Converts</label>
+                                    <input type="number" id="q3_converts" name="quarters[converts][2]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Leaders</label>
+                                    <input type="number" id="q3_leaders" name="quarters[leaders][2]" min="0" max="500"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Volunteers</label>
+                                    <input type="number" id="q3_volunteers" name="quarters[volunteers][2]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Q4 -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h5 class="text-sm font-medium text-gray-900 mb-3">Q4</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Attendance</label>
+                                    <input type="number" id="q4_attendance" name="quarters[attendance][3]" min="0" max="10000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Converts</label>
+                                    <input type="number" id="q4_converts" name="quarters[converts][3]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Leaders</label>
+                                    <input type="number" id="q4_leaders" name="quarters[leaders][3]" min="0" max="500"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700">Volunteers</label>
+                                    <input type="number" id="q4_volunteers" name="quarters[volunteers][3]" min="0" max="1000"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-8 flex justify-end space-x-3">
@@ -440,6 +593,11 @@ function createProjectionRow(projection) {
                     <div>Converts: <span class="font-medium">${formatNumber(projection.converts_target)}</span></div>
                     <div>Leaders: <span class="font-medium">${formatNumber(projection.leaders_target)}</span></div>
                     <div>Volunteers: <span class="font-medium">${formatNumber(projection.volunteers_target)}</span></div>
+                    ${projection.weekly_avg_attendance_target ? `<div>Weekly Avg: <span class="font-medium">${formatNumber(projection.weekly_avg_attendance_target)}</span></div>` : ''}
+                    ${projection.guests_target ? `<div>Guests: <span class="font-medium">${formatNumber(projection.guests_target)}</span></div>` : ''}
+                    ${projection.lifegroups_target ? `<div>LifeGroups: <span class="font-medium">${formatNumber(projection.lifegroups_target)}</span></div>` : ''}
+                    ${projection.lifegroups_memberships_target ? `<div>LG Memberships: <span class="font-medium">${formatNumber(projection.lifegroups_memberships_target)}</span></div>` : ''}
+                    ${projection.lifegroups_weekly_avg_attendance_target ? `<div>LG Weekly Avg: <span class="font-medium">${formatNumber(projection.lifegroups_weekly_avg_attendance_target)}</span></div>` : ''}
                 </div>
             </div>
         </td>
@@ -450,7 +608,10 @@ function createProjectionRow(projection) {
             ${formatDate(projection.updated_at)}
         </td>
         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-            <button onclick="viewProjection(${projection.id})" class="text-indigo-600 hover:text-indigo-900">View</button>
+            <div class="flex items-center justify-end space-x-2">
+                <button onclick="viewProjection(${projection.id})" class="text-indigo-600 hover:text-indigo-900">View</button>
+                ${getActionButtons(projection)}
+            </div>
         </td>
     `;
     
@@ -471,6 +632,22 @@ function getStatusBadge(status) {
     return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badgeClass}">${displayText}</span>`;
 }
 
+function getActionButtons(projection) {
+    let buttons = '';
+    
+    // Edit button - only for draft and rejected projections
+    if (projection.status === 'draft' || projection.status === 'rejected') {
+        buttons += `<button onclick="editProjection(${projection.id})" class="text-blue-600 hover:text-blue-900">Edit</button>`;
+    }
+    
+    // Reopen button - only for approved projections
+    if (projection.status === 'approved') {
+        buttons += `<button onclick="reopenProjection(${projection.id})" class="text-orange-600 hover:text-orange-900">Reopen</button>`;
+    }
+    
+    return buttons;
+}
+
 function renderPagination(data) {
     const container = document.getElementById('pagination-container');
     if (!data.links || data.last_page <= 1) {
@@ -488,16 +665,132 @@ function openCreateModal() {
     document.getElementById('save-button-text').textContent = 'Create Projection';
     document.getElementById('projection-form').reset();
     document.getElementById('branch_id').value = userBranchId;
+    document.getElementById('projection-id').value = ''; // Clear any existing projection ID
+    
+    // Clear quarterly fields
+    clearQuarterlyFields();
+    
+    // Clear new fields
+    document.getElementById('weekly_avg_attendance_target').value = '';
+    document.getElementById('guests_target').value = '';
+    document.getElementById('lifegroups_target').value = '';
+    document.getElementById('lifegroups_memberships_target').value = '';
+    document.getElementById('lifegroups_weekly_avg_attendance_target').value = '';
+    
     document.getElementById('projection-modal').classList.remove('hidden');
 }
 
+function clearQuarterlyFields() {
+    const quarters = ['q1', 'q2', 'q3', 'q4'];
+    const types = ['attendance', 'converts', 'leaders', 'volunteers'];
+    
+    quarters.forEach(quarter => {
+        types.forEach(type => {
+            document.getElementById(`${quarter}_${type}`).value = '';
+        });
+    });
+}
+
 function closeModal() {
+    editingProjectionId = null;
     document.getElementById('projection-modal').classList.add('hidden');
 }
 
-function viewProjection(projectionId) {
-    // Add view projection logic
-    console.log('Viewing projection:', projectionId);
+function editProjection(projectionId) {
+    // Edit is the same as view for draft/rejected projections
+    viewProjection(projectionId);
+}
+
+async function reopenProjection(projectionId) {
+    if (!confirm('Are you sure you want to reopen this projection for editing? This will change its status back to draft.')) {
+        return;
+    }
+    
+    try {
+        showLoadingSpinner();
+        
+        const response = await fetch(`/api/projections/${projectionId}/reopen`, {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Projection reopened for editing successfully!');
+            loadProjections(); // Refresh the table
+        } else {
+            alert('Error: ' + data.message);
+        }
+        
+    } catch (error) {
+        console.error('Error reopening projection:', error);
+        alert('Error reopening projection. Please try again.');
+    } finally {
+        hideLoadingSpinner();
+    }
+}
+
+async function viewProjection(projectionId) {
+    try {
+        showLoadingSpinner();
+        
+        const response = await fetch(`/api/projections/${projectionId}`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const projection = data.data;
+            
+            // Populate the form with projection data
+            document.getElementById('projection-id').value = projection.id;
+            document.getElementById('year').value = projection.year;
+            document.getElementById('attendance_target').value = projection.attendance_target;
+            document.getElementById('converts_target').value = projection.converts_target;
+            document.getElementById('leaders_target').value = projection.leaders_target;
+            document.getElementById('volunteers_target').value = projection.volunteers_target;
+            
+            // Populate new fields
+            document.getElementById('weekly_avg_attendance_target').value = projection.weekly_avg_attendance_target || '';
+            document.getElementById('guests_target').value = projection.guests_target || '';
+            document.getElementById('lifegroups_target').value = projection.lifegroups_target || '';
+            document.getElementById('lifegroups_memberships_target').value = projection.lifegroups_memberships_target || '';
+            document.getElementById('lifegroups_weekly_avg_attendance_target').value = projection.lifegroups_weekly_avg_attendance_target || '';
+            
+            // Populate quarterly data
+            populateQuarterlyData(projection);
+            
+            // Update modal title and button
+            document.getElementById('modal-title').textContent = 'Edit Projection';
+            document.getElementById('save-button-text').textContent = 'Update Projection';
+            
+            // Set editing flag
+            editingProjectionId = projectionId;
+            
+            // Show the modal
+            document.getElementById('projection-modal').classList.remove('hidden');
+            
+            hideLoadingSpinner();
+        } else {
+            throw new Error(data.message || 'Failed to load projection');
+        }
+    } catch (error) {
+        console.error('Error loading projection:', error);
+        hideLoadingSpinner();
+        alert('Failed to load projection: ' + error.message);
+    }
 }
 
 // Utility functions
@@ -516,21 +809,131 @@ function formatDate(dateString) {
     return new Date(dateString).toLocaleDateString();
 }
 
+function populateQuarterlyData(projection) {
+    // Populate Q1
+    document.getElementById('q1_attendance').value = projection.quarterly_attendance?.[0] || 0;
+    document.getElementById('q1_converts').value = projection.quarterly_converts?.[0] || 0;
+    document.getElementById('q1_leaders').value = projection.quarterly_leaders?.[0] || 0;
+    document.getElementById('q1_volunteers').value = projection.quarterly_volunteers?.[0] || 0;
+    
+    // Populate Q2
+    document.getElementById('q2_attendance').value = projection.quarterly_attendance?.[1] || 0;
+    document.getElementById('q2_converts').value = projection.quarterly_converts?.[1] || 0;
+    document.getElementById('q2_leaders').value = projection.quarterly_leaders?.[1] || 0;
+    document.getElementById('q2_volunteers').value = projection.quarterly_volunteers?.[1] || 0;
+    
+    // Populate Q3
+    document.getElementById('q3_attendance').value = projection.quarterly_attendance?.[2] || 0;
+    document.getElementById('q3_converts').value = projection.quarterly_converts?.[2] || 0;
+    document.getElementById('q3_leaders').value = projection.quarterly_leaders?.[2] || 0;
+    document.getElementById('q3_volunteers').value = projection.quarterly_volunteers?.[2] || 0;
+    
+    // Populate Q4
+    document.getElementById('q4_attendance').value = projection.quarterly_attendance?.[3] || 0;
+    document.getElementById('q4_converts').value = projection.quarterly_converts?.[3] || 0;
+    document.getElementById('q4_leaders').value = projection.quarterly_leaders?.[3] || 0;
+    document.getElementById('q4_volunteers').value = projection.quarterly_volunteers?.[3] || 0;
+}
+
+function autoDistributeTargets() {
+    // Default weights: Q1=15%, Q2=20%, Q3=30%, Q4=35%
+    const weights = [0.15, 0.20, 0.30, 0.35];
+    
+    const attendanceTarget = parseInt(document.getElementById('attendance_target').value) || 0;
+    const convertsTarget = parseInt(document.getElementById('converts_target').value) || 0;
+    const leadersTarget = parseInt(document.getElementById('leaders_target').value) || 0;
+    const volunteersTarget = parseInt(document.getElementById('volunteers_target').value) || 0;
+    
+    // Distribute attendance
+    distributeToQuarters('attendance', attendanceTarget, weights);
+    distributeToQuarters('converts', convertsTarget, weights);
+    distributeToQuarters('leaders', leadersTarget, weights);
+    distributeToQuarters('volunteers', volunteersTarget, weights);
+}
+
+function distributeToQuarters(type, total, weights) {
+    const quarters = [];
+    let remaining = total;
+    
+    // Calculate base distribution
+    for (let i = 0; i < 4; i++) {
+        const base = Math.floor(total * weights[i]);
+        quarters[i] = base;
+        remaining -= base;
+    }
+    
+    // Distribute remaining using largest remainder method
+    const remainders = [];
+    for (let i = 0; i < 4; i++) {
+        remainders[i] = {
+            index: i,
+            remainder: (total * weights[i]) - quarters[i]
+        };
+    }
+    
+    // Sort by remainder (largest first)
+    remainders.sort((a, b) => b.remainder - a.remainder);
+    
+    // Distribute remaining units
+    for (let i = 0; i < remaining; i++) {
+        quarters[remainders[i].index]++;
+    }
+    
+    // Update the form fields
+    for (let i = 0; i < 4; i++) {
+        document.getElementById(`q${i+1}_${type}`).value = quarters[i];
+    }
+}
+
 // Form submission
 document.getElementById('projection-form').addEventListener('submit', async function(e) {
     e.preventDefault();
     
     const saveButton = document.getElementById('save-button');
     saveButton.disabled = true;
-    document.getElementById('save-button-text').textContent = 'Creating...';
+    
+    const isEditing = editingProjectionId !== null;
+    const buttonText = isEditing ? 'Updating...' : 'Creating...';
+    document.getElementById('save-button-text').textContent = buttonText;
     
     try {
         const formData = new FormData(this);
         const data = Object.fromEntries(formData.entries());
         data.branch_id = userBranchId;
         
-        const response = await fetch('/api/projections', {
-            method: 'POST',
+        // Collect quarterly data
+        data.quarters = {
+            attendance: [
+                parseInt(document.getElementById('q1_attendance').value) || 0,
+                parseInt(document.getElementById('q2_attendance').value) || 0,
+                parseInt(document.getElementById('q3_attendance').value) || 0,
+                parseInt(document.getElementById('q4_attendance').value) || 0
+            ],
+            converts: [
+                parseInt(document.getElementById('q1_converts').value) || 0,
+                parseInt(document.getElementById('q2_converts').value) || 0,
+                parseInt(document.getElementById('q3_converts').value) || 0,
+                parseInt(document.getElementById('q4_converts').value) || 0
+            ],
+            leaders: [
+                parseInt(document.getElementById('q1_leaders').value) || 0,
+                parseInt(document.getElementById('q2_leaders').value) || 0,
+                parseInt(document.getElementById('q3_leaders').value) || 0,
+                parseInt(document.getElementById('q4_leaders').value) || 0
+            ],
+            volunteers: [
+                parseInt(document.getElementById('q1_volunteers').value) || 0,
+                parseInt(document.getElementById('q2_volunteers').value) || 0,
+                parseInt(document.getElementById('q3_volunteers').value) || 0,
+                parseInt(document.getElementById('q4_volunteers').value) || 0
+            ]
+        };
+        
+        const url = isEditing ? `/api/projections/${editingProjectionId}` : '/api/projections';
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        const response = await fetch(url, {
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
@@ -545,15 +948,25 @@ document.getElementById('projection-form').addEventListener('submit', async func
             closeModal();
             await loadProjections();
             await loadStatistics();
+            
+            // Show success message
+            const message = isEditing ? 'Projection updated successfully!' : 'Projection created successfully!';
+            alert(message);
         } else {
-            alert(result.message || 'Operation failed');
+            // Show validation errors if any
+            if (result.errors) {
+                const errorMessages = Object.values(result.errors).flat().join('\n');
+                alert('Validation errors:\n' + errorMessages);
+            } else {
+                alert(result.message || 'Operation failed');
+            }
         }
     } catch (error) {
         console.error('Error saving projection:', error);
-        alert('Failed to save projection');
+        alert('Failed to save projection: ' + error.message);
     } finally {
         saveButton.disabled = false;
-        document.getElementById('save-button-text').textContent = 'Create Projection';
+        document.getElementById('save-button-text').textContent = isEditing ? 'Update Projection' : 'Create Projection';
     }
 });
 </script>

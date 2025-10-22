@@ -181,18 +181,28 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::prefix('projections')->group(function () {
         Route::get('/', [ProjectionController::class, 'index']);
         Route::post('/', [ProjectionController::class, 'store']);
+        // Global projection (super admin) - optional
+        Route::post('/global', [ProjectionController::class, 'storeGlobal']);
         Route::get('/branches/available', [ProjectionController::class, 'getAvailableBranches']);
         Route::get('/statistics', [ProjectionController::class, 'statistics']);
         Route::get('/comparison', [ProjectionController::class, 'comparison']);
         Route::get('/{projection}', [ProjectionController::class, 'show']);
         Route::put('/{projection}', [ProjectionController::class, 'update']);
+        Route::patch('/{projection}/quarters', [ProjectionController::class, 'updateQuarters']);
         Route::delete('/{projection}', [ProjectionController::class, 'destroy']);
 
         // Status management routes
         Route::post('/{projection}/submit-for-review', [ProjectionController::class, 'submitForReview']);
         Route::post('/{projection}/approve', [ProjectionController::class, 'approve']);
         Route::post('/{projection}/reject', [ProjectionController::class, 'reject']);
+        Route::post('/{projection}/reopen', [ProjectionController::class, 'reopen']);
         Route::post('/{projection}/set-current-year', [ProjectionController::class, 'setCurrentYear']);
+    });
+
+    // Performance routes
+    Route::prefix('performance')->group(function () {
+        Route::get('/branch', [\App\Http\Controllers\PerformanceController::class, 'branch']);
+        Route::get('/network', [\App\Http\Controllers\PerformanceController::class, 'network']);
     });
 
     // Import/Export routes

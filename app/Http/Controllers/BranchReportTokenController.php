@@ -50,6 +50,7 @@ final class BranchReportTokenController extends Controller
 
         $validated = $request->validate([
             'branch_id' => 'required|exists:branches,id',
+            'event_id' => 'nullable|exists:events,id',
             'token_type' => 'required|in:individual,team',
             'name' => 'required_if:token_type,individual|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -73,6 +74,17 @@ final class BranchReportTokenController extends Controller
             ], 403);
         }
 
+        // If event_id is provided, validate that the event belongs to the specified branch
+        if ($validated['event_id']) {
+            $event = Event::find($validated['event_id']);
+            if (! $event || $event->branch_id !== (int) $validated['branch_id']) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The specified event does not belong to this branch.',
+                ], 422);
+            }
+        }
+
         try {
             if ($validated['token_type'] === 'team') {
                 // Create team token
@@ -82,7 +94,8 @@ final class BranchReportTokenController extends Controller
                     $validated['team_emails'],
                     $validated['team_roles'],
                     $validated['allowed_events'] ?? null,
-                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null
+                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null,
+                    $validated['event_id'] ? (int) $validated['event_id'] : null
                 );
             } else {
                 // Create individual token
@@ -91,7 +104,8 @@ final class BranchReportTokenController extends Controller
                     $validated['name'],
                     $validated['email'] ?? null,
                     $validated['allowed_events'] ?? null,
-                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null
+                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null,
+                    $validated['event_id'] ? (int) $validated['event_id'] : null
                 );
             }
 
@@ -293,6 +307,88 @@ final class BranchReportTokenController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to regenerate report submission link.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate a report token for a specific event.
+     */
+    public function generateEventToken(Request $request, Event $event): JsonResponse
+    {
+        Gate::authorize('createReports', [\App\Models\User::class]);
+
+        $user = auth()->user();
+
+        // Check if user has access to this event's branch
+        if (! $user->isSuperAdmin() && $user->getActiveBranchId() !== $event->branch_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to create tokens for this event.',
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'token_type' => 'required|in:individual,team',
+            'name' => 'required_if:token_type,individual|string|max:255',
+            'email' => 'nullable|email|max:255',
+            'team_name' => 'required_if:token_type,team|string|max:255',
+            'team_emails' => 'required_if:token_type,team|array|min:1',
+            'team_emails.*' => 'email|max:255',
+            'team_roles' => 'required_if:token_type,team|array|min:1',
+            'team_roles.*' => 'string|max:255',
+            'expires_at' => 'nullable|date|after:now',
+        ]);
+
+        try {
+            if ($validated['token_type'] === 'team') {
+                // Create team token for event
+                $token = BranchReportToken::createTeamTokenForBranch(
+                    $event->branch_id,
+                    $validated['team_name'],
+                    $validated['team_emails'],
+                    $validated['team_roles'],
+                    null, // No additional allowed_events for event-specific tokens
+                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null,
+                    $event->id
+                );
+            } else {
+                // Create individual token for event
+                $token = BranchReportToken::createForBranch(
+                    $event->branch_id,
+                    $validated['name'],
+                    $validated['email'] ?? null,
+                    null, // No additional allowed_events for event-specific tokens
+                    $validated['expires_at'] ? new \DateTime($validated['expires_at']) : null,
+                    $event->id
+                );
+            }
+
+            Log::info('Event-specific report token created', [
+                'token_id' => $token->id,
+                'event_id' => $event->id,
+                'branch_id' => $event->branch_id,
+                'created_by' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Event report submission link created successfully.',
+                'data' => [
+                    'token' => $token->load(['event:id,name', 'branch:id,name']),
+                    'submission_url' => $token->getSubmissionUrl(),
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to create event-specific report token', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create event report submission link.',
             ], 500);
         }
     }

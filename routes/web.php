@@ -118,6 +118,9 @@ Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->na
     })->name('users');
 
     Route::get('/reports', [ReportingController::class, 'index'])->name('reports');
+    Route::get('/performance', function () {
+        return view('admin.reports.network');
+    })->name('performance');
 
     Route::get('/import-export', function () {
         return view('admin.import-export.index');
@@ -203,6 +206,9 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
 
         return view('pastor.reports.index', compact('isSuperAdmin', 'eventTypes'));
     })->name('reports');
+    Route::get('/performance', function () {
+        return view('pastor.reports.performance');
+    })->name('performance');
 
     Route::get('/projections', function () {
         $user = Auth::user();

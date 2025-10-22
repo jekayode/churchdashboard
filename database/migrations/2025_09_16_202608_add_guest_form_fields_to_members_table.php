@@ -2,8 +2,8 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -27,9 +27,9 @@ return new class extends Migration
             $table->tinyInteger('profile_completion_percentage')->default(0);
             $table->enum('registration_source', ['guest-form', 'admin-created', 'imported'])->default('admin-created');
         });
-        
-        // Update existing enums
-        DB::statement("ALTER TABLE members MODIFY COLUMN gender ENUM('male', 'female', 'prefer-not-to-say') NULL");
+
+        // Skip enum modification for SQLite compatibility
+        // The enum values are already correct in the create_members_table migration
     }
 
     /**
@@ -40,7 +40,7 @@ return new class extends Migration
         Schema::table('members', function (Blueprint $table) {
             $table->dropColumn([
                 'preferred_call_time',
-                'home_address', 
+                'home_address',
                 'age_group',
                 'prayer_request',
                 'discovery_source',
@@ -50,10 +50,10 @@ return new class extends Migration
                 'consent_given_at',
                 'consent_ip',
                 'profile_completion_percentage',
-                'registration_source'
+                'registration_source',
             ]);
         });
-        
+
         // Revert gender enum
         DB::statement("ALTER TABLE members MODIFY COLUMN gender ENUM('male', 'female') NULL");
     }
