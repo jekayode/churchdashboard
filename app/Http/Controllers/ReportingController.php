@@ -457,20 +457,29 @@ final class ReportingController extends Controller
     {
         Gate::authorize('viewAllBranchesReports', [User::class]);
 
-        // Default to this month
-        $period = $request->get('period', 'this_month');
-        $startDate = $request->get('start_date');
-        $endDate = $request->get('end_date');
+        try {
+            // Default to this month
+            $period = $request->get('period', 'this_month');
+            $startDate = $request->get('start_date');
+            $endDate = $request->get('end_date');
 
-        $dateRange = $this->reportingService->calculateSuperAdminDateRange($period, $startDate, $endDate);
-        $dashboardData = $this->reportingService->getSuperAdminReportDashboard($dateRange);
+            $dateRange = $this->reportingService->calculateSuperAdminDateRange($period, $startDate, $endDate);
+            $dashboardData = $this->reportingService->getSuperAdminReportDashboard($dateRange);
 
-        return view('admin.reports.dashboard', [
-            'dashboardData' => $dashboardData,
-            'currentPeriod' => $period,
-            'currentStartDate' => $startDate,
-            'currentEndDate' => $endDate,
-        ]);
+            return view('admin.reports.dashboard', [
+                'dashboardData' => $dashboardData,
+                'currentPeriod' => $period,
+                'currentStartDate' => $startDate,
+                'currentEndDate' => $endDate,
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Error loading Super Admin Dashboard', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            throw $e;
+        }
     }
 
     /**

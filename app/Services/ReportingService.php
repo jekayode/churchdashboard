@@ -1424,7 +1424,9 @@ final class ReportingService
         $branches = Branch::where('status', 'active')->get();
 
         // Get all event reports for the period (all event types)
+        // Only get reports that have valid events
         $allReports = EventReport::with('event')
+            ->whereHas('event')
             ->whereBetween('report_date', [$start, $end])
             ->get();
 

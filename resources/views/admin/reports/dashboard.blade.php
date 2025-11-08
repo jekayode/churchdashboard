@@ -187,7 +187,7 @@
                 endDate: @js($currentEndDate ?? ''),
                 dashboardData: @js($dashboardData ?? null),
                 loading: false,
-                periodLabel: @js(isset($dashboardData['period']['label']) ? $dashboardData['period']['label'] : ''),
+                periodLabel: @js(isset($dashboardData) && isset($dashboardData['period']) && isset($dashboardData['period']['label']) ? $dashboardData['period']['label'] : ''),
 
                 init() {
                     // Set initial period label if data exists
