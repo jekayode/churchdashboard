@@ -118,6 +118,8 @@ Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->na
     })->name('users');
 
     Route::get('/reports', [ReportingController::class, 'index'])->name('reports');
+    Route::get('/reports/dashboard', [ReportingController::class, 'superAdminDashboard'])->name('reports.dashboard');
+    Route::get('/api/reports/dashboard', [ReportingController::class, 'getDashboardData'])->name('api.reports.dashboard');
     Route::get('/performance', function () {
         return view('admin.reports.network');
     })->name('performance');

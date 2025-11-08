@@ -1321,4 +1321,217 @@ final class ReportingService
             'pending_graduation' => $pendingGraduation,
         ];
     }
+
+    /**
+     * Calculate date range for Super Admin dashboard based on period.
+     */
+    public function calculateSuperAdminDateRange(string $period, ?string $startDate = null, ?string $endDate = null): array
+    {
+        $now = Carbon::now();
+
+        $result = match ($period) {
+            'this_week' => [
+                'start' => $now->copy()->startOfWeek(),
+                'end' => $now->copy()->endOfWeek(),
+            ],
+            'this_month' => [
+                'start' => $now->copy()->startOfMonth(),
+                'end' => $now->copy()->endOfMonth(),
+            ],
+            'last_quarter' => $this->getLastQuarterRange($now),
+            'this_year' => [
+                'start' => $now->copy()->startOfYear(),
+                'end' => $now->copy()->endOfYear(),
+            ],
+            'custom' => [
+                'start' => $startDate ? Carbon::parse($startDate)->startOfDay() : $now->copy()->startOfMonth(),
+                'end' => $endDate ? Carbon::parse($endDate)->endOfDay() : $now->copy()->endOfMonth(),
+            ],
+            default => [
+                'start' => $now->copy()->startOfMonth(),
+                'end' => $now->copy()->endOfMonth(),
+            ],
+        };
+
+        $result['type'] = $period;
+
+        return $result;
+    }
+
+    /**
+     * Get last quarter date range.
+     */
+    private function getLastQuarterRange(Carbon $now): array
+    {
+        $currentQuarter = (int) ceil($now->month / 3);
+        $currentYear = $now->year;
+
+        if ($currentQuarter === 1) {
+            // If Q1, show Q4 of previous year
+            $start = Carbon::create($currentYear - 1, 10, 1)->startOfDay();
+            $end = Carbon::create($currentYear - 1, 12, 31)->endOfDay();
+        } else {
+            // Show previous quarter of current year
+            $lastQuarter = $currentQuarter - 1;
+            $startMonth = (($lastQuarter - 1) * 3) + 1;
+            $endMonth = $lastQuarter * 3;
+            $start = Carbon::create($currentYear, $startMonth, 1)->startOfDay();
+            $end = Carbon::create($currentYear, $endMonth, 1)->endOfMonth()->endOfDay();
+        }
+
+        return [
+            'start' => $start,
+            'end' => $end,
+        ];
+    }
+
+    /**
+     * Get Super Admin report dashboard data.
+     */
+    public function getSuperAdminReportDashboard(array $dateRange): array
+    {
+        $start = $dateRange['start'];
+        $end = $dateRange['end'];
+        $periodType = $dateRange['type'] ?? 'custom';
+
+        // Ensure Carbon instances
+        if (is_string($start)) {
+            $start = Carbon::parse($start)->startOfDay();
+        }
+        if (is_string($end)) {
+            $end = Carbon::parse($end)->endOfDay();
+        }
+
+        return [
+            'event_attendance' => $this->getEventAttendanceData($start, $end),
+            'small_groups' => $this->getSmallGroupsDashboardData($start, $end),
+            'period' => [
+                'type' => $periodType,
+                'start' => $start->format('Y-m-d H:i:s'),
+                'end' => $end->format('Y-m-d H:i:s'),
+                'label' => $this->getPeriodLabel($start, $end),
+            ],
+        ];
+    }
+
+    /**
+     * Get event attendance data aggregated by branch.
+     * Uses the same calculation method as getReportsSummary for consistency.
+     */
+    private function getEventAttendanceData(Carbon $start, Carbon $end): array
+    {
+        // Get all branches
+        $branches = Branch::where('status', 'active')->get();
+
+        // Get all event reports for the period (all event types)
+        $allReports = EventReport::with('event')
+            ->whereBetween('report_date', [$start, $end])
+            ->get();
+
+        // Calculate overall totals using model accessors (same as getReportsSummary)
+        $totals = [
+            'total_attendance' => $allReports->sum('combined_total_attendance'),
+            'first_time_guests' => $allReports->sum('combined_first_time_guests'),
+            'new_converts' => $allReports->sum('combined_converts'),
+        ];
+
+        // Calculate per-branch metrics
+        $branchData = [];
+        foreach ($branches as $branch) {
+            $branchReports = $allReports->filter(function ($report) use ($branch) {
+                return $report->event && $report->event->branch_id === $branch->id;
+            });
+
+            $branchData[] = [
+                'id' => $branch->id,
+                'name' => $branch->name,
+                'total_attendance' => $branchReports->sum('combined_total_attendance'),
+                'first_time_guests' => $branchReports->sum('combined_first_time_guests'),
+                'new_converts' => $branchReports->sum('combined_converts'),
+            ];
+        }
+
+        return [
+            'totals' => $totals,
+            'branches' => $branchData,
+        ];
+    }
+
+    /**
+     * Get small groups dashboard data with attendance.
+     */
+    private function getSmallGroupsDashboardData(Carbon $start, Carbon $end): array
+    {
+        // Get all active small groups across all branches
+        $allGroups = SmallGroup::where('status', 'active')
+            ->with('branch:id,name')
+            ->get();
+
+        // Get attendance for each group in the period
+        $groupsWithAttendance = [];
+        $groupsByBranch = [];
+
+        foreach ($allGroups as $group) {
+            // Sum attendance from approved meeting reports in the period
+            $attendance = SmallGroupMeetingReport::query()
+                ->where('small_group_id', $group->id)
+                ->where('status', 'approved')
+                ->whereBetween('meeting_date', [$start, $end])
+                ->sum('total_attendance');
+
+            $groupData = [
+                'id' => $group->id,
+                'name' => $group->name,
+                'branch_id' => $group->branch_id,
+                'branch_name' => $group->branch->name ?? 'Unknown',
+                'attendance' => (int) $attendance,
+            ];
+
+            $groupsWithAttendance[] = $groupData;
+
+            // Group by branch
+            if (! isset($groupsByBranch[$group->branch_id])) {
+                $groupsByBranch[$group->branch_id] = [
+                    'branch_id' => $group->branch_id,
+                    'branch_name' => $group->branch->name ?? 'Unknown',
+                    'groups' => [],
+                ];
+            }
+
+            $groupsByBranch[$group->branch_id]['groups'][] = [
+                'id' => $group->id,
+                'name' => $group->name,
+                'attendance' => (int) $attendance,
+            ];
+        }
+
+        return [
+            'totals' => $groupsWithAttendance,
+            'by_branch' => array_values($groupsByBranch),
+        ];
+    }
+
+    /**
+     * Get period label for display.
+     */
+    private function getPeriodLabel(Carbon $start, Carbon $end): string
+    {
+        // If it's a full month
+        if ($start->isStartOfMonth() && $end->isEndOfMonth() && $start->month === $end->month) {
+            return $start->format('F Y');
+        }
+
+        // If it's a full year
+        if ($start->isStartOfYear() && $end->isEndOfYear() && $start->year === $end->year) {
+            return $start->format('Y');
+        }
+
+        // If it's a week
+        if ($start->isStartOfWeek() && $end->isEndOfWeek() && $start->diffInDays($end) <= 7) {
+            return $start->format('M j').' - '.$end->format('M j, Y');
+        }
+
+        // Custom range
+        return $start->format('M j, Y').' - '.$end->format('M j, Y');
+    }
 }

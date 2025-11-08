@@ -100,7 +100,8 @@
         </svg>
     </button>
     <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95" class="ml-8 mt-2 space-y-1">
-        <a href="{{ route('admin.reports') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700 {{ request()->routeIs('admin.reports') ? 'bg-purple-50 text-purple-700' : '' }}">Dashboard</a>
+        <a href="{{ route('admin.reports') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700 {{ request()->routeIs('admin.reports') && !request()->routeIs('admin.reports.dashboard') ? 'bg-purple-50 text-purple-700' : '' }}">Event Reports</a>
+        <a href="{{ route('admin.reports.dashboard') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700 {{ request()->routeIs('admin.reports.dashboard') ? 'bg-purple-50 text-purple-700' : '' }}">Report Dashboard</a>
         <a href="{{ route('admin.performance') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700 {{ request()->routeIs('admin.performance*') ? 'bg-purple-50 text-purple-700' : '' }}">Performance</a>
     </div>
 </div>

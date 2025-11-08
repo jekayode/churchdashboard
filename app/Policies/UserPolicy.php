@@ -211,4 +211,12 @@ final class UserPolicy extends BasePolicy
     {
         return $this->isSuperAdmin($user);
     }
+
+    /**
+     * Determine whether the user can view reports for all branches (Super Admin only).
+     */
+    public function viewAllBranchesReports(User $user): bool
+    {
+        return $this->isSuperAdmin($user);
+    }
 }
