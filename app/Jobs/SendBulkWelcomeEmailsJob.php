@@ -112,3 +112,5 @@ final class SendBulkWelcomeEmailsJob implements ShouldQueue
     }
 }
 
+
+

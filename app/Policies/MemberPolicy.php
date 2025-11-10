@@ -108,4 +108,90 @@ final class MemberPolicy extends BasePolicy
         // Users with leadership privileges can view member reports
         return $this->hasLeadershipPrivileges($user) && $this->belongsToSameBranch($user, $member);
     }
+
+    /**
+     * Determine whether the user can view any guests.
+     * Override for guest management access.
+     */
+    public function viewAnyGuests(User $user): bool
+    {
+        // Super Admins have full access
+        if ($this->isSuperAdmin($user)) {
+            return true;
+        }
+
+        // Branch Pastors have access
+        if ($this->isBranchPastor($user)) {
+            return true;
+        }
+
+        // Eligible Ministry Leaders have access
+        return $this->isEligibleMinistryLeader($user);
+    }
+
+    /**
+     * Determine whether the user can view a guest.
+     * Override for guest management access.
+     */
+    public function viewGuest(User $user, Member $member): bool
+    {
+        // Must be a guest (visitor status with guest-form registration source)
+        if ($member->member_status !== 'visitor' || $member->registration_source !== 'guest-form') {
+            return false;
+        }
+
+        // Super Admins have full access
+        if ($this->isSuperAdmin($user)) {
+            return true;
+        }
+
+        // Branch Pastors can view guests in their branch(es)
+        if ($this->isBranchPastor($user)) {
+            return $this->belongsToSameBranch($user, $member);
+        }
+
+        // Eligible Ministry Leaders can view guests in their ministry's branch
+        if ($this->isEligibleMinistryLeader($user)) {
+            return $this->belongsToSameBranch($user, $member);
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if user is an eligible Ministry Leader (leads ministries matching criteria).
+     */
+    protected function isEligibleMinistryLeader(User $user): bool
+    {
+        // User must have a member record to lead ministries
+        if (!$user->member) {
+            return false;
+        }
+
+        // Keywords to match in ministry names (case-insensitive partial match)
+        $keywords = [
+            'life groups',
+            'assimilation',
+            'online church',
+            'finance',
+            'prayers',
+        ];
+
+        // Get all ministries led by this user's member
+        $ledMinistries = $user->member->ledMinistries()
+            ->where('status', 'active')
+            ->get();
+
+        // Check if any ministry name contains any of the keywords
+        foreach ($ledMinistries as $ministry) {
+            $ministryName = strtolower($ministry->name ?? '');
+            foreach ($keywords as $keyword) {
+                if (str_contains($ministryName, strtolower($keyword))) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
 } 

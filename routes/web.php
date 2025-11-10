@@ -320,6 +320,19 @@ Route::middleware(['auth', 'verified', 'role:ministry_leader,super_admin,branch_
     })->name('events');
 });
 
+// Guest Management Routes (Branch Pastors and eligible Ministry Leaders)
+Route::middleware(['auth', 'verified', 'role:branch_pastor,ministry_leader,super_admin'])
+    ->prefix('guests')
+    ->name('guests.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\GuestManagementController::class, 'index'])->name('index');
+        Route::get('/export', [\App\Http\Controllers\GuestManagementController::class, 'export'])->name('export');
+        Route::get('/api/list', [\App\Http\Controllers\GuestManagementController::class, 'getGuests'])->name('api.list');
+        Route::get('/{member}', [\App\Http\Controllers\GuestManagementController::class, 'show'])->name('show');
+        Route::post('/{member}/status', [\App\Http\Controllers\GuestManagementController::class, 'updateStatus'])->name('update-status');
+        Route::post('/{member}/follow-up', [\App\Http\Controllers\GuestManagementController::class, 'addFollowUp'])->name('add-follow-up');
+    });
+
 // Department Leader Routes
 Route::middleware(['auth', 'verified', 'role:department_leader,super_admin,branch_pastor,ministry_leader'])->prefix('department')->name('department.')->group(function () {
     Route::get('/team', function () {

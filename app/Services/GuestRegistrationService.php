@@ -91,19 +91,38 @@ final class GuestRegistrationService
                 $member->updateProfileCompletion();
 
                 // Send welcome email with login credentials
-                $branch = $user->member->branch;
+                // Load the branch relationship using the member we just created
+                $member->load('branch');
+                $branch = $member->branch;
 
-                // Generate password reset token and URL for easy password setup
-                $token = app('auth.password.broker')->createToken($user);
-                $resetUrl = url(route('password.reset', ['token' => $token, 'email' => $user->email], false));
+                if ($branch) {
+                    try {
+                        // Generate password reset token and URL for easy password setup
+                        $token = app('auth.password.broker')->createToken($user);
+                        $resetUrl = url(route('password.reset', ['token' => $token, 'email' => $user->email], false));
 
-                $this->emailService->sendWelcomeEmail(
-                    $user->email,
-                    $user->name,
-                    $password,
-                    $branch->name,
-                    $resetUrl
-                );
+                        $this->emailService->sendWelcomeEmail(
+                            $user->email,
+                            $user->name,
+                            $password,
+                            $branch->name,
+                            $resetUrl
+                        );
+                    } catch (\Exception $emailException) {
+                        // Log email failure but don't prevent user registration
+                        \Log::error('Failed to send welcome email during guest registration', [
+                            'user_id' => $user->id,
+                            'email' => $user->email,
+                            'error' => $emailException->getMessage(),
+                        ]);
+                    }
+                } else {
+                    \Log::error('Branch not found for welcome email', [
+                        'user_id' => $user->id,
+                        'member_id' => $member->id,
+                        'branch_id' => $member->branch_id,
+                    ]);
+                }
 
                 return $user;
             });

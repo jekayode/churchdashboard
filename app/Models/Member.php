@@ -368,6 +368,27 @@ final class Member extends Model implements HasMedia
     }
 
     /**
+     * Log a status change to the member status history.
+     */
+    protected function logStatusChange(
+        string $previousStatus,
+        string $newStatus,
+        ?string $reason = null,
+        ?string $notes = null,
+        ?int $changedBy = null
+    ): void {
+        MemberStatusHistory::create([
+            'member_id' => $this->id,
+            'previous_status' => $previousStatus,
+            'new_status' => $newStatus,
+            'reason' => $reason,
+            'notes' => $notes,
+            'changed_by' => $changedBy ?? auth()->id(),
+            'changed_at' => now(),
+        ]);
+    }
+
+    /**
      * Get the guest follow-ups for this member.
      */
     public function followUps(): HasMany
