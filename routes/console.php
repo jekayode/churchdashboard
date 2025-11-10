@@ -30,3 +30,10 @@ Schedule::command('messages:send-birthday-anniversary')
     ->daily()
     ->at('09:00')
     ->description('Send birthday and anniversary messages to members');
+
+// Schedule personalized guest follow-up emails (runs every Monday)
+Schedule::command('guests:send-personalized-emails')
+    ->weekly()
+    ->mondays()
+    ->at('08:00')
+    ->description('Send personalized follow-up emails to guests who registered in the previous week');

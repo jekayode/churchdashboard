@@ -495,19 +495,40 @@
                             recipients: this.selectedRecipients
                         })
                         });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({ error: 'Unknown error occurred' }));
+                            const errorMessage = errorData.errors 
+                                ? Object.values(errorData.errors).flat().join('\n')
+                                : errorData.error || `HTTP ${response.status}: ${response.statusText}`;
+                            throw new Error(errorMessage);
+                        }
+
                         const data = await response.json();
                         console.log('Send message response:', data);
-                        this.sendResults = data.data?.summary || data.summary || data;
+                        
+                        if (data.success === false) {
+                            throw new Error(data.message || 'Failed to send messages');
+                        }
+
+                        this.sendResults = data.data?.summary || data.summary || {
+                            total: data.data?.results?.length || 0,
+                            successful: data.data?.results?.filter(r => r.status === 'success').length || 0,
+                            failed: data.data?.results?.filter(r => r.status === 'failed').length || 0,
+                            failures: data.data?.results?.filter(r => r.status === 'failed') || []
+                        };
                         this.showResultsModal = true;
                         
-                        // Reset form
-                        this.messageForm.subject = '';
-                        this.messageForm.content = '';
-                        this.messageForm.template_id = '';
-                        this.selectedRecipients = [];
+                        // Reset form only if all messages were successful
+                        if (this.sendResults.failed === 0) {
+                            this.messageForm.subject = '';
+                            this.messageForm.content = '';
+                            this.messageForm.template_id = '';
+                            this.selectedRecipients = [];
+                        }
                     } catch (error) {
                         console.error('Failed to send message:', error);
-                        alert('Failed to send message');
+                        alert(`Failed to send message: ${error.message || error}`);
                     } finally {
                         this.sending = false;
                     }
