@@ -18,6 +18,28 @@
         <a href="{{ route('ministry.departments') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700">Departments</a>
         <a href="{{ route('department.team') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700">My Team</a>
         <a href="{{ route('ministry.events') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700">Ministry Events</a>
+        @php
+            $user = Auth::user();
+            $canManageGuests = false;
+            if ($user?->isSuperAdmin() || $user?->isBranchPastor()) {
+                $canManageGuests = true;
+            } elseif ($user?->isMinistryLeader() && $user?->member) {
+                $keywords = ['life groups', 'assimilation', 'online church', 'finance', 'prayers'];
+                $ledMinistries = $user->member->ledMinistries()->where('status', 'active')->get();
+                foreach ($ledMinistries as $ministry) {
+                    $ministryName = strtolower($ministry->name ?? '');
+                    foreach ($keywords as $keyword) {
+                        if (str_contains($ministryName, strtolower($keyword))) {
+                            $canManageGuests = true;
+                            break 2;
+                        }
+                    }
+                }
+            }
+        @endphp
+        @if($canManageGuests)
+            <a href="{{ route('guests.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-purple-50 hover:text-purple-700 {{ request()->routeIs('guests.*') ? 'bg-purple-50 text-purple-700' : '' }}">Guest Management</a>
+        @endif
     </div>
 </div>
 

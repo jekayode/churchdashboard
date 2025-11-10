@@ -9,6 +9,23 @@
     $isDepartmentLeader = $user?->isDepartmentLeader();
     $isChurchMember = $user?->isChurchMember();
     
+    // Check if ministry leader is eligible for guest management
+    $canManageGuests = false;
+    if ($isSuperAdmin || $isBranchPastor) {
+        $canManageGuests = true;
+    } elseif ($isMinistryLeader && $user?->member) {
+        $keywords = ['life groups', 'assimilation', 'online church', 'finance', 'prayers'];
+        $ledMinistries = $user->member->ledMinistries()->where('status', 'active')->get();
+        foreach ($ledMinistries as $ministry) {
+            $ministryName = strtolower($ministry->name ?? '');
+            foreach ($keywords as $keyword) {
+                if (str_contains($ministryName, strtolower($keyword))) {
+                    $canManageGuests = true;
+                    break 2;
+                }
+            }
+        }
+    }
 @endphp
 
 <!-- Navigation -->
@@ -305,6 +322,9 @@
                 <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95" class="ml-8 mt-2 space-y-1">
                     <a href="{{ route('minister.dashboard') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Minister Dashboard</a>
                     <a href="{{ route('ministry.departments') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Ministry Departments</a>
+                    @if($canManageGuests)
+                        <a href="{{ route('guests.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700 {{ request()->routeIs('guests.*') ? 'bg-green-50 text-green-700' : '' }}">Guest Management</a>
+                    @endif
                 </div>
             </div>
 
