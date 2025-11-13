@@ -96,7 +96,7 @@
             <!-- Branch Breakdown - Event Attendance -->
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-4">Event Attendance by Branch</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <template x-for="branch in dashboardData?.event_attendance?.branches || []" :key="branch.id">
                         <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                             <h3 class="text-lg font-semibold text-gray-900 mb-3" x-text="branch.name"></h3>
@@ -105,6 +105,30 @@
                                     <span class="text-sm text-gray-600">Total Attendance:</span>
                                     <span class="text-sm font-medium text-gray-900" x-text="branch.total_attendance || 0"></span>
                                 </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Average Attendance:</span>
+                                    <span class="text-sm font-medium text-gray-900" x-text="branch.average_attendance || 0"></span>
+                                </div>
+                                <template x-if="branch.weekly_avg_target !== null && branch.weekly_avg_target !== undefined">
+                                    <div class="pt-2 border-t border-gray-200 space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm text-gray-600">Weekly Avg Target:</span>
+                                            <span class="text-sm font-medium text-gray-900" x-text="branch.weekly_avg_target || 0"></span>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-600">vs Target:</span>
+                                            <span 
+                                                :class="{
+                                                    'text-green-600': branch.target_percentage >= 100,
+                                                    'text-yellow-600': branch.target_percentage >= 90 && branch.target_percentage < 100,
+                                                    'text-red-600': branch.target_percentage < 90
+                                                }"
+                                                class="text-sm font-semibold"
+                                                x-text="branch.target_percentage ? branch.target_percentage + '%' : 'N/A'">
+                                            </span>
+                                        </div>
+                                    </div>
+                                </template>
                                 <div class="flex justify-between">
                                     <span class="text-sm text-gray-600">First Time Guests:</span>
                                     <span class="text-sm font-medium text-gray-900" x-text="branch.first_time_guests || 0"></span>

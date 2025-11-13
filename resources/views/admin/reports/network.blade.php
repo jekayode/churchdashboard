@@ -125,7 +125,16 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guests</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Converts</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Progress vs Target</th>
+                                <th colspan="3" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-300">Average Attendance Progress vs Target</th>
+                            </tr>
+                            <tr>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th></th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-l border-gray-300">Target</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actual</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">%</th>
                             </tr>
                         </thead>
                         <tbody id="branchPerformanceBody" class="bg-white divide-y divide-gray-200">
@@ -313,20 +322,31 @@
             performanceData.forEach(branchData => {
                 const row = document.createElement('tr');
                 
-                // Calculate progress vs target if projection exists
-                let progressHtml = '-';
-                if (projection) {
-                    const attendanceProgress = projection.attendance_target > 0 ? 
-                        Math.round((branchData.actuals.attendance / projection.attendance_target) * 100) : 0;
-                    const convertsProgress = projection.converts_target > 0 ? 
-                        Math.round((branchData.actuals.converts / projection.converts_target) * 100) : 0;
+                // Get average attendance (always show this)
+                const averageAttendance = branchData.actuals.weekly_avg_attendance || 0;
+                
+                // Get target and calculate percentage if projection exists
+                let targetHtml = '-';
+                let percentageHtml = '-';
+                let percentageColor = 'text-gray-900';
+                
+                if (branchData.projection && branchData.projection.weekly_avg_attendance_target) {
+                    const weeklyAvgTarget = branchData.projection.weekly_avg_attendance_target;
+                    const progressPercentage = weeklyAvgTarget > 0 ? 
+                        Math.round((averageAttendance / weeklyAvgTarget) * 100) : 0;
                     
-                    progressHtml = `
-                        <div class="text-sm">
-                            <div>Attendance: ${attendanceProgress}%</div>
-                            <div>Converts: ${convertsProgress}%</div>
-                        </div>
-                    `;
+                    targetHtml = fmt(weeklyAvgTarget);
+                    
+                    // Color coding based on performance
+                    if (progressPercentage >= 100) {
+                        percentageColor = 'text-green-600';
+                    } else if (progressPercentage >= 90) {
+                        percentageColor = 'text-yellow-600';
+                    } else {
+                        percentageColor = 'text-red-600';
+                    }
+                    
+                    percentageHtml = `<span class="${percentageColor} font-semibold">${progressPercentage}%</span>`;
                 }
                 
                 row.innerHTML = `
@@ -334,8 +354,9 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fmt(branchData.actuals.attendance)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fmt(branchData.actuals.guests)}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fmt(branchData.actuals.converts)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fmt(branchData.actuals.weekly_avg_attendance)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${progressHtml}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 border-l border-gray-300">${targetHtml}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${fmt(averageAttendance)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${percentageHtml}</td>
                 `;
                 tbody.appendChild(row);
             });

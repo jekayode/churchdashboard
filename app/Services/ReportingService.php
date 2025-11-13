@@ -10,6 +10,7 @@ use App\Models\Event;
 use App\Models\EventReport;
 use App\Models\Member;
 use App\Models\Ministry;
+use App\Models\Projection;
 use App\Models\SmallGroup;
 use App\Models\SmallGroupMeetingReport;
 use Carbon\Carbon;
@@ -1437,6 +1438,14 @@ final class ReportingService
             'new_converts' => $allReports->sum('combined_converts'),
         ];
 
+        // Eager load projections for all branches to avoid N+1 queries
+        $branchIds = $branches->pluck('id')->toArray();
+        $projections = Projection::whereIn('branch_id', $branchIds)
+            ->where('year', now()->year)
+            ->where('is_current_year', true)
+            ->get()
+            ->keyBy('branch_id');
+
         // Calculate per-branch metrics
         $branchData = [];
         foreach ($branches as $branch) {
@@ -1444,12 +1453,36 @@ final class ReportingService
                 return $report->event && $report->event->branch_id === $branch->id;
             });
 
+            $totalAttendance = $branchReports->sum('combined_total_attendance');
+            $reportCount = $branchReports->count();
+
+            // Calculate average attendance per event (rounded up)
+            $averageAttendance = $reportCount > 0
+                ? (int) ceil($totalAttendance / $reportCount)
+                : 0;
+
+            // Get projection target for this branch
+            $projection = $projections->get($branch->id);
+            $weeklyAvgTarget = $projection?->weekly_avg_attendance_target;
+
+            // Calculate comparison metrics using average attendance vs weekly target
+            $targetVariance = null;
+            $targetPercentage = null;
+            if ($weeklyAvgTarget !== null && $weeklyAvgTarget > 0) {
+                $targetVariance = $averageAttendance - $weeklyAvgTarget;
+                $targetPercentage = round(($averageAttendance / $weeklyAvgTarget) * 100, 1);
+            }
+
             $branchData[] = [
                 'id' => $branch->id,
                 'name' => $branch->name,
-                'total_attendance' => $branchReports->sum('combined_total_attendance'),
+                'total_attendance' => $totalAttendance,
                 'first_time_guests' => $branchReports->sum('combined_first_time_guests'),
                 'new_converts' => $branchReports->sum('combined_converts'),
+                'average_attendance' => $averageAttendance,
+                'weekly_avg_target' => $weeklyAvgTarget,
+                'target_variance' => $targetVariance,
+                'target_percentage' => $targetPercentage,
             ];
         }
 

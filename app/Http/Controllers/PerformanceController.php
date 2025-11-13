@@ -72,12 +72,24 @@ final class PerformanceController extends Controller
         $branches = \App\Models\Branch::all();
         $branchPerformance = [];
 
+        // Eager load projections for all branches
+        $projections = \App\Models\Projection::whereIn('branch_id', $branches->pluck('id'))
+            ->where('year', $year)
+            ->where('is_current_year', true)
+            ->get()
+            ->keyBy('branch_id');
+
         foreach ($branches as $branch) {
             $branchActuals = $this->service->computeBranchActuals($branch->id, $year, $dateRange['start'], $dateRange['end']);
+            $projection = $projections->get($branch->id);
+
             $branchPerformance[] = [
                 'branch_id' => $branch->id,
                 'branch_name' => $branch->name,
                 'actuals' => $branchActuals,
+                'projection' => $projection ? [
+                    'weekly_avg_attendance_target' => $projection->weekly_avg_attendance_target,
+                ] : null,
             ];
         }
 
