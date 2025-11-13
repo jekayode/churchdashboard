@@ -5,7 +5,7 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Super Admin Report Dashboard</h1>
-                    <p class="text-gray-600 mt-1">View event attendance and small groups across all branches</p>
+                    <p class="text-gray-600 mt-1">View event attendance and small groups across all expressions</p>
                 </div>
             </div>
         </div>
@@ -95,7 +95,7 @@
 
             <!-- Branch Breakdown - Event Attendance -->
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-4">Event Attendance by Branch</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Event Attendance by Expression</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <template x-for="branch in dashboardData?.event_attendance?.branches || []" :key="branch.id">
                         <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
