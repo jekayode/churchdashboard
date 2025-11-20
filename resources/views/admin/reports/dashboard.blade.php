@@ -5,14 +5,14 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Super Admin Report Dashboard</h1>
-                    <p class="text-gray-600 mt-1">View event attendance and small groups across all expressions</p>
+                    <p class="text-gray-600 mt-1">View event attendance and life groups across all expressions</p>
                 </div>
             </div>
         </div>
 
         <!-- Time Period Selector -->
         <div class="bg-white rounded-lg shadow-sm p-6">
-            <div class="flex flex-wrap gap-3 items-center">
+            <div class="flex flex-wrap gap-3 items-center mb-4">
                 <label class="text-sm font-medium text-gray-700">Time Period:</label>
                 <button @click="selectPeriod('this_week')" 
                         :class="period === 'this_week' ? 'bg-indigo-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'"
@@ -39,6 +39,19 @@
                         class="px-4 py-2 rounded-lg transition-colors">
                     Custom Range
                 </button>
+            </div>
+
+            <!-- Event Type Selector -->
+            <div class="flex flex-wrap gap-3 items-center">
+                <label class="text-sm font-medium text-gray-700">Event Type:</label>
+                <select x-model="eventType" @change="loadData()" 
+                        class="border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    @foreach($eventTypes as $type)
+                        <option value="{{ $type }}" {{ ($currentEventType ?? 'Sunday Service') === $type ? 'selected' : '' }}>
+                            {{ $type }}
+                        </option>
+                    @endforeach
+                </select>
             </div>
 
             <!-- Custom Date Range Picker -->
@@ -93,7 +106,7 @@
                 </div>
             </div>
 
-            <!-- Branch Breakdown - Event Attendance -->
+            <!-- Expression Breakdown - Event Attendance -->
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h2 class="text-xl font-bold text-gray-900 mb-4">Event Attendance by Expression</h2>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -143,15 +156,15 @@
                 </div>
             </div>
 
-            <!-- Small Groups Section - Overall Totals -->
+            <!-- Life Groups Section - Overall Totals -->
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <h2 class="text-xl font-bold text-gray-900 mb-4">Small Groups - Overall</h2>
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Life Groups - Overall</h2>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Small Group Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expression</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendance</th>
                             </tr>
                         </thead>
@@ -164,18 +177,18 @@
                                 </tr>
                             </template>
                             <tr x-show="!dashboardData?.small_groups?.totals?.length">
-                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No small groups found</td>
+                                <td colspan="3" class="px-6 py-4 text-center text-sm text-gray-500">No life groups found</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- Small Groups by Branch -->
+            <!-- Small Groups by Expression -->
             <div class="space-y-6">
                 <template x-for="branchGroup in dashboardData?.small_groups?.by_branch || []" :key="branchGroup.branch_id">
                     <div class="bg-white rounded-lg shadow-sm p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="branchGroup.branch_name + ' - Small Groups'"></h3>
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4" x-text="branchGroup.branch_name + ' - Life Groups'"></h3>
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
@@ -192,7 +205,7 @@
                                         </tr>
                                     </template>
                                     <tr x-show="!branchGroup.groups?.length">
-                                        <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">No small groups found</td>
+                                        <td colspan="2" class="px-6 py-4 text-center text-sm text-gray-500">No life groups found</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -209,6 +222,7 @@
                 period: @js($currentPeriod ?? 'this_month'),
                 startDate: @js($currentStartDate ?? ''),
                 endDate: @js($currentEndDate ?? ''),
+                eventType: @js($currentEventType ?? 'Sunday Service'),
                 dashboardData: @js($dashboardData ?? null),
                 loading: false,
                 periodLabel: @js(isset($dashboardData) && isset($dashboardData['period']) && isset($dashboardData['period']['label']) ? $dashboardData['period']['label'] : ''),
@@ -239,6 +253,7 @@
                     try {
                         const params = new URLSearchParams({
                             period: this.period,
+                            event_type: this.eventType,
                         });
 
                         if (this.period === 'custom') {

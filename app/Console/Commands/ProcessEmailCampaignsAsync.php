@@ -47,6 +47,3 @@ final class ProcessEmailCampaignsAsync extends Command
         }
     }
 }
-
-
-

@@ -337,7 +337,7 @@ final class PerformanceController extends Controller
 
         return [
             [
-                'metric' => 'Attendance',
+                'metric' => 'Cumulative Attendance',
                 'target' => $projection->attendance_target,
                 'actual' => $actuals['attendance'],
                 'progress' => $projection->attendance_target > 0 ?
@@ -369,6 +369,7 @@ final class PerformanceController extends Controller
 
     /**
      * Get quarterly progress data.
+     * Measures actual average weekly attendance vs projected average weekly attendance.
      */
     private function getQuarterlyProgress(int $branchId, int $year): array
     {
@@ -388,10 +389,11 @@ final class PerformanceController extends Controller
             $endDate = $this->getQuarterEnd($year, $quarter);
 
             $actuals = $this->service->computeBranchActuals($branchId, $year, $startDate, $endDate);
-            $target = $projection->quarterly_attendance[$quarter - 1] ?? 0;
+            $projectedWeeklyAvg = $projection->quarterly_weekly_avg_attendance[$quarter - 1] ?? 0;
+            $actualWeeklyAvg = $actuals['weekly_avg_attendance'] ?? 0;
 
-            // Calculate actual progress against quarterly target
-            $progress = $target > 0 ? round(($actuals['attendance'] / $target) * 100, 1) : 0;
+            // Calculate actual average weekly attendance vs projected average weekly attendance
+            $progress = $projectedWeeklyAvg > 0 ? round(($actualWeeklyAvg / $projectedWeeklyAvg) * 100, 1) : 0;
 
             $quarterlyProgress[] = [
                 'quarter' => "Q{$quarter}",

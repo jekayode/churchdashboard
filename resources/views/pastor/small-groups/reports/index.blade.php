@@ -1,7 +1,7 @@
-<x-sidebar-layout title="Small Group Meeting Reports">
+<x-sidebar-layout title="Life Group Meeting Reports">
     <div class="flex justify-between items-center mb-6">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Small Group Meeting Reports') }}
+            {{ __('Life Group Meeting Reports') }}
         </h2>
         <div class="flex gap-2">
             <button onclick="openReportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
@@ -44,7 +44,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Small Group</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Life Group</label>
                             <select id="groupFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Groups</option>
                             </select>
@@ -139,9 +139,9 @@
                     <form id="reportForm">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Small Group *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Life Group *</label>
                                 <select name="small_group_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select Small Group</option>
+                                    <option value="">Select Life Group</option>
                                 </select>
                             </div>
                             <div>
@@ -392,7 +392,7 @@
                         const groupFilter = document.getElementById('groupFilter');
                         
                         // Clear existing options
-                        groupSelect.innerHTML = '<option value="">Select Small Group</option>';
+                        groupSelect.innerHTML = '<option value="">Select Life Group</option>';
                         groupFilter.innerHTML = '<option value="">All Groups</option>';
                         
                         data.data.forEach(group => {
@@ -755,17 +755,51 @@
                 headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
             }
             
-            Promise.all([
-                fetch(`/api/small-group-reports/statistics?${params}`, { headers, credentials: 'same-origin' }).then(r => r.json()),
-                fetch(`/api/small-group-reports/trends?${params}`, { headers, credentials: 'same-origin' }).then(r => r.json()),
-                fetch(`/api/small-group-reports/comparison?${params}`, { headers, credentials: 'same-origin' }).then(r => r.json())
+            // Load statistics with error handling for each endpoint
+            Promise.allSettled([
+                fetch(`/api/small-group-reports/statistics?${params}`, { headers, credentials: 'same-origin' }).then(r => {
+                    if (!r.ok) throw new Error(`Statistics API returned ${r.status}`);
+                    return r.json();
+                }),
+                fetch(`/api/small-group-reports/trends?${params}`, { headers, credentials: 'same-origin' }).then(r => {
+                    if (!r.ok) throw new Error(`Trends API returned ${r.status}`);
+                    return r.json();
+                }),
+                fetch(`/api/small-group-reports/comparison?${params}`, { headers, credentials: 'same-origin' }).then(r => {
+                    if (!r.ok) throw new Error(`Comparison API returned ${r.status}`);
+                    return r.json();
+                })
             ])
-            .then(([statsData, trendsData, comparisonData]) => {
-                displayStatistics(statsData.data, trendsData.data, comparisonData.data);
+            .then(([statsResult, trendsResult, comparisonResult]) => {
+                // Check if any requests failed
+                if (statsResult.status === 'rejected') {
+                    console.error('Statistics error:', statsResult.reason);
+                    showError('Failed to load statistics: ' + statsResult.reason.message);
+                    return;
+                }
+                
+                if (trendsResult.status === 'rejected') {
+                    console.error('Trends error:', trendsResult.reason);
+                }
+                
+                if (comparisonResult.status === 'rejected') {
+                    console.error('Comparison error:', comparisonResult.reason);
+                }
+                
+                // Use successful results or empty data
+                const statsData = statsResult.status === 'fulfilled' ? statsResult.value : { success: false, data: {} };
+                const trendsData = trendsResult.status === 'fulfilled' ? trendsResult.value : { success: false, data: {} };
+                const comparisonData = comparisonResult.status === 'fulfilled' ? comparisonResult.value : { success: false, data: null };
+                
+                if (statsData.success) {
+                    displayStatistics(statsData.data, trendsData.data || {}, comparisonData.data || null);
+                } else {
+                    showError('Failed to load statistics');
+                }
             })
             .catch(error => {
                 console.error('Error loading statistics:', error);
-                showError('Failed to load statistics');
+                showError('Failed to load statistics: ' + error.message);
             });
         }
 

@@ -1389,11 +1389,14 @@ final class ReportingService
     /**
      * Get Super Admin report dashboard data.
      */
-    public function getSuperAdminReportDashboard(array $dateRange): array
+    public function getSuperAdminReportDashboard(array $dateRange, ?string $eventType = null): array
     {
         $start = $dateRange['start'];
         $end = $dateRange['end'];
         $periodType = $dateRange['type'] ?? 'custom';
+
+        // Default to Sunday Service if no event type specified
+        $eventType = $eventType ?? 'Sunday Service';
 
         // Ensure Carbon instances
         if (is_string($start)) {
@@ -1404,7 +1407,7 @@ final class ReportingService
         }
 
         return [
-            'event_attendance' => $this->getEventAttendanceData($start, $end),
+            'event_attendance' => $this->getEventAttendanceData($start, $end, $eventType),
             'small_groups' => $this->getSmallGroupsDashboardData($start, $end),
             'period' => [
                 'type' => $periodType,
@@ -1419,16 +1422,20 @@ final class ReportingService
      * Get event attendance data aggregated by branch.
      * Uses the same calculation method as getReportsSummary for consistency.
      */
-    private function getEventAttendanceData(Carbon $start, Carbon $end): array
+    private function getEventAttendanceData(Carbon $start, Carbon $end, ?string $eventType = null): array
     {
         // Get all branches
         $branches = Branch::where('status', 'active')->get();
 
-        // Get all event reports for the period (all event types)
+        // Default to Sunday Service if no event type specified
+        $eventType = $eventType ?? 'Sunday Service';
+
+        // Get event reports for the period filtered by event type
         // Only get reports that have valid events
         $allReports = EventReport::with('event')
             ->whereHas('event')
             ->whereBetween('report_date', [$start, $end])
+            ->where('event_type', $eventType)
             ->get();
 
         // Calculate overall totals using model accessors (same as getReportsSummary)

@@ -99,6 +99,3 @@ final class SendBulkSMSJob implements ShouldQueue
         ]);
     }
 }
-
-
-

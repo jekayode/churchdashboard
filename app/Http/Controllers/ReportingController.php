@@ -463,14 +463,17 @@ final class ReportingController extends Controller
             $startDate = $request->get('start_date');
             $endDate = $request->get('end_date');
 
+            $eventType = $request->get('event_type', 'Sunday Service');
             $dateRange = $this->reportingService->calculateSuperAdminDateRange($period, $startDate, $endDate);
-            $dashboardData = $this->reportingService->getSuperAdminReportDashboard($dateRange);
+            $dashboardData = $this->reportingService->getSuperAdminReportDashboard($dateRange, $eventType);
 
             return view('admin.reports.dashboard', [
                 'dashboardData' => $dashboardData,
                 'currentPeriod' => $period,
                 'currentStartDate' => $startDate,
                 'currentEndDate' => $endDate,
+                'currentEventType' => $eventType,
+                'eventTypes' => EventReport::EVENT_TYPES,
             ]);
         } catch (\Exception $e) {
             \Log::error('Error loading Super Admin Dashboard', [
@@ -493,6 +496,7 @@ final class ReportingController extends Controller
             'period' => 'required|in:this_week,this_month,last_quarter,this_year,custom',
             'start_date' => 'required_if:period,custom|nullable|date',
             'end_date' => 'required_if:period,custom|nullable|date|after_or_equal:start_date',
+            'event_type' => 'nullable|string|in:'.implode(',', EventReport::EVENT_TYPES),
         ]);
 
         try {
@@ -502,7 +506,7 @@ final class ReportingController extends Controller
                 $validated['end_date'] ?? null
             );
 
-            $dashboardData = $this->reportingService->getSuperAdminReportDashboard($dateRange);
+            $dashboardData = $this->reportingService->getSuperAdminReportDashboard($dateRange, $validated['event_type'] ?? null);
 
             return response()->json([
                 'success' => true,

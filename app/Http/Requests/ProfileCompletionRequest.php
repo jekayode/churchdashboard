@@ -36,6 +36,3 @@ class ProfileCompletionRequest extends BaseMemberRequest
         return $this->getCommonMessages();
     }
 }
-
-
-

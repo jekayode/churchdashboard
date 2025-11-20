@@ -251,6 +251,3 @@ class SendBirthdayAnniversaryMessages extends Command
         return $processed;
     }
 }
-
-
-

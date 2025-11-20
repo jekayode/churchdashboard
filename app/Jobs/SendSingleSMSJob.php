@@ -77,6 +77,3 @@ final class SendSingleSMSJob implements ShouldQueue
         ]);
     }
 }
-
-
-

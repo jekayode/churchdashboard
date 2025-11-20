@@ -1,7 +1,7 @@
-<x-sidebar-layout title="Small Group Meeting Reports">
+<x-sidebar-layout title="Life Group Meeting Reports">
     <div class="flex justify-between items-center mb-6">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Small Group Meeting Reports') }}
+            {{ __('Life Group Meeting Reports') }}
         </h2>
         <div class="flex gap-2">
             <button onclick="openReportModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
@@ -44,7 +44,7 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Small Group</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Life Group</label>
                             <select id="groupFilter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Groups</option>
                             </select>
@@ -137,9 +137,9 @@
                     <form id="reportForm">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="md:col-span-2">
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Small Group *</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Life Group *</label>
                                 <select name="small_group_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <option value="">Select Small Group</option>
+                                    <option value="">Select Life Group</option>
                                 </select>
                             </div>
                             <div>
@@ -225,7 +225,7 @@
         let editingReportId = null;
 
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('Admin small groups reports page loaded');
+            console.log('Admin life groups reports page loaded');
             console.log('User authenticated:', {{ auth()->check() ? 'true' : 'false' }});
             console.log('User ID:', {{ auth()->id() ?? 'null' }});
             console.log('Is Super Admin:', {{ auth()->user()?->isSuperAdmin() ? 'true' : 'false' }});
@@ -459,7 +459,7 @@
                         const groupFilter = document.getElementById('groupFilter');
                         
                         // Clear existing options
-                        groupSelect.innerHTML = '<option value="">Select Small Group</option>';
+                        groupSelect.innerHTML = '<option value="">Select Life Group</option>';
                         groupFilter.innerHTML = '<option value="">All Groups</option>';
                         
                         data.data.forEach(group => {

@@ -356,9 +356,13 @@ final class SmallGroupMeetingReportController extends Controller
             'status' => 'nullable|in:pending,approved,rejected',
         ]);
 
-        // Determine status filter - default to 'approved' if not specified
-        $status = $request->get('status', 'approved');
-        $query = SmallGroupMeetingReport::byStatus($status);
+        // Determine status filter - use provided status or show all if not specified
+        $status = $request->get('status');
+        if ($status) {
+            $query = SmallGroupMeetingReport::byStatus($status);
+        } else {
+            $query = SmallGroupMeetingReport::query();
+        }
 
         // Apply role-based filtering
         if ($user->isSuperAdmin()) {

@@ -137,6 +137,3 @@ final class CommunicationPerformanceService
         ];
     }
 }
-
-
-

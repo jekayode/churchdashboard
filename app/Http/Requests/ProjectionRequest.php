@@ -63,7 +63,7 @@ final class ProjectionRequest extends FormRequest
                 $isUpdate ? 'sometimes' : 'required',
                 'integer',
                 'min:1',
-                'max:100000',
+                'max:1000000',
             ],
             'converts_target' => [
                 $isUpdate ? 'sometimes' : 'required',
@@ -414,7 +414,7 @@ final class ProjectionRequest extends FormRequest
             'year.min' => 'Year must be within the last 5 years.',
             'year.max' => 'Year cannot be more than 10 years in the future.',
             'attendance_target.min' => 'Attendance target must be at least 1.',
-            'attendance_target.max' => 'Attendance target cannot exceed 10,000.',
+            'attendance_target.max' => 'Attendance target cannot exceed 1,000,000.',
             'converts_target.max' => 'Converts target cannot exceed 1,000.',
             'leaders_target.max' => 'Leaders target cannot exceed 500.',
             'volunteers_target.max' => 'Volunteers target cannot exceed 1,000.',

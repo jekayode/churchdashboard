@@ -170,6 +170,3 @@ final class EnvironmentAwareEmailService
         }
     }
 }
-
-
-

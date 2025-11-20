@@ -160,7 +160,17 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::prefix('small-group-reports')->group(function () {
         Route::get('/', [SmallGroupMeetingReportController::class, 'index']);
         Route::post('/', [SmallGroupMeetingReportController::class, 'store']);
+        
+        // Analytics and statistics (must be before parameterized routes)
+        Route::get('/statistics', [SmallGroupMeetingReportController::class, 'getAttendanceStatistics']);
+        Route::get('/trends', [SmallGroupMeetingReportController::class, 'getTrends']);
+        Route::get('/comparison', [SmallGroupMeetingReportController::class, 'getComparison']);
+        Route::get('/analytics/statistics', [SmallGroupMeetingReportController::class, 'getAttendanceStatistics']);
+        Route::get('/analytics/compare', [SmallGroupMeetingReportController::class, 'compareAttendance']);
+        
         Route::get('/my-groups', [SmallGroupMeetingReportController::class, 'getMySmallGroups']);
+        
+        // Parameterized routes (must be after specific routes)
         Route::get('/{report}', [SmallGroupMeetingReportController::class, 'show']);
         Route::put('/{report}', [SmallGroupMeetingReportController::class, 'update']);
         Route::delete('/{report}', [SmallGroupMeetingReportController::class, 'destroy']);
@@ -168,13 +178,6 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         // Report approval workflow
         Route::post('/{report}/approve', [SmallGroupMeetingReportController::class, 'approve']);
         Route::post('/{report}/reject', [SmallGroupMeetingReportController::class, 'reject']);
-
-        // Analytics and statistics
-        Route::get('/statistics', [SmallGroupMeetingReportController::class, 'getAttendanceStatistics']);
-        Route::get('/trends', [SmallGroupMeetingReportController::class, 'getTrends']);
-        Route::get('/comparison', [SmallGroupMeetingReportController::class, 'getComparison']);
-        Route::get('/analytics/statistics', [SmallGroupMeetingReportController::class, 'getAttendanceStatistics']);
-        Route::get('/analytics/compare', [SmallGroupMeetingReportController::class, 'compareAttendance']);
     });
 
     // Projection management routes

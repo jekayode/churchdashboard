@@ -24,7 +24,7 @@
 
                         {{-- Super Admin Navigation --}}
                         @if($user->isSuperAdmin())
-                            {{-- Manage Branches Dropdown --}}
+                            {{-- Manage Expressions Dropdown --}}
                             <div class="relative" x-data="{ open: false }">
                                 <button @click="open = !open" @click.away="open = false" 
                                     class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('admin.*', 'pastor.ministries*', 'ministry.departments*', 'department.team*', 'ministry.events*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out">
@@ -45,13 +45,13 @@
                                             {{ __('All Branches') }}
                                         </a>
                                         <a href="{{ route('admin.projections') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.projections*') ? 'bg-gray-50 text-gray-900' : '' }}">
-                                            {{ __('Branch Projections') }}
+                                            {{ __('Expression Projections') }}
                                         </a>
                                         <a href="{{ route('pastor.ministries') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('pastor.ministries*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('Ministries') }}
                                         </a>
                                         <a href="{{ route('pastor.small-groups') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('pastor.small-groups*') && !request()->routeIs('pastor.small-groups.reports*') ? 'bg-gray-50 text-gray-900' : '' }}">
-                                            {{ __('Small Groups') }}
+                                            {{ __('Life Groups') }}
                                         </a>
                                         <a href="{{ route('pastor.small-groups.reports') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('pastor.small-groups.reports*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('Group Reports') }}
@@ -91,11 +91,11 @@
 
                         {{-- Branch Pastor Navigation --}}
                         @if($user->isBranchPastor() && !$user->isSuperAdmin())
-                            {{-- Manage Branches Dropdown for Branch Pastor --}}
+                            {{-- Manage Expressions Dropdown for Branch Pastor --}}
                             <div class="relative" x-data="{ open: false }">
                                 <button @click="open = !open" @click.away="open = false" 
                                     class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('pastor.ministries*', 'ministry.departments*', 'department.team*', 'ministry.events*') ? 'border-indigo-400 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium leading-5 focus:outline-none focus:text-gray-700 focus:border-gray-300 transition duration-150 ease-in-out">
-                                    {{ __('Manage Branch') }}
+                                    {{ __('Manage Expression') }}
                                     <svg class="ml-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
@@ -112,13 +112,13 @@
                                             {{ __('Ministries') }}
                                         </a>
                                         <a href="{{ route('pastor.small-groups') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('pastor.small-groups*') && !request()->routeIs('pastor.small-groups.reports*') ? 'bg-gray-50 text-gray-900' : '' }}">
-                                            {{ __('Small Groups') }}
+                                            {{ __('Life Groups') }}
                                         </a>
                                         <a href="{{ route('pastor.small-groups.reports') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('pastor.small-groups.reports*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('Group Reports') }}
                                         </a>
                                         <a href="{{ route('admin.projections') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('admin.projections*') ? 'bg-gray-50 text-gray-900' : '' }}">
-                                            {{ __('Branch Projections') }}
+                                            {{ __('Expression Projections') }}
                                         </a>
                                         <a href="{{ route('ministry.departments') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('ministry.departments*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('Departments') }}
@@ -203,7 +203,7 @@
                                      class="absolute left-0 top-full z-50 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5">
                                     <div class="py-1">
                                         <a href="{{ route('member.groups') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('member.groups*') ? 'bg-gray-50 text-gray-900' : '' }}">
-                                            {{ __('Small Groups') }}
+                                            {{ __('Life Groups') }}
                                         </a>
                                         <a href="{{ route('member.events') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 {{ request()->routeIs('member.events*') ? 'bg-gray-50 text-gray-900' : '' }}">
                                             {{ __('Events') }}
@@ -341,15 +341,15 @@
 
                 {{-- Mobile Super Admin Navigation --}}
                 @if($user->isSuperAdmin())
-                    <!-- Manage Branches Section -->
+                    <!-- Manage Expressions Section -->
                     <div class="px-4 py-2">
-                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Manage Branches</div>
+                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Manage Expressions</div>
                     </div>
                     <x-responsive-nav-link :href="route('admin.branches')" :active="request()->routeIs('admin.branches*')">
                         {{ __('All Branches') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.projections')" :active="request()->routeIs('admin.projections*')">
-                        {{ __('Branch Projections') }}
+                        {{ __('Expression Projections') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('pastor.ministries')" :active="request()->routeIs('pastor.ministries*')">
                         {{ __('Ministries') }}
@@ -377,15 +377,15 @@
 
                 {{-- Mobile Branch Pastor Navigation --}}
                 @if($user->isBranchPastor() && !$user->isSuperAdmin())
-                    <!-- Manage Branch Section -->
+                    <!-- Manage Expression Section -->
                     <div class="px-4 py-2">
-                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Manage Branch</div>
+                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wide">Manage Expression</div>
                     </div>
                     <x-responsive-nav-link :href="route('pastor.ministries')" :active="request()->routeIs('pastor.ministries*')">
                         {{ __('Ministries') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('admin.projections')" :active="request()->routeIs('admin.projections*')">
-                        {{ __('Branch Projections') }}
+                        {{ __('Expression Projections') }}
                     </x-responsive-nav-link>
                     <x-responsive-nav-link :href="route('ministry.departments')" :active="request()->routeIs('ministry.departments*')">
                         {{ __('Departments') }}

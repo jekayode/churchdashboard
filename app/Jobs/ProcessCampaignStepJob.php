@@ -66,6 +66,3 @@ final class ProcessCampaignStepJob implements ShouldQueue
         ]);
     }
 }
-
-
-

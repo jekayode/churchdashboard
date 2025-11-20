@@ -1,10 +1,10 @@
-<x-sidebar-layout title="Small Groups Management">
+<x-sidebar-layout title="Life Groups Management">
     <div class="flex justify-between items-center mb-6">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Small Groups Management') }}
+            {{ __('Life Groups Management') }}
         </h2>
         <button onclick="openAddGroupModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
-            Add Small Group
+            Add Life Group
         </button>
     </div>
 
@@ -97,7 +97,7 @@
             <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-screen overflow-y-auto">
                 <div class="p-6">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 id="modalTitle" class="text-lg font-medium">Add Small Group</h3>
+                        <h3 id="modalTitle" class="text-lg font-medium">Add Life Group</h3>
                         <button onclick="closeGroupModal()" class="text-gray-400 hover:text-gray-600">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -382,7 +382,7 @@
                         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM9 9a2 2 0 11-4 0 2 2 0 014 0z"></path>
                         </svg>
-                        <p class="mt-2">No small groups found.</p>
+                        <p class="mt-2">No life groups found.</p>
                         <button onclick="openAddGroupModal()" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
                             Create Your First Group
                         </button>
@@ -432,7 +432,7 @@
 
         function openAddGroupModal() {
             currentGroupId = null;
-            document.getElementById('modalTitle').textContent = 'Add Small Group';
+            document.getElementById('modalTitle').textContent = 'Add Life Group';
             document.getElementById('groupForm').reset();
             loadAvailableLeaders();
             document.getElementById('groupModal').classList.remove('hidden');
@@ -521,7 +521,7 @@
                 const group = data.data;
                 
                 currentGroupId = groupId;
-                document.getElementById('modalTitle').textContent = 'Edit Small Group';
+                document.getElementById('modalTitle').textContent = 'Edit Life Group';
                 
                 // Populate form fields
                 document.querySelector('input[name="name"]').value = group.name || '';
