@@ -406,6 +406,8 @@ final class PerformanceController extends Controller
             $quarterlyProgress[] = [
                 'quarter' => "Q{$quarter}",
                 'progress' => $progress,
+                'actual' => round($actualWeeklyAvg, 1),
+                'projected' => $projectedQuarterlyAttendance,
             ];
         }
 

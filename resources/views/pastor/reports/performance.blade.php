@@ -491,7 +491,7 @@
             if (currentData.quarterly_progress) {
                 quarterlyProgressDiv.innerHTML = currentData.quarterly_progress.map(q => 
                     `<div class="flex justify-between items-center">
-                        <span class="text-sm">${q.quarter}</span>
+                        <span class="text-sm">${q.quarter}: ${q.actual || 0}/${q.projected || 0}</span>
                         <div class="flex items-center space-x-2">
                             <div class="w-20 bg-gray-200 rounded-full h-2">
                                 <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(q.progress, 100)}%"></div>
