@@ -370,6 +370,7 @@ final class PerformanceController extends Controller
     /**
      * Get quarterly progress data.
      * Measures actual average weekly attendance vs projected average weekly attendance.
+     * Compares actual weekly average for the quarter vs projected quarterly attendance target converted to weekly average.
      */
     private function getQuarterlyProgress(int $branchId, int $year): array
     {
@@ -388,11 +389,22 @@ final class PerformanceController extends Controller
             $startDate = $this->getQuarterStart($year, $quarter);
             $endDate = $this->getQuarterEnd($year, $quarter);
 
+            // Get actual weekly average attendance for this quarter
             $actuals = $this->service->computeBranchActuals($branchId, $year, $startDate, $endDate);
-            $projectedWeeklyAvg = $projection->quarterly_weekly_avg_attendance[$quarter - 1] ?? 0;
             $actualWeeklyAvg = $actuals['weekly_avg_attendance'] ?? 0;
 
-            // Calculate actual average weekly attendance vs projected average weekly attendance
+            // Get projected quarterly attendance target
+            $projectedQuarterlyAttendance = $projection->quarterly_attendance[$quarter - 1] ?? 0;
+
+            // Calculate number of weeks in the quarter
+            $start = \Carbon\Carbon::parse($startDate);
+            $end = \Carbon\Carbon::parse($endDate);
+            $weeksInQuarter = $start->diffInWeeks($end) + 1; // +1 to include both start and end weeks
+
+            // Calculate projected weekly average = quarterly attendance target / weeks in quarter
+            $projectedWeeklyAvg = $weeksInQuarter > 0 ? round($projectedQuarterlyAttendance / $weeksInQuarter, 1) : 0;
+
+            // Calculate progress: actual weekly average vs projected weekly average
             $progress = $projectedWeeklyAvg > 0 ? round(($actualWeeklyAvg / $projectedWeeklyAvg) * 100, 1) : 0;
 
             $quarterlyProgress[] = [
