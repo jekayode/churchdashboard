@@ -231,12 +231,12 @@
                 
                 <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
                     <div>
-                        <label for="branch_id" class="block text-sm font-medium text-gray-700">Branch</label>
+                        <label for="branch_id" class="block text-sm font-medium text-gray-700">Expression</label>
                         <input type="text" id="branch_display" readonly 
                                class="mt-1 block w-full rounded-md border-gray-300 bg-gray-50 shadow-sm sm:text-sm"
-                               value="{{ Auth::user()->getPrimaryBranch()?->name ?? 'Your Branch' }}">
+                               value="{{ Auth::user()->getPrimaryBranch()?->name ?? 'Your Expression' }}">
                         <input type="hidden" id="branch_id" name="branch_id" value="{{ Auth::user()->getActiveBranchId() }}">
-                        <p class="mt-1 text-sm text-gray-500">Creating projection for your assigned branch</p>
+                        <p class="mt-1 text-sm text-gray-500">Creating projection for your assigned expression</p>
                     </div>
 
                     <div>
