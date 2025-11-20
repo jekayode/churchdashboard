@@ -470,7 +470,7 @@ function loadQuarterlyAnalysis() {
     
     container.innerHTML = quarterlyData.map(quarter => `
         <div class="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 class="font-semibold text-gray-900 mb-2">${quarter.quarter}</h3>
+            <h3 class="font-semibold text-gray-900 mb-2">${quarter.quarter}: ${quarter.actual || 0}/${quarter.projected || 0}</h3>
             <div class="text-2xl font-bold text-gray-900">${quarter.progress}%</div>
             <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
                 <div class="bg-blue-600 h-2 rounded-full" style="width: ${Math.min(quarter.progress, 100)}%"></div>
