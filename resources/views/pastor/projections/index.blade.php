@@ -251,7 +251,7 @@
                     <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
                             <label for="attendance_target" class="block text-sm font-medium text-gray-700">Attendance Target *</label>
-                            <input type="number" id="attendance_target" name="attendance_target" required min="1" max="10000"
+                            <input type="number" id="attendance_target" name="attendance_target" required min="1" max="1000000"
                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                         </div>
 
