@@ -1,13 +1,13 @@
-<x-sidebar-layout title="Branch Projections">
+<x-sidebar-layout title="Expression Projections">
     <div class="space-y-6">
         <!-- Header Section -->
         <div class="md:flex md:items-center md:justify-between mb-8">
             <div class="flex-1 min-w-0">
                 <h1 class="text-3xl font-bold leading-7 text-gray-900 sm:text-4xl sm:truncate">
-                    Branch Projections
+                    Expression Projections
                 </h1>
                 <p class="mt-2 text-lg text-gray-600">
-                    Create and manage yearly projections and track performance for your branch
+                    Create and manage yearly projections and track performance for your expression
                 </p>
             </div>
             <div class="mt-4 flex md:mt-0 md:ml-4">
