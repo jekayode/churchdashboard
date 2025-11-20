@@ -369,8 +369,11 @@ final class PerformanceController extends Controller
 
     /**
      * Get quarterly progress data.
-     * Measures actual average weekly attendance vs projected average weekly attendance.
-     * Compares actual weekly average for the quarter vs projected quarterly attendance target converted to weekly average.
+     * Compares actual average weekly attendance for the quarter vs projected quarterly attendance target.
+     * Q1: Jan-Mar actual weekly avg vs Q1 Attendance target
+     * Q2: Apr-Jun actual weekly avg vs Q2 Attendance target
+     * Q3: Jul-Sep actual weekly avg vs Q3 Attendance target
+     * Q4: Oct-Dec actual weekly avg vs Q4 Attendance target
      */
     private function getQuarterlyProgress(int $branchId, int $year): array
     {
@@ -389,23 +392,16 @@ final class PerformanceController extends Controller
             $startDate = $this->getQuarterStart($year, $quarter);
             $endDate = $this->getQuarterEnd($year, $quarter);
 
-            // Get actual weekly average attendance for this quarter
+            // Get actual average weekly attendance for this quarter (Jan-Mar, Apr-Jun, etc.)
             $actuals = $this->service->computeBranchActuals($branchId, $year, $startDate, $endDate);
             $actualWeeklyAvg = $actuals['weekly_avg_attendance'] ?? 0;
 
-            // Get projected quarterly attendance target
+            // Get projected quarterly attendance target directly from quarterly_attendance array
+            // This is the value entered in the Quarterly Breakdown form (e.g., Q1: 200, Q2: 250)
             $projectedQuarterlyAttendance = $projection->quarterly_attendance[$quarter - 1] ?? 0;
 
-            // Calculate number of weeks in the quarter
-            $start = \Carbon\Carbon::parse($startDate);
-            $end = \Carbon\Carbon::parse($endDate);
-            $weeksInQuarter = $start->diffInWeeks($end) + 1; // +1 to include both start and end weeks
-
-            // Calculate projected weekly average = quarterly attendance target / weeks in quarter
-            $projectedWeeklyAvg = $weeksInQuarter > 0 ? round($projectedQuarterlyAttendance / $weeksInQuarter, 1) : 0;
-
-            // Calculate progress: actual weekly average vs projected weekly average
-            $progress = $projectedWeeklyAvg > 0 ? round(($actualWeeklyAvg / $projectedWeeklyAvg) * 100, 1) : 0;
+            // Calculate progress: actual weekly average vs projected quarterly attendance target
+            $progress = $projectedQuarterlyAttendance > 0 ? round(($actualWeeklyAvg / $projectedQuarterlyAttendance) * 100, 1) : 0;
 
             $quarterlyProgress[] = [
                 'quarter' => "Q{$quarter}",
