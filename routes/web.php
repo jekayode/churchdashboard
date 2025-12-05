@@ -326,11 +326,17 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,ministry_leader,super
     ->name('guests.')
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\GuestManagementController::class, 'index'])->name('index');
+        Route::get('/members', [\App\Http\Controllers\GuestManagementController::class, 'members'])->name('members');
         Route::get('/export', [\App\Http\Controllers\GuestManagementController::class, 'export'])->name('export');
         Route::get('/api/list', [\App\Http\Controllers\GuestManagementController::class, 'getGuests'])->name('api.list');
         Route::get('/{member}', [\App\Http\Controllers\GuestManagementController::class, 'show'])->name('show');
         Route::post('/{member}/status', [\App\Http\Controllers\GuestManagementController::class, 'updateStatus'])->name('update-status');
         Route::post('/{member}/follow-up', [\App\Http\Controllers\GuestManagementController::class, 'addFollowUp'])->name('add-follow-up');
+        
+        // Member management routes
+        Route::post('/members', [\App\Http\Controllers\GuestManagementController::class, 'storeMember'])->name('members.store');
+        Route::put('/members/{member}', [\App\Http\Controllers\GuestManagementController::class, 'updateMember'])->name('members.update');
+        Route::delete('/members/{member}', [\App\Http\Controllers\GuestManagementController::class, 'destroyMember'])->name('members.destroy');
     });
 
 // Department Leader Routes

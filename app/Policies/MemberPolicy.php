@@ -41,8 +41,13 @@ final class MemberPolicy extends BasePolicy
      */
     public function create(User $user): bool
     {
-        // Users with administrative privileges can create member records
-        return $this->hasAdminPrivileges($user);
+        // Super Admins and Branch Pastors can create members
+        if ($this->hasAdminPrivileges($user)) {
+            return true;
+        }
+
+        // Eligible Ministry Leaders (membership/assimilation teams) can create members
+        return $this->isEligibleMinistryLeader($user);
     }
 
     /**
@@ -55,7 +60,17 @@ final class MemberPolicy extends BasePolicy
             return true;
         }
 
-        // Users with leadership privileges can update members in their branch
+        // Super Admins and Branch Pastors can update members
+        if ($this->hasAdminPrivileges($user)) {
+            return $this->belongsToSameBranch($user, $member);
+        }
+
+        // Eligible Ministry Leaders can update members in their branch
+        if ($this->isEligibleMinistryLeader($user)) {
+            return $this->belongsToSameBranch($user, $member);
+        }
+
+        // Other leadership privileges
         if ($this->hasLeadershipPrivileges($user)) {
             return $this->belongsToSameBranch($user, $member);
         }

@@ -6,11 +6,14 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AddGuestFollowUpRequest;
 use App\Http\Requests\UpdateGuestStatusRequest;
+use App\Http\Requests\BaseMemberRequest;
 use App\Models\Member;
 use App\Services\GuestManagementService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -50,14 +53,21 @@ final class GuestManagementController extends Controller
         // Remove empty filters
         $filters = array_filter($filters, fn($value) => !is_null($value) && $value !== '');
 
-        // Get paginated guests
-        $guests = $this->guestManagementService->getGuests($branchId, $filters);
+        // Get paginated guests or members based on view type
+        $viewType = $filters['view_type'] ?? 'guests';
+        if ($viewType === 'members') {
+            $items = $this->guestManagementService->getMembers($branchId, $filters);
+        } else {
+            $items = $this->guestManagementService->getGuests($branchId, $filters);
+        }
 
         return view('admin.guests.index', [
-            'guests' => $guests,
+            'guests' => $items,
+            'members' => $viewType === 'members' ? $items : null,
             'filters' => $filters,
             'branchId' => $branchId,
             'isSuperAdmin' => $user->isSuperAdmin(),
+            'viewType' => $viewType,
         ]);
     }
 
@@ -79,22 +89,30 @@ final class GuestManagementController extends Controller
         // Get filter values from request
         $filters = [
             'search' => $request->get('search'),
+            'date_range' => $request->get('date_range'),
             'date_from' => $request->get('date_from'),
             'date_to' => $request->get('date_to'),
             'staying_intention' => $request->get('staying_intention'),
             'discovery_source' => $request->get('discovery_source'),
             'gender' => $request->get('gender'),
+            'member_status' => $request->get('member_status'),
+            'view_type' => $request->get('view_type', 'guests'),
         ];
 
         // Remove empty filters
         $filters = array_filter($filters, fn($value) => !is_null($value) && $value !== '');
 
-        // Get paginated guests
-        $guests = $this->guestManagementService->getGuests($branchId, $filters, 15);
+        // Get paginated guests or members based on view type
+        $viewType = $filters['view_type'] ?? 'guests';
+        if ($viewType === 'members') {
+            $items = $this->guestManagementService->getMembers($branchId, $filters, 15);
+        } else {
+            $items = $this->guestManagementService->getGuests($branchId, $filters, 15);
+        }
 
         return response()->json([
             'success' => true,
-            'data' => $guests,
+            'data' => $items,
         ]);
     }
 
@@ -200,7 +218,13 @@ final class GuestManagementController extends Controller
      */
     public function export(Request $request): BinaryFileResponse|StreamedResponse
     {
-        Gate::authorize('viewAnyGuests', [\App\Models\Member::class]);
+        // Check authorization based on view type
+        $viewType = $request->get('view_type', 'guests');
+        if ($viewType === 'members') {
+            Gate::authorize('viewAny', [\App\Models\Member::class]);
+        } else {
+            Gate::authorize('viewAnyGuests', [\App\Models\Member::class]);
+        }
 
         $request->validate([
             'format' => 'required|in:csv,xlsx',
@@ -217,22 +241,30 @@ final class GuestManagementController extends Controller
         // Get filter values from request
         $filters = [
             'search' => $request->get('search'),
+            'date_range' => $request->get('date_range'),
             'date_from' => $request->get('date_from'),
             'date_to' => $request->get('date_to'),
             'staying_intention' => $request->get('staying_intention'),
             'discovery_source' => $request->get('discovery_source'),
             'gender' => $request->get('gender'),
+            'member_status' => $request->get('member_status'),
+            'view_type' => $request->get('view_type', 'guests'),
         ];
 
         // Remove empty filters
         $filters = array_filter($filters, fn($value) => !is_null($value) && $value !== '');
 
-        // Get guests data
-        $guests = $this->guestManagementService->exportGuests($branchId, $filters, $request->get('format'));
-        $formattedData = $this->guestManagementService->formatExportData($guests);
+        // Get guests or members data based on view type
+        $viewType = $filters['view_type'] ?? 'guests';
+        if ($viewType === 'members') {
+            $items = $this->guestManagementService->exportMembers($branchId, $filters, $request->get('format'));
+        } else {
+            $items = $this->guestManagementService->exportGuests($branchId, $filters, $request->get('format'));
+        }
+        $formattedData = $this->guestManagementService->formatExportData($items);
 
         $format = $request->get('format');
-        $filename = 'guests_export_'.now()->format('Y-m-d_His').'.'.$format;
+        $filename = ($viewType === 'members' ? 'members' : 'guests').'_export_'.now()->format('Y-m-d_His').'.'.$format;
 
         if ($format === 'csv') {
             // Generate CSV
@@ -280,6 +312,213 @@ final class GuestManagementController extends Controller
             };
 
             return Excel::download($export, $filename);
+        }
+    }
+
+    /**
+     * Display member list view (all members, not just guests).
+     */
+    public function members(Request $request): View
+    {
+        Gate::authorize('viewAny', [\App\Models\Member::class]);
+
+        $user = auth()->user();
+        
+        // Determine branch filter for non-super-admin users
+        $branchId = null;
+        if (!$user->isSuperAdmin()) {
+            $branchId = $user->getPrimaryBranch()?->id;
+        }
+
+        // Get filter values from request
+        $filters = [
+            'search' => $request->get('search'),
+            'date_range' => $request->get('date_range'),
+            'date_from' => $request->get('date_from'),
+            'date_to' => $request->get('date_to'),
+            'staying_intention' => $request->get('staying_intention'),
+            'discovery_source' => $request->get('discovery_source'),
+            'gender' => $request->get('gender'),
+            'member_status' => $request->get('member_status'),
+            'view_type' => 'members',
+        ];
+
+        // Remove empty filters
+        $filters = array_filter($filters, fn($value) => !is_null($value) && $value !== '');
+
+        // Get paginated members
+        $members = $this->guestManagementService->getMembers($branchId, $filters);
+
+        return view('admin.guests.index', [
+            'members' => $members,
+            'guests' => null,
+            'filters' => $filters,
+            'branchId' => $branchId,
+            'isSuperAdmin' => $user->isSuperAdmin(),
+            'viewType' => 'members',
+        ]);
+    }
+
+    /**
+     * Store a newly created member.
+     */
+    public function storeMember(BaseMemberRequest $request): JsonResponse
+    {
+        Gate::authorize('create', Member::class);
+
+        try {
+            DB::beginTransaction();
+
+            $user = auth()->user();
+            $data = $request->validated();
+
+            // For non-super admins, ensure they can only assign members to their own branch
+            if (!$user->isSuperAdmin()) {
+                $userBranch = $user->getPrimaryBranch();
+                if ($userBranch) {
+                    $data['branch_id'] = $userBranch->id;
+                }
+            }
+
+            // Ensure name is set
+            if (empty($data['name']) && !empty($data['first_name']) && !empty($data['surname'])) {
+                $data['name'] = trim($data['first_name'].' '.$data['surname']);
+            }
+
+            $member = Member::create($data);
+
+            // Load relationships for response
+            $member->load([
+                'branch:id,name',
+                'user:id,name,email',
+            ]);
+
+            DB::commit();
+
+            Log::info('Member created via guest management', [
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'branch_id' => $member->branch_id,
+                'created_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $member,
+                'message' => 'Member created successfully.',
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to create member via guest management', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create member: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update the specified member.
+     */
+    public function updateMember(BaseMemberRequest $request, Member $member): JsonResponse
+    {
+        Gate::authorize('update', $member);
+
+        try {
+            DB::beginTransaction();
+
+            $user = auth()->user();
+            $data = $request->validated();
+
+            // For non-super admins, ensure they can only assign members to their own branch
+            if (!$user->isSuperAdmin()) {
+                $userBranch = $user->getPrimaryBranch();
+                if ($userBranch) {
+                    $data['branch_id'] = $userBranch->id;
+                }
+            }
+
+            // Ensure name is set
+            if (empty($data['name']) && !empty($data['first_name']) && !empty($data['surname'])) {
+                $data['name'] = trim($data['first_name'].' '.$data['surname']);
+            }
+
+            $member->update($data);
+
+            // Load relationships for response
+            $member->load([
+                'branch:id,name',
+                'user:id,name,email',
+            ]);
+
+            DB::commit();
+
+            Log::info('Member updated via guest management', [
+                'member_id' => $member->id,
+                'member_name' => $member->name,
+                'branch_id' => $member->branch_id,
+                'updated_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $member,
+                'message' => 'Member updated successfully.',
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to update member via guest management', [
+                'error' => $e->getMessage(),
+                'member_id' => $member->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update member: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Remove the specified member.
+     */
+    public function destroyMember(Member $member): JsonResponse
+    {
+        Gate::authorize('delete', $member);
+
+        try {
+            $memberName = $member->name;
+            $member->delete();
+
+            Log::info('Member deleted via guest management', [
+                'member_id' => $member->id,
+                'member_name' => $memberName,
+                'deleted_by' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Member deleted successfully.',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to delete member via guest management', [
+                'error' => $e->getMessage(),
+                'member_id' => $member->id,
+                'user_id' => auth()->id(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete member: '.$e->getMessage(),
+            ], 500);
         }
     }
 }

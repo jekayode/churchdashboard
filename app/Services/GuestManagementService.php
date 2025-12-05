@@ -28,14 +28,8 @@ final class GuestManagementService
             $query->where('branch_id', $branchId);
         }
 
-        // Filter by date range (newly registered)
-        if (!empty($filters['date_from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
-        }
-
-        if (!empty($filters['date_to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
-        }
+        // Apply date filtering
+        $this->applyDateFilters($query, $filters);
 
         // Filter by staying intention
         if (!empty($filters['staying_intention'])) {
@@ -65,6 +59,97 @@ final class GuestManagementService
         }
 
         return $query->paginate($perPage);
+    }
+
+    /**
+     * Get paginated member list with filtering (includes all members, not just guests).
+     */
+    public function getMembers(?int $branchId = null, array $filters = [], int $perPage = 15): LengthAwarePaginator
+    {
+        $query = Member::query()
+            ->with(['branch:id,name', 'user:id,name,email'])
+            ->orderBy('created_at', 'desc');
+
+        // Apply branch filter
+        if ($branchId !== null) {
+            $query->where('branch_id', $branchId);
+        }
+
+        // Apply date filtering
+        $this->applyDateFilters($query, $filters);
+
+        // Filter by staying intention
+        if (!empty($filters['staying_intention'])) {
+            $query->where('staying_intention', $filters['staying_intention']);
+        }
+
+        // Filter by discovery source
+        if (!empty($filters['discovery_source'])) {
+            $query->where('discovery_source', $filters['discovery_source']);
+        }
+
+        // Filter by gender
+        if (!empty($filters['gender'])) {
+            $query->where('gender', $filters['gender']);
+        }
+
+        // Filter by member status
+        if (!empty($filters['member_status'])) {
+            $query->where('member_status', $filters['member_status']);
+        }
+
+        // Search by name, email, or phone
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * Apply date filters to query based on filter type.
+     */
+    protected function applyDateFilters($query, array $filters): void
+    {
+        // Check for predefined date ranges first
+        if (!empty($filters['date_range'])) {
+            $this->applyPredefinedDateRange($query, $filters['date_range']);
+            return;
+        }
+
+        // Fall back to custom date range
+        if (!empty($filters['date_from'])) {
+            $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
+        }
+
+        if (!empty($filters['date_to'])) {
+            $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
+        }
+    }
+
+    /**
+     * Apply predefined date range filters.
+     */
+    protected function applyPredefinedDateRange($query, string $range): void
+    {
+        $now = Carbon::now();
+
+        match ($range) {
+            'last_week' => $query->where('created_at', '>=', $now->copy()->subWeek()->startOfWeek())
+                ->where('created_at', '<=', $now->copy()->endOfWeek()),
+            'last_month' => $query->where('created_at', '>=', $now->copy()->subMonth()->startOfMonth())
+                ->where('created_at', '<=', $now->copy()->endOfMonth()),
+            'last_quarter' => $query->where('created_at', '>=', $now->copy()->subQuarter()->startOfQuarter())
+                ->where('created_at', '<=', $now->copy()->endOfQuarter()),
+            default => null,
+        };
     }
 
     /**
@@ -157,14 +242,8 @@ final class GuestManagementService
             $query->where('branch_id', $branchId);
         }
 
-        // Apply same filters as getGuests
-        if (!empty($filters['date_from'])) {
-            $query->where('created_at', '>=', Carbon::parse($filters['date_from'])->startOfDay());
-        }
-
-        if (!empty($filters['date_to'])) {
-            $query->where('created_at', '<=', Carbon::parse($filters['date_to'])->endOfDay());
-        }
+        // Apply date filtering
+        $this->applyDateFilters($query, $filters);
 
         if (!empty($filters['staying_intention'])) {
             $query->where('staying_intention', $filters['staying_intention']);
@@ -176,6 +255,54 @@ final class GuestManagementService
 
         if (!empty($filters['gender'])) {
             $query->where('gender', $filters['gender']);
+        }
+
+        if (!empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('first_name', 'like', "%{$search}%")
+                    ->orWhere('surname', 'like', "%{$search}%");
+            });
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Export members data to CSV or Excel.
+     */
+    public function exportMembers(?int $branchId, array $filters, string $format = 'csv'): Collection
+    {
+        $query = Member::query()
+            ->with(['branch:id,name', 'user:id,name,email'])
+            ->withCount('followUps')
+            ->orderBy('created_at', 'desc');
+
+        // Apply branch filter
+        if ($branchId !== null) {
+            $query->where('branch_id', $branchId);
+        }
+
+        // Apply date filtering
+        $this->applyDateFilters($query, $filters);
+
+        if (!empty($filters['staying_intention'])) {
+            $query->where('staying_intention', $filters['staying_intention']);
+        }
+
+        if (!empty($filters['discovery_source'])) {
+            $query->where('discovery_source', $filters['discovery_source']);
+        }
+
+        if (!empty($filters['gender'])) {
+            $query->where('gender', $filters['gender']);
+        }
+
+        if (!empty($filters['member_status'])) {
+            $query->where('member_status', $filters['member_status']);
         }
 
         if (!empty($filters['search'])) {
