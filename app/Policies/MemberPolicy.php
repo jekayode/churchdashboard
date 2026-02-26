@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
-use App\Models\User;
 use App\Models\Member;
+use App\Models\User;
 
 final class MemberPolicy extends BasePolicy
 {
@@ -41,13 +41,8 @@ final class MemberPolicy extends BasePolicy
      */
     public function create(User $user): bool
     {
-        // Super Admins and Branch Pastors can create members
-        if ($this->hasAdminPrivileges($user)) {
-            return true;
-        }
-
-        // Eligible Ministry Leaders (membership/assimilation teams) can create members
-        return $this->isEligibleMinistryLeader($user);
+        // Users with administrative privileges can create member records
+        return $this->hasAdminPrivileges($user);
     }
 
     /**
@@ -60,17 +55,7 @@ final class MemberPolicy extends BasePolicy
             return true;
         }
 
-        // Super Admins and Branch Pastors can update members
-        if ($this->hasAdminPrivileges($user)) {
-            return $this->belongsToSameBranch($user, $member);
-        }
-
-        // Eligible Ministry Leaders can update members in their branch
-        if ($this->isEligibleMinistryLeader($user)) {
-            return $this->belongsToSameBranch($user, $member);
-        }
-
-        // Other leadership privileges
+        // Users with leadership privileges can update members in their branch
         if ($this->hasLeadershipPrivileges($user)) {
             return $this->belongsToSameBranch($user, $member);
         }
@@ -130,6 +115,28 @@ final class MemberPolicy extends BasePolicy
      */
     public function viewAnyGuests(User $user): bool
     {
+        // #region agent log
+        try {
+            file_put_contents('/Users/emmanuel/Herd/churchdashboard/.cursor/debug.log', json_encode([
+                'sessionId' => 'debug-session',
+                'runId' => 'pre-fix',
+                'hypothesisId' => 'C',
+                'location' => 'app/Policies/MemberPolicy.php:viewAnyGuests:entry',
+                'message' => 'MemberPolicy::viewAnyGuests (entry)',
+                'data' => [
+                    'user_id' => $user->id,
+                    'is_super_admin' => $user->isSuperAdmin(),
+                    'is_branch_pastor' => $user->isBranchPastor(),
+                    'is_ministry_leader' => $user->isMinistryLeader(),
+                    'is_department_leader' => $user->isDepartmentLeader(),
+                    'has_member_profile' => (bool) $user->member,
+                ],
+                'timestamp' => (int) round(microtime(true) * 1000),
+            ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+        } catch (\Throwable) {
+        }
+        // #endregion
+
         // Super Admins have full access
         if ($this->isSuperAdmin($user)) {
             return true;
@@ -141,7 +148,27 @@ final class MemberPolicy extends BasePolicy
         }
 
         // Eligible Ministry Leaders have access
-        return $this->isEligibleMinistryLeader($user);
+        $eligible = $this->isEligibleMinistryLeader($user);
+
+        // #region agent log
+        try {
+            file_put_contents('/Users/emmanuel/Herd/churchdashboard/.cursor/debug.log', json_encode([
+                'sessionId' => 'debug-session',
+                'runId' => 'pre-fix',
+                'hypothesisId' => 'C',
+                'location' => 'app/Policies/MemberPolicy.php:viewAnyGuests:result',
+                'message' => 'MemberPolicy::viewAnyGuests result (eligible ministry leader)',
+                'data' => [
+                    'user_id' => $user->id,
+                    'eligible_ministry_leader' => $eligible,
+                ],
+                'timestamp' => (int) round(microtime(true) * 1000),
+            ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+        } catch (\Throwable) {
+        }
+        // #endregion
+
+        return $eligible;
     }
 
     /**
@@ -179,7 +206,24 @@ final class MemberPolicy extends BasePolicy
     protected function isEligibleMinistryLeader(User $user): bool
     {
         // User must have a member record to lead ministries
-        if (!$user->member) {
+        if (! $user->member) {
+            // #region agent log
+            try {
+                file_put_contents('/Users/emmanuel/Herd/churchdashboard/.cursor/debug.log', json_encode([
+                    'sessionId' => 'debug-session',
+                    'runId' => 'pre-fix',
+                    'hypothesisId' => 'B',
+                    'location' => 'app/Policies/MemberPolicy.php:isEligibleMinistryLeader:no-member',
+                    'message' => 'isEligibleMinistryLeader=false (no member profile)',
+                    'data' => [
+                        'user_id' => $user->id,
+                    ],
+                    'timestamp' => (int) round(microtime(true) * 1000),
+                ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+            } catch (\Throwable) {
+            }
+            // #endregion
+
             return false;
         }
 
@@ -197,16 +241,73 @@ final class MemberPolicy extends BasePolicy
             ->where('status', 'active')
             ->get();
 
+        // #region agent log
+        try {
+            $names = $ledMinistries->take(5)->map(fn ($m) => (string) ($m->name ?? ''))->values()->all();
+            file_put_contents('/Users/emmanuel/Herd/churchdashboard/.cursor/debug.log', json_encode([
+                'sessionId' => 'debug-session',
+                'runId' => 'pre-fix',
+                'hypothesisId' => 'D',
+                'location' => 'app/Policies/MemberPolicy.php:isEligibleMinistryLeader:ministries',
+                'message' => 'Loaded led ministries for eligibility check',
+                'data' => [
+                    'user_id' => $user->id,
+                    'member_id' => $user->member->id,
+                    'active_led_ministries_count' => $ledMinistries->count(),
+                    'sample_ministry_names' => $names,
+                ],
+                'timestamp' => (int) round(microtime(true) * 1000),
+            ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+        } catch (\Throwable) {
+        }
+        // #endregion
+
         // Check if any ministry name contains any of the keywords
         foreach ($ledMinistries as $ministry) {
             $ministryName = strtolower($ministry->name ?? '');
             foreach ($keywords as $keyword) {
                 if (str_contains($ministryName, strtolower($keyword))) {
+                    // #region agent log
+                    try {
+                        file_put_contents('/Users/emmanuel/Herd/churchdashboard/.cursor/debug.log', json_encode([
+                            'sessionId' => 'debug-session',
+                            'runId' => 'pre-fix',
+                            'hypothesisId' => 'D',
+                            'location' => 'app/Policies/MemberPolicy.php:isEligibleMinistryLeader:match',
+                            'message' => 'Eligible ministry leader keyword match',
+                            'data' => [
+                                'user_id' => $user->id,
+                                'matched_keyword' => (string) $keyword,
+                                'ministry_name' => (string) ($ministry->name ?? ''),
+                            ],
+                            'timestamp' => (int) round(microtime(true) * 1000),
+                        ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+                    } catch (\Throwable) {
+                    }
+                    // #endregion
+
                     return true;
                 }
             }
         }
 
+        // #region agent log
+        try {
+            file_put_contents('/Users/emmanuel/Herd/churchdashboard/.cursor/debug.log', json_encode([
+                'sessionId' => 'debug-session',
+                'runId' => 'pre-fix',
+                'hypothesisId' => 'D',
+                'location' => 'app/Policies/MemberPolicy.php:isEligibleMinistryLeader:no-match',
+                'message' => 'isEligibleMinistryLeader=false (no keyword match)',
+                'data' => [
+                    'user_id' => $user->id,
+                ],
+                'timestamp' => (int) round(microtime(true) * 1000),
+            ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+        } catch (\Throwable) {
+        }
+        // #endregion
+
         return false;
     }
-} 
+}

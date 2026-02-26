@@ -20,6 +20,37 @@
                         @php
                             $user = Auth::user();
                             $primaryRole = $user->getPrimaryRole();
+
+                            // #region agent log
+                            try {
+                                $path = '/Users/emmanuel/Herd/churchdashboard/.cursor/debug.log';
+                                $dir = dirname($path);
+                                if (! is_dir($dir)) {
+                                    @mkdir($dir, 0755, true);
+                                }
+
+                                @file_put_contents($path, json_encode([
+                                    'sessionId' => 'debug-session',
+                                    'runId' => 'pre-fix',
+                                    'hypothesisId' => 'N1',
+                                    'location' => 'resources/views/layouts/navigation.blade.php:auth',
+                                    'message' => 'Top nav role snapshot',
+                                    'data' => [
+                                        'path' => request()->path(),
+                                        'user_id' => $user?->id,
+                                        'primary_role' => $primaryRole?->name,
+                                        'is_super_admin' => $user?->isSuperAdmin(),
+                                        'is_branch_pastor' => $user?->isBranchPastor(),
+                                        'is_ministry_leader' => $user?->isMinistryLeader(),
+                                        'is_department_leader' => $user?->isDepartmentLeader(),
+                                        'is_church_member' => $user?->isChurchMember(),
+                                        'roles' => $user?->roles()->pluck('name')->values()->all(),
+                                    ],
+                                    'timestamp' => (int) round(microtime(true) * 1000),
+                                ], JSON_UNESCAPED_SLASHES).PHP_EOL, FILE_APPEND);
+                            } catch (\Throwable) {
+                            }
+                            // #endregion
                         @endphp
 
                         {{-- Super Admin Navigation --}}

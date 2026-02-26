@@ -7,12 +7,11 @@ namespace App\Http\Controllers;
 use App\Services\ImportExportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 final class ImportExportController extends Controller
 {
@@ -61,17 +60,17 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to import members'
+                    'message' => 'Unauthorized to import members',
                 ], 403);
             }
 
             // Validate request
             $request->validate([
                 'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-                'branch_id' => 'nullable|integer|exists:branches,id'
+                'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
             // Determine branch ID
@@ -91,19 +90,19 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Import members API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during import',
-                'errors' => ['system' => 'Import operation failed']
+                'errors' => ['system' => 'Import operation failed'],
             ], 500);
         }
     }
@@ -116,10 +115,10 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to export members'
+                    'message' => 'Unauthorized to export members',
                 ], 403);
             }
 
@@ -132,40 +131,40 @@ final class ImportExportController extends Controller
                 'gender' => 'nullable|string|in:male,female',
                 'marital_status' => 'nullable|string|in:single,married,divorced,separated,widowed,in_a_relationship,engaged',
                 'date_from' => 'nullable|date',
-                'date_to' => 'nullable|date|after_or_equal:date_from'
+                'date_to' => 'nullable|date|after_or_equal:date_from',
             ]);
 
             // Determine branch ID and filters
             $branchId = $this->getBranchId($request);
             $filters = $request->only([
-                'member_status', 
-                'growth_level', 
-                'teci_status', 
-                'gender', 
+                'member_status',
+                'growth_level',
+                'teci_status',
+                'gender',
                 'marital_status',
                 'date_from',
-                'date_to'
+                'date_to',
             ]);
 
             // Remove empty filters
             $filters = array_filter($filters, function ($value) {
-                return !is_null($value) && $value !== '';
+                return ! is_null($value) && $value !== '';
             });
 
             // Perform export
             $result = $this->importExportService->exportMembers($branchId, $filters);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 500);
             }
 
             // Return file download
-            $fullPath = storage_path('app/public/' . $result['file_path']);
-            
-            if (!file_exists($fullPath)) {
+            $fullPath = storage_path('app/public/'.$result['file_path']);
+
+            if (! file_exists($fullPath)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Export file not found'
+                    'message' => 'Export file not found',
                 ], 404);
             }
 
@@ -175,19 +174,19 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Export members API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during export',
-                'errors' => ['system' => 'Export operation failed']
+                'errors' => ['system' => 'Export operation failed'],
             ], 500);
         }
     }
@@ -200,17 +199,17 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to import ministries'
+                    'message' => 'Unauthorized to import ministries',
                 ], 403);
             }
 
             // Validate request
             $request->validate([
                 'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-                'branch_id' => 'nullable|integer|exists:branches,id'
+                'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
             // Determine branch ID
@@ -230,19 +229,19 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Import ministries API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during import',
-                'errors' => ['system' => 'Import operation failed']
+                'errors' => ['system' => 'Import operation failed'],
             ], 500);
         }
     }
@@ -255,17 +254,17 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to import departments'
+                    'message' => 'Unauthorized to import departments',
                 ], 403);
             }
 
             // Validate request
             $request->validate([
                 'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-                'branch_id' => 'nullable|integer|exists:branches,id'
+                'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
             // Determine branch ID
@@ -285,19 +284,19 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Import departments API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during import',
-                'errors' => ['system' => 'Import operation failed']
+                'errors' => ['system' => 'Import operation failed'],
             ], 500);
         }
     }
@@ -310,17 +309,17 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to import event reports'
+                    'message' => 'Unauthorized to import event reports',
                 ], 403);
             }
 
             // Validate request
             $request->validate([
                 'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-                'branch_id' => 'nullable|integer|exists:branches,id'
+                'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
             // Determine branch ID
@@ -340,19 +339,19 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Import event reports API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during import',
-                'errors' => ['system' => 'Import operation failed']
+                'errors' => ['system' => 'Import operation failed'],
             ], 500);
         }
     }
@@ -365,17 +364,17 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to import small groups'
+                    'message' => 'Unauthorized to import small groups',
                 ], 403);
             }
 
             // Validate request
             $request->validate([
                 'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-                'branch_id' => 'nullable|integer|exists:branches,id'
+                'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
             // Determine branch ID
@@ -395,19 +394,19 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Import small groups API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during import',
-                'errors' => ['system' => 'Import operation failed']
+                'errors' => ['system' => 'Import operation failed'],
             ], 500);
         }
     }
@@ -484,7 +483,7 @@ final class ImportExportController extends Controller
         $branchId = $request->input('branch_id');
         $filters = $request->only(['start_date', 'end_date', 'event_type']);
 
-        if (!$branchId) {
+        if (! $branchId) {
             $user = Auth::user();
             $branchId = $this->getBranchIdForUser($user);
         }
@@ -509,7 +508,7 @@ final class ImportExportController extends Controller
         $branchId = $request->input('branch_id');
         $year = $request->input('year');
 
-        if (!$branchId) {
+        if (! $branchId) {
             $user = Auth::user();
             $branchId = $this->getBranchIdForUser($user);
         }
@@ -539,26 +538,26 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to access import template'
+                    'message' => 'Unauthorized to access import template',
                 ], 403);
             }
 
             $result = $this->importExportService->getMemberImportTemplate();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 500);
             }
 
             // Get the file path from the service result
-            $filePath = storage_path('app/public/' . $result['file_path']);
-            
-            if (!file_exists($filePath)) {
+            $filePath = storage_path('app/public/'.$result['file_path']);
+
+            if (! file_exists($filePath)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Template file not found'
+                    'message' => 'Template file not found',
                 ], 404);
             }
 
@@ -567,12 +566,12 @@ final class ImportExportController extends Controller
         } catch (\Exception $e) {
             Log::error('Get import template API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while generating template'
+                'message' => 'An error occurred while generating template',
             ], 500);
         }
     }
@@ -585,26 +584,26 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to access import template'
+                    'message' => 'Unauthorized to access import template',
                 ], 403);
             }
 
             $result = $this->importExportService->getMinistryImportTemplate();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 500);
             }
 
             // Get the file path from the service result
-            $filePath = storage_path('app/public/' . $result['file_path']);
-            
-            if (!file_exists($filePath)) {
+            $filePath = storage_path('app/public/'.$result['file_path']);
+
+            if (! file_exists($filePath)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Template file not found'
+                    'message' => 'Template file not found',
                 ], 404);
             }
 
@@ -613,12 +612,12 @@ final class ImportExportController extends Controller
         } catch (\Exception $e) {
             Log::error('Get ministry import template API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while generating template'
+                'message' => 'An error occurred while generating template',
             ], 500);
         }
     }
@@ -631,26 +630,26 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to access import template'
+                    'message' => 'Unauthorized to access import template',
                 ], 403);
             }
 
             $result = $this->importExportService->getDepartmentImportTemplate();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 500);
             }
 
             // Get the file path from the service result
-            $filePath = storage_path('app/public/' . $result['file_path']);
-            
-            if (!file_exists($filePath)) {
+            $filePath = storage_path('app/public/'.$result['file_path']);
+
+            if (! file_exists($filePath)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Template file not found'
+                    'message' => 'Template file not found',
                 ], 404);
             }
 
@@ -659,12 +658,12 @@ final class ImportExportController extends Controller
         } catch (\Exception $e) {
             Log::error('Get department import template API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while generating template'
+                'message' => 'An error occurred while generating template',
             ], 500);
         }
     }
@@ -677,26 +676,26 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to access import template'
+                    'message' => 'Unauthorized to access import template',
                 ], 403);
             }
 
             $result = $this->importExportService->getEventReportsImportTemplate();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 500);
             }
 
             // Get the file path from the service result
-            $filePath = storage_path('app/public/' . $result['file_path']);
-            
-            if (!file_exists($filePath)) {
+            $filePath = storage_path('app/public/'.$result['file_path']);
+
+            if (! file_exists($filePath)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Template file not found'
+                    'message' => 'Template file not found',
                 ], 404);
             }
 
@@ -705,12 +704,12 @@ final class ImportExportController extends Controller
         } catch (\Exception $e) {
             Log::error('Get event reports import template API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while generating template'
+                'message' => 'An error occurred while generating template',
             ], 500);
         }
     }
@@ -723,26 +722,26 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to access import template'
+                    'message' => 'Unauthorized to access import template',
                 ], 403);
             }
 
             $result = $this->importExportService->getSmallGroupImportTemplate();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return response()->json($result, 500);
             }
 
             // Get the file path from the service result
-            $filePath = storage_path('app/public/' . $result['file_path']);
-            
-            if (!file_exists($filePath)) {
+            $filePath = storage_path('app/public/'.$result['file_path']);
+
+            if (! file_exists($filePath)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Template file not found'
+                    'message' => 'Template file not found',
                 ], 404);
             }
 
@@ -751,12 +750,12 @@ final class ImportExportController extends Controller
         } catch (\Exception $e) {
             Log::error('Get small group import template API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'An error occurred while generating template'
+                'message' => 'An error occurred while generating template',
             ], 500);
         }
     }
@@ -769,16 +768,16 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = Auth::user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to validate import files'
+                    'message' => 'Unauthorized to validate import files',
                 ], 403);
             }
 
             // Validate request
             $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240' // 10MB max
+                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
             ]);
 
             $result = $this->importExportService->validateImportFile($request->file('file'));
@@ -789,18 +788,18 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Validate import file API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'valid' => false,
-                'errors' => ['system' => 'File validation failed']
+                'errors' => ['system' => 'File validation failed'],
             ], 500);
         }
     }
@@ -813,10 +812,10 @@ final class ImportExportController extends Controller
         try {
             // Authorization check
             $user = auth()->user();
-            if (!$user->isSuperAdmin() && !$user->isBranchPastor()) {
+            if (! $user->isSuperAdmin() && ! $user->isBranchPastor()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to view import/export statistics'
+                    'message' => 'Unauthorized to view import/export statistics',
                 ], 403);
             }
 
@@ -824,8 +823,8 @@ final class ImportExportController extends Controller
 
             // Get member statistics
             $memberQuery = \App\Models\Member::query();
-            
-            if (!$isSuperAdmin && $user->isBranchPastor()) {
+
+            if (! $isSuperAdmin && $user->isBranchPastor()) {
                 $branchId = $user->getActiveBranchId();
                 $memberQuery->where('branch_id', $branchId);
             }
@@ -847,13 +846,13 @@ final class ImportExportController extends Controller
 
             // Get recent export files (if any)
             $recentExports = collect(\Illuminate\Support\Facades\Storage::disk('public')->files('exports'))
-                ->filter(fn($file) => \Illuminate\Support\Facades\Storage::disk('public')->lastModified($file) >= now()->subDays(7)->timestamp)
+                ->filter(fn ($file) => \Illuminate\Support\Facades\Storage::disk('public')->lastModified($file) >= now()->subDays(7)->timestamp)
                 ->map(function ($file) {
                     return [
                         'filename' => basename($file),
                         'size' => \Illuminate\Support\Facades\Storage::disk('public')->size($file),
                         'created_at' => date('Y-m-d H:i:s', \Illuminate\Support\Facades\Storage::disk('public')->lastModified($file)),
-                        'download_url' => \Illuminate\Support\Facades\Storage::disk('public')->url($file)
+                        'download_url' => \Illuminate\Support\Facades\Storage::disk('public')->url($file),
                     ];
                 })
                 ->sortByDesc('created_at')
@@ -868,31 +867,31 @@ final class ImportExportController extends Controller
                         'total' => $totalMembers,
                         'recent' => $recentMembers,
                         'by_status' => $membersByStatus,
-                        'by_growth_level' => $membersByGrowthLevel
+                        'by_growth_level' => $membersByGrowthLevel,
                     ],
                     'exports' => [
                         'recent_files' => $recentExports,
-                        'total_recent' => count($recentExports)
+                        'total_recent' => count($recentExports),
                     ],
                     'user_context' => [
                         'is_super_admin' => $isSuperAdmin,
-                        'branch_id' => !$isSuperAdmin && $user->isBranchPastor() ? $user->getActiveBranchId() : null,
+                        'branch_id' => ! $isSuperAdmin && $user->isBranchPastor() ? $user->getActiveBranchId() : null,
                         'can_import' => true,
-                        'can_export' => true
-                    ]
-                ]
+                        'can_export' => true,
+                    ],
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Get import/export stats API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while fetching statistics',
-                'errors' => ['system' => 'Statistics retrieval failed']
+                'errors' => ['system' => 'Statistics retrieval failed'],
             ], 500);
         }
     }
@@ -905,15 +904,15 @@ final class ImportExportController extends Controller
         try {
             // Only super admins can cleanup exports
             $user = auth()->user();
-            if (!$user->isSuperAdmin()) {
+            if (! $user->isSuperAdmin()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Unauthorized to cleanup export files'
+                    'message' => 'Unauthorized to cleanup export files',
                 ], 403);
             }
 
             $request->validate([
-                'days_old' => 'nullable|integer|min:1|max:365'
+                'days_old' => 'nullable|integer|min:1|max:365',
             ]);
 
             $daysOld = $request->input('days_old', 7);
@@ -928,19 +927,19 @@ final class ImportExportController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('Cleanup exports API error', [
                 'error' => $e->getMessage(),
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred during cleanup',
-                'errors' => ['system' => 'Cleanup operation failed']
+                'errors' => ['system' => 'Cleanup operation failed'],
             ], 500);
         }
     }
@@ -951,7 +950,7 @@ final class ImportExportController extends Controller
     private function getBranchId(Request $request): int
     {
         $user = auth()->user();
-        
+
         // Super admins can specify branch_id or work with all branches
         if ($user->isSuperAdmin()) {
             return $request->input('branch_id') ?? 0; // 0 means all branches for super admin
@@ -960,9 +959,10 @@ final class ImportExportController extends Controller
         // Branch pastors can only work with their own branch
         if ($user->isBranchPastor()) {
             $branchId = $user->getActiveBranchId();
-            if (!$branchId) {
+            if (! $branchId) {
                 throw new \Exception('Branch pastor must be assigned to a branch');
             }
+
             return $branchId;
         }
 
@@ -982,4 +982,4 @@ final class ImportExportController extends Controller
         // Other users are restricted to their branch
         return $user->member?->branch_id;
     }
-} 
+}

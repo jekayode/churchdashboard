@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Requests;
 
+use App\Models\GuestRegistrationAttempt;
+use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\ValidationException;
 
 final class GuestRegistrationRequest extends FormRequest
 {
@@ -33,7 +36,7 @@ final class GuestRegistrationRequest extends FormRequest
             'consent_given' => 'required|accepted',
             'consent_given_at' => 'nullable|date',
             'consent_ip' => 'nullable|string|max:45',
-            
+
             // Optional fields (can be filled during registration or later)
             'gender' => 'nullable|in:male,female,prefer-not-to-say',
             'preferred_call_time' => 'nullable|in:anytime,morning,afternoon,evening',
@@ -72,5 +75,34 @@ final class GuestRegistrationRequest extends FormRequest
             'consent_given_at' => now(),
             'consent_ip' => $this->ip(),
         ]);
+    }
+
+    /**
+     * Log failed validation attempt so Guest Management can see the data.
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        $payload = $this->except(['_token']);
+        $errors = $validator->errors();
+        $firstMessage = $errors->first();
+
+        try {
+            GuestRegistrationAttempt::create([
+                'email' => $this->input('email'),
+                'first_name' => $this->input('first_name'),
+                'surname' => $this->input('surname'),
+                'phone' => $this->input('phone'),
+                'branch_id' => $this->input('branch_id') ? (int) $this->input('branch_id') : null,
+                'status' => 'validation_failed',
+                'error_type' => 'validation',
+                'error_message' => $firstMessage,
+                'payload' => $payload,
+                'completed_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        throw new ValidationException($validator);
     }
 }

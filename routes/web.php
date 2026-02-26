@@ -127,6 +127,7 @@ Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->na
     Route::get('/import-export', function () {
         return view('admin.import-export.index');
     })->name('import-export');
+    Route::post('/import-export/populate-birthday-month-day', [\App\Http\Controllers\ImportExportController::class, 'populateBirthdayMonthDay'])->name('import-export.populate-birthday-month-day');
 
     // Communication Routes
     Route::prefix('communication')->name('communication.')->group(function () {
@@ -326,17 +327,15 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,ministry_leader,super
     ->name('guests.')
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\GuestManagementController::class, 'index'])->name('index');
-        Route::get('/members', [\App\Http\Controllers\GuestManagementController::class, 'members'])->name('members');
+        Route::get('/attempts', [\App\Http\Controllers\GuestManagementController::class, 'attempts'])->name('attempts');
         Route::get('/export', [\App\Http\Controllers\GuestManagementController::class, 'export'])->name('export');
+        Route::get('/template', [\App\Http\Controllers\GuestManagementController::class, 'downloadTemplate'])->name('template');
+        Route::post('/import', [\App\Http\Controllers\GuestManagementController::class, 'import'])->name('import');
+        Route::post('/send-setup-emails', [\App\Http\Controllers\GuestManagementController::class, 'sendAccountSetupEmails'])->name('send-setup-emails');
         Route::get('/api/list', [\App\Http\Controllers\GuestManagementController::class, 'getGuests'])->name('api.list');
         Route::get('/{member}', [\App\Http\Controllers\GuestManagementController::class, 'show'])->name('show');
         Route::post('/{member}/status', [\App\Http\Controllers\GuestManagementController::class, 'updateStatus'])->name('update-status');
         Route::post('/{member}/follow-up', [\App\Http\Controllers\GuestManagementController::class, 'addFollowUp'])->name('add-follow-up');
-        
-        // Member management routes
-        Route::post('/members', [\App\Http\Controllers\GuestManagementController::class, 'storeMember'])->name('members.store');
-        Route::put('/members/{member}', [\App\Http\Controllers\GuestManagementController::class, 'updateMember'])->name('members.update');
-        Route::delete('/members/{member}', [\App\Http\Controllers\GuestManagementController::class, 'destroyMember'])->name('members.destroy');
     });
 
 // Department Leader Routes

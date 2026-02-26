@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Imports;
 
-use App\Jobs\SendBulkWelcomeEmailsJob;
 use App\Models\Branch;
 use App\Models\Member;
 use App\Models\Role;
@@ -34,11 +33,19 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
 
     private int $failureCount = 0;
 
-    private array $usersForWelcomeEmails = [];
+    private array $usersForAccountSetup = [];
 
-    public function __construct(int $branchId)
+    private ?int $currentRow = null;
+
+    private string $registrationSource;
+
+    private string $defaultMemberStatus;
+
+    public function __construct(int $branchId, string $registrationSource = 'imported', string $defaultMemberStatus = 'member')
     {
         $this->branchId = $branchId;
+        $this->registrationSource = $registrationSource;
+        $this->defaultMemberStatus = $defaultMemberStatus;
     }
 
     /**
@@ -72,45 +79,66 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
      */
     private function processRow(array $row, int $rowNumber): void
     {
-        // Clean and validate data
-        $data = $this->cleanRowData($row);
+        // Store current row for logging in helper methods
+        $this->currentRow = $rowNumber;
 
-        $validator = Validator::make($data, $this->getRowValidationRules());
+        try {
+            // Clean and validate data
+            $data = $this->cleanRowData($row);
 
-        if ($validator->fails()) {
-            foreach ($validator->errors()->all() as $error) {
-                $this->addError($rowNumber, 'validation', $error);
+            $validator = Validator::make($data, $this->getRowValidationRules());
+
+            if ($validator->fails()) {
+                // Log first few validation errors for debugging
+                if ($this->failureCount < 5) {
+                    \Log::warning('Import validation failed', [
+                        'row' => $rowNumber,
+                        'data' => $data,
+                        'errors' => $validator->errors()->all(),
+                        'original_row_keys' => array_keys($row),
+                    ]);
+                }
+
+                foreach ($validator->errors()->all() as $error) {
+                    $this->addError($rowNumber, 'validation', $error);
+                }
+                $this->failureCount++;
+
+                return;
             }
+        } catch (\Exception $e) {
+            $this->addError($rowNumber, 'general', 'Failed to clean/validate row data: '.$e->getMessage());
             $this->failureCount++;
 
             return;
         }
 
         // Check if member already exists (by email if provided, otherwise by name and phone)
-        // Use select to optimize query performance
         $existingMember = null;
 
         if (! empty($data['email'])) {
-            $existingMember = Member::select('id')->where('email', $data['email'])->first();
+            $existingMember = Member::where('email', $data['email'])->first();
         } elseif (! empty($data['phone'])) {
-            $existingMember = Member::select('id')
-                ->where('name', $data['name'])
+            $existingMember = Member::where('name', $data['name'])
                 ->where('phone', $data['phone'])
                 ->first();
         }
 
         if ($existingMember) {
             $identifier = $data['email'] ?? $data['name'];
-            $this->addError($rowNumber, 'duplicate', "Member already exists: {$identifier}");
+            $comparison = $this->compareMemberData($existingMember, $data);
+            $this->addError($rowNumber, 'duplicate', [
+                'message' => "Member already exists: {$identifier}",
+                'comparison' => $comparison,
+                'existing_id' => $existingMember->id,
+            ]);
             $this->failureCount++;
 
             return;
         }
 
-        // Create or find user account (only if email is provided)
+        // Create or find user account (always creates, generates temporary email if needed)
         $user = $this->createOrFindUser($data);
-
-        // Note: user can be null if no email is provided, which is acceptable
 
         // Create member record
         $memberData = $this->prepareMemberData($data, $user?->id);
@@ -132,11 +160,12 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             'name' => $member->name,
         ];
 
-        // Add user to welcome email list if user account was created
+        // Add user to account setup email list (all users get accounts now)
         if ($user) {
-            $this->usersForWelcomeEmails[] = [
+            $this->usersForAccountSetup[] = [
                 'user_id' => $user->id,
-                'temporary_password' => $this->getTemporaryPassword($user),
+                'email' => $user->email,
+                'name' => $user->name,
             ];
         }
 
@@ -154,48 +183,64 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
     {
         $cleanData = [];
 
-        // Map column headers to database fields
+        // Map column headers to database fields (includes variations with spaces for export compatibility)
         $fieldMap = [
             'name' => ['name', 'full_name', 'member_name'],
-            'first_name' => ['first_name', 'firstname', 'fname'],
-            'last_name' => ['last_name', 'lastname', 'lname', 'surname'],
-            'email' => ['email', 'email_address'],
-            'phone' => ['phone', 'phone_number', 'mobile'],
-            'date_of_birth' => ['date_of_birth', 'dob', 'birth_date'],
-            'anniversary' => ['anniversary', 'wedding_anniversary'],
+            'first_name' => ['first_name', 'firstname', 'fname', 'first name'],
+            'last_name' => ['last_name', 'lastname', 'lname', 'surname', 'last name'],
+            'email' => ['email', 'email_address', 'email address'],
+            // Note: Google Forms exports often use headers like "Phone Number (WhatsApp)"
+            'phone' => ['phone', 'phone_number', 'mobile', 'phone number', 'whatsapp_number', 'phone_number_whatsapp', 'phone_number_(whatsapp)'],
+            'date_of_birth' => ['date_of_birth', 'dob', 'birth_date', 'date of birth'],
+            'anniversary' => ['anniversary', 'wedding_anniversary', 'wedding anniversary'],
             'gender' => ['gender', 'sex'],
-            'marital_status' => ['marital_status', 'marriage_status'],
+            'marital_status' => ['marital_status', 'marriage_status', 'marital status'],
             'occupation' => ['occupation', 'job', 'profession'],
-            'nearest_bus_stop' => ['nearest_bus_stop', 'bus_stop'],
-            'date_joined' => ['date_joined', 'join_date', 'membership_date'],
-            'date_attended_membership_class' => ['date_attended_membership_class', 'membership_class_date'],
-            'teci_status' => ['teci_status', 'teci'],
-            'growth_level' => ['growth_level', 'level'],
-            'member_status' => ['member_status', 'status'],
-            'branch_name' => ['branch_name', 'branch', 'church_branch'],
+            'nearest_bus_stop' => ['nearest_bus_stop', 'bus_stop', 'nearest bus stop', 'bus stop'],
+            'date_joined' => ['date_joined', 'join_date', 'membership_date', 'timestamp', 'date joined'],
+            'date_attended_membership_class' => ['date_attended_membership_class', 'membership_class_date', 'date attended membership class'],
+            'teci_status' => ['teci_status', 'teci', 'teci status'],
+            'growth_level' => ['growth_level', 'level', 'growth level'],
+            'member_status' => ['member_status', 'status', 'member status'],
+            'branch_name' => ['branch_name', 'branch', 'church_branch', 'branch name'],
             // Guest form fields
-            'preferred_call_time' => ['preferred_call_time', 'call_time', 'best_time_to_call'],
-            'home_address' => ['home_address', 'address', 'residential_address'],
-            'age_group' => ['age_group', 'age_range'],
-            'prayer_request' => ['prayer_request', 'prayer_requests', 'prayer_needs'],
-            'discovery_source' => ['discovery_source', 'how_did_you_hear', 'how_heard_about_us'],
-            'staying_intention' => ['staying_intention', 'intention_to_stay', 'plan_to_stay'],
-            'closest_location' => ['closest_location', 'nearest_location', 'preferred_location'],
-            'additional_info' => ['additional_info', 'additional_information', 'other_info', 'notes'],
-            'leadership_trainings' => ['leadership_trainings', 'trainings', 'completed_trainings'],
+            'preferred_call_time' => ['preferred_call_time', 'call_time', 'best_time_to_call', 'preferred call time'],
+            'home_address' => ['home_address', 'address', 'residential_address', 'home address'],
+            'age_group' => ['age_group', 'age_range', 'age group'],
+            'prayer_request' => ['prayer_request', 'prayer_requests', 'prayer_needs', 'prayer request'],
+            // Google Forms exports often include punctuation: "How did you hear about us?"
+            'discovery_source' => ['discovery_source', 'how_did_you_hear', 'how_heard_about_us', 'discovery source', 'how_did_you_hear_about_us', 'how_did_you_hear_about_us?'],
+            'staying_intention' => ['staying_intention', 'intention_to_stay', 'plan_to_stay', 'staying intention', 'will_you_be_staying_with_us', 'will_you_be_staying_with_us?'],
+            'closest_location' => ['closest_location', 'nearest_location', 'preferred_location', 'closest location'],
+            'additional_info' => ['additional_info', 'additional_information', 'other_info', 'notes', 'additional info'],
+            'leadership_trainings' => ['leadership_trainings', 'trainings', 'completed_trainings', 'leadership trainings'],
         ];
+
+        // Normalize row keys for case-insensitive matching.
+        // Important: handle punctuation in headers (e.g., "Phone Number (WhatsApp)", "How did you hear about us?")
+        $normalizedRow = [];
+        foreach ($row as $key => $value) {
+            $normalizedKey = $this->normalizeHeaderKey((string) $key);
+            $normalizedRow[$normalizedKey] = $value;
+        }
 
         foreach ($fieldMap as $dbField => $possibleHeaders) {
             foreach ($possibleHeaders as $header) {
-                if (isset($row[$header]) && ! empty($row[$header])) {
-                    $value = $row[$header];
+                $normalizedHeader = $this->normalizeHeaderKey((string) $header);
+                if (isset($normalizedRow[$normalizedHeader]) && ! empty($normalizedRow[$normalizedHeader])) {
+                    $value = $normalizedRow[$normalizedHeader];
 
-                    // Convert phone numbers to string
-                    if ($dbField === 'phone') {
-                        $value = (string) $value;
+                    // Clean and format email
+                    if ($dbField === 'email') {
+                        $value = $this->cleanEmail($value);
                     }
 
-                    $cleanData[$dbField] = trim($value);
+                    // Format phone numbers to Nigerian format
+                    if ($dbField === 'phone') {
+                        $value = $this->formatPhoneNumber($value);
+                    }
+
+                    $cleanData[$dbField] = trim((string) $value);
                     break;
                 }
             }
@@ -214,15 +259,33 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
         // Remove first_name and last_name since we only need the combined name
         unset($cleanData['first_name'], $cleanData['last_name']);
 
-        // Parse leadership trainings if present
-        if (isset($row['leadership_trainings']) && ! empty($row['leadership_trainings'])) {
-            $trainings = explode(',', $row['leadership_trainings']);
-            $cleanData['leadership_trainings'] = array_map('trim', $trainings);
+        // Parse leadership trainings if present (check normalized row for "Leadership Trainings" from exports)
+        if (! isset($cleanData['leadership_trainings'])) {
+            foreach (['leadership_trainings', 'trainings', 'completed_trainings'] as $key) {
+                $normalizedKey = strtolower(trim($key));
+                $normalizedKey = str_replace(' ', '_', $normalizedKey);
+                if (isset($normalizedRow[$normalizedKey]) && ! empty($normalizedRow[$normalizedKey])) {
+                    $leadershipTrainingsValue = $normalizedRow[$normalizedKey];
+                    $trainings = explode(',', (string) $leadershipTrainingsValue);
+                    $cleanData['leadership_trainings'] = array_map('trim', $trainings);
+                    break;
+                }
+            }
         }
 
         // Normalize gender
         if (isset($cleanData['gender'])) {
-            $cleanData['gender'] = strtolower($cleanData['gender']) === 'female' ? 'female' : 'male';
+            $gender = strtolower(trim((string) $cleanData['gender']));
+            $cleanData['gender'] = match ($gender) {
+                'female', 'f' => 'female',
+                'male', 'm' => 'male',
+                // DB enum is only male/female; treat other answers as null.
+                default => null,
+            };
+
+            if ($cleanData['gender'] === null) {
+                unset($cleanData['gender']);
+            }
         }
 
         // Normalize marital status
@@ -240,14 +303,209 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             };
         }
 
-        // Parse dates
+        // Normalize guest form enums to match DB enum values (Google Forms often uses human strings).
+        if (isset($cleanData['preferred_call_time'])) {
+            $raw = strtolower(trim((string) $cleanData['preferred_call_time']));
+            $raw = str_replace([' ', '_'], '-', $raw);
+            $cleanData['preferred_call_time'] = match ($raw) {
+                'anytime', 'any-time', 'any' => 'anytime',
+                'morning', 'am' => 'morning',
+                'afternoon', 'pm' => 'afternoon',
+                'evening', 'night' => 'evening',
+                default => null,
+            };
+            if ($cleanData['preferred_call_time'] === null) {
+                unset($cleanData['preferred_call_time']);
+            }
+        }
+
+        if (isset($cleanData['age_group'])) {
+            $raw = strtolower(trim((string) $cleanData['age_group']));
+            $raw = preg_replace('/\s+/', '', $raw);
+            $raw = str_replace(['–', '—'], '-', $raw); // normalize dashes
+            $cleanData['age_group'] = match (true) {
+                in_array($raw, ['15-20', '15to20'], true) => '15-20',
+                in_array($raw, ['21-25', '21to25'], true) => '21-25',
+                in_array($raw, ['26-30', '26to30'], true) => '26-30',
+                in_array($raw, ['31-35', '31to35'], true) => '31-35',
+                in_array($raw, ['36-40', '36to40'], true) => '36-40',
+                in_array($raw, ['above-40', 'above40', '40+', '40plus', 'above_40'], true) => 'above-40',
+                default => null,
+            };
+            if ($cleanData['age_group'] === null) {
+                unset($cleanData['age_group']);
+            }
+        }
+
+        if (isset($cleanData['discovery_source'])) {
+            $raw = strtolower(trim((string) $cleanData['discovery_source']));
+            $raw = preg_replace('/\s+/', ' ', $raw);
+            $cleanData['discovery_source'] = match (true) {
+                str_contains($raw, 'social') => 'social-media',
+                str_contains($raw, 'word') || str_contains($raw, 'mouth') => 'word-of-mouth',
+                str_contains($raw, 'bill') => 'billboard',
+                str_contains($raw, 'email') => 'email',
+                str_contains($raw, 'web') => 'website',
+                str_contains($raw, 'promo') || str_contains($raw, 'flyer') => 'promotional-material',
+                str_contains($raw, 'radio') || str_contains($raw, 'tv') => 'radio-tv',
+                str_contains($raw, 'outreach') => 'outreach',
+                default => null,
+            };
+            if ($cleanData['discovery_source'] === null) {
+                unset($cleanData['discovery_source']);
+            }
+        }
+
+        if (isset($cleanData['staying_intention'])) {
+            $raw = strtolower(trim((string) $cleanData['staying_intention']));
+            $raw = preg_replace('/\s+/', ' ', $raw);
+            $cleanData['staying_intention'] = match (true) {
+                str_contains($raw, 'yes') => 'yes-for-sure',
+                str_contains($raw, 'town') => 'visit-when-in-town',
+                str_contains($raw, 'just') || str_contains($raw, 'visit') => 'just-visiting',
+                str_contains($raw, 'weigh') || str_contains($raw, 'option') => 'weighing-options',
+                default => null,
+            };
+            if ($cleanData['staying_intention'] === null) {
+                unset($cleanData['staying_intention']);
+            }
+        }
+
+        // Parse dates (also check for "Date Joined", "Anniversary", etc. from exports)
+        $dateFieldMap = [
+            'anniversary' => ['anniversary', 'wedding_anniversary'],
+            'date_joined' => ['date_joined', 'join_date', 'membership_date', 'timestamp', 'date_joined'], // "Date Joined" normalized becomes "date_joined"
+            'date_attended_membership_class' => ['date_attended_membership_class', 'membership_class_date'],
+        ];
+
+        foreach ($dateFieldMap as $dbField => $possibleHeaders) {
+            if (! isset($cleanData[$dbField])) {
+                // Try to find it in normalized row
+                foreach ($possibleHeaders as $header) {
+                    $normalizedHeader = strtolower(trim($header));
+                    $normalizedHeader = str_replace(' ', '_', $normalizedHeader);
+                    if (isset($normalizedRow[$normalizedHeader]) && ! empty($normalizedRow[$normalizedHeader])) {
+                        $cleanData[$dbField] = $this->parseDate($normalizedRow[$normalizedHeader]);
+                        break;
+                    }
+                }
+            } else {
+                $cleanData[$dbField] = $this->parseDate($cleanData[$dbField]);
+            }
+        }
+
+        // Parse birthdate with special handling for partial dates (day/month without year)
+        // Check both cleanData and normalizedRow for date_of_birth (handles "Date of Birth" from exports)
+        $dobValue = null;
+        if (isset($cleanData['date_of_birth'])) {
+            $dobValue = $cleanData['date_of_birth'];
+        } else {
+            // Try normalized row for "Date of Birth" header (normalized becomes "date_of_birth")
+            foreach (['date_of_birth', 'dob', 'birth_date'] as $key) {
+                $normalizedKey = strtolower(trim($key));
+                $normalizedKey = str_replace(' ', '_', $normalizedKey);
+                if (isset($normalizedRow[$normalizedKey]) && ! empty($normalizedRow[$normalizedKey])) {
+                    $dobValue = $normalizedRow[$normalizedKey];
+                    break;
+                }
+            }
+        }
+
+        if ($dobValue && is_string($dobValue)) {
+            $dateValue = trim($dobValue);
+            if (! empty($dateValue)) {
+                $birthdayData = $this->parseBirthDate($dateValue);
+                $cleanData['date_of_birth'] = $birthdayData['date'];
+                $cleanData['birthday_month'] = $birthdayData['month'];
+                $cleanData['birthday_day'] = $birthdayData['day'];
+            } else {
+                // Ensure null values are set explicitly
+                $cleanData['date_of_birth'] = null;
+                $cleanData['birthday_month'] = null;
+                $cleanData['birthday_day'] = null;
+            }
+        } elseif (! isset($cleanData['date_of_birth'])) {
+            // Set to null if not found
+            $cleanData['date_of_birth'] = null;
+            $cleanData['birthday_month'] = null;
+            $cleanData['birthday_day'] = null;
+        }
+
+        // Convert empty strings to null for date fields to pass nullable validation
         foreach (['date_of_birth', 'anniversary', 'date_joined', 'date_attended_membership_class'] as $dateField) {
-            if (isset($cleanData[$dateField])) {
-                $cleanData[$dateField] = $this->parseDate($cleanData[$dateField]);
+            if (isset($cleanData[$dateField]) && $cleanData[$dateField] === '') {
+                $cleanData[$dateField] = null;
             }
         }
 
         return array_filter($cleanData, fn ($value) => ! is_null($value) && $value !== '');
+    }
+
+    /**
+     * Normalize header keys to improve mapping robustness across CSV/Excel exports.
+     *
+     * Examples:
+     * - "Phone Number (WhatsApp)" => "phone_number_whatsapp"
+     * - "How did you hear about us?" => "how_did_you_hear_about_us"
+     */
+    private function normalizeHeaderKey(string $key): string
+    {
+        $key = strtolower(trim($key));
+        $key = str_replace(['–', '—'], '-', $key);
+        $key = str_replace([' ', '-'], '_', $key);
+        $key = preg_replace('/[^a-z0-9_]+/', '_', $key);
+        $key = preg_replace('/_+/', '_', $key);
+
+        return trim($key, '_');
+    }
+
+    /**
+     * Clean and normalize email address.
+     */
+    private function cleanEmail(string $email): string
+    {
+        // Trim whitespace
+        $email = trim($email);
+
+        // Convert to lowercase
+        $email = strtolower($email);
+
+        // Remove all whitespace characters
+        $email = preg_replace('/\s+/', '', $email);
+
+        return $email;
+    }
+
+    /**
+     * Format phone number to Nigerian format (09068719246).
+     */
+    private function formatPhoneNumber(mixed $phone): string
+    {
+        // Convert to string and trim (Excel may provide numeric values)
+        $phone = trim((string) $phone);
+
+        // Remove all non-numeric characters except +
+        $phone = preg_replace('/[^\d+]/', '', $phone);
+
+        // Handle different formats
+        if (str_starts_with($phone, '+234')) {
+            // Convert +2349068719246 to 09068719246
+            $phone = '0'.substr($phone, 4);
+        } elseif (str_starts_with($phone, '234')) {
+            // Convert 2349068719246 to 09068719246
+            $phone = '0'.substr($phone, 3);
+        } elseif (! str_starts_with($phone, '0') && strlen($phone) === 10) {
+            // If it's 10 digits without leading 0, add 0
+            $phone = '0'.$phone;
+        }
+
+        // Ensure it starts with 0 and has 11 digits (Nigerian format)
+        if (str_starts_with($phone, '0') && strlen($phone) === 11) {
+            return $phone;
+        }
+
+        // If format is still invalid, return as-is (validation will catch it)
+        return $phone;
     }
 
     /**
@@ -262,6 +520,158 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    /**
+     * Parse birthdate with special handling for partial dates (day/month without year).
+     * Returns array with 'date' (full date or null) and 'month'/'day' (extracted values).
+     */
+    private function parseBirthDate(string $dateString): array
+    {
+        $dateString = trim($dateString);
+        $result = [
+            'date' => null,
+            'month' => null,
+            'day' => null,
+        ];
+
+        // Return early if empty
+        if (empty($dateString)) {
+            return $result;
+        }
+
+        // Check if it's a partial date (only day/month format like "26/09" or "13/11")
+        // Pattern: digits/digits with optional leading zeros, no year
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})$/', $dateString, $matches)) {
+            // This is a partial date without year
+            $day = (int) $matches[1];
+            $month = (int) $matches[2];
+
+            // Determine if it's DD/MM or MM/DD format
+            // If first part > 12, it's likely DD/MM, otherwise try both interpretations
+            if ($day > 12) {
+                // Definitely DD/MM format
+                $result['day'] = $day;
+                $result['month'] = $month;
+            } elseif ($month > 12) {
+                // Definitely MM/DD format
+                $result['day'] = $month;
+                $result['month'] = $day;
+            } else {
+                // Ambiguous - assume DD/MM (common in many countries)
+                // But validate both possibilities
+                if ($this->isValidDayForMonth($day, $month)) {
+                    $result['day'] = $day;
+                    $result['month'] = $month;
+                } elseif ($this->isValidDayForMonth($month, $day)) {
+                    $result['day'] = $month;
+                    $result['month'] = $day;
+                } else {
+                    Log::warning('Partial birthdate could not be validated - storing as null', [
+                        'date_string' => $dateString,
+                        'row' => $this->currentRow ?? 'unknown',
+                    ]);
+
+                    return $result;
+                }
+            }
+
+            // Validate the extracted values
+            if (! $this->isValidDayForMonth($result['day'], $result['month'])) {
+                Log::warning('Invalid partial birthdate (invalid day for month) - storing as null', [
+                    'date_string' => $dateString,
+                    'day' => $result['day'],
+                    'month' => $result['month'],
+                    'row' => $this->currentRow ?? 'unknown',
+                ]);
+
+                return ['date' => null, 'month' => null, 'day' => null];
+            }
+
+            Log::info('Partial birthdate detected (day/month only) - storing month/day only', [
+                'date_string' => $dateString,
+                'month' => $result['month'],
+                'day' => $result['day'],
+                'row' => $this->currentRow ?? 'unknown',
+            ]);
+
+            return $result;
+        }
+
+        // Try to parse as full date
+        try {
+            $date = \Carbon\Carbon::parse($dateString);
+
+            // Validate it's a reasonable birthdate (not in the future, not too old)
+            $maxAge = 120; // Reasonable maximum age
+            $minDate = now()->subYears($maxAge);
+            $maxDate = now();
+
+            if ($date->isFuture()) {
+                Log::warning('Birthdate is in the future - storing as null', [
+                    'date_string' => $dateString,
+                    'parsed_date' => $date->format('Y-m-d'),
+                    'row' => $this->currentRow ?? 'unknown',
+                ]);
+
+                return $result;
+            }
+
+            if ($date->lt($minDate)) {
+                Log::warning('Birthdate is too old (over '.$maxAge.' years) - storing as null', [
+                    'date_string' => $dateString,
+                    'parsed_date' => $date->format('Y-m-d'),
+                    'row' => $this->currentRow ?? 'unknown',
+                ]);
+
+                return $result;
+            }
+
+            // Extract month and day from full date
+            $result['date'] = $date->format('Y-m-d');
+            $result['month'] = (int) $date->format('n'); // 1-12
+            $result['day'] = (int) $date->format('j'); // 1-31
+
+            return $result;
+        } catch (\Exception $e) {
+            Log::warning('Failed to parse birthdate - storing as null', [
+                'date_string' => $dateString,
+                'error' => $e->getMessage(),
+                'row' => $this->currentRow ?? 'unknown',
+            ]);
+
+            return $result;
+        }
+    }
+
+    /**
+     * Validate that a day is valid for a given month.
+     */
+    private function isValidDayForMonth(int $day, int $month): bool
+    {
+        if ($month < 1 || $month > 12) {
+            return false;
+        }
+
+        if ($day < 1 || $day > 31) {
+            return false;
+        }
+
+        // Days in each month (non-leap year)
+        $daysInMonth = [
+            1 => 31, 2 => 28, 3 => 31, 4 => 30, 5 => 31, 6 => 30,
+            7 => 31, 8 => 31, 9 => 30, 10 => 31, 11 => 30, 12 => 31,
+        ];
+
+        $maxDay = $daysInMonth[$month];
+
+        // Handle leap year for February
+        if ($month === 2 && $day === 29) {
+            // Allow Feb 29 - it's valid in leap years
+            return true;
+        }
+
+        return $day <= $maxDay;
     }
 
     /**
@@ -302,16 +712,29 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
 
     /**
      * Create or find existing user account.
+     * Always creates a user account, generating temporary email if needed.
      */
     private function createOrFindUser(array $data): ?User
     {
-        // If no email provided, skip user account creation
-        if (empty($data['email'])) {
-            return null;
+        $email = $data['email'] ?? null;
+        $isTemporaryEmail = false;
+
+        // Generate temporary email if none provided
+        if (empty($email)) {
+            $phone = $data['phone'] ?? null;
+            if ($phone) {
+                // Use phone-based temporary email
+                $sanitizedPhone = preg_replace('/[^0-9]/', '', $phone);
+                $email = "guest-{$sanitizedPhone}@church.local";
+            } else {
+                // Use timestamp and random number
+                $email = 'guest-'.time().'-'.rand(1000, 9999).'@church.local';
+            }
+            $isTemporaryEmail = true;
         }
 
         // Check if user already exists (optimize query)
-        $user = User::select('id', 'email')->where('email', $data['email'])->first();
+        $user = User::select('id', 'email')->where('email', $email)->first();
 
         if ($user) {
             return $user;
@@ -323,25 +746,31 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
 
             $user = User::create([
                 'name' => $data['name'],
-                'email' => $data['email'],
+                'email' => $email,
                 'phone' => $data['phone'] ?? null,
                 'password' => Hash::make($password),
                 'email_verified_at' => now(), // Auto-verify church members
             ]);
 
-            // Store the temporary password for welcome email
-            $user->temporary_password = $password;
-
-            Log::info('User account created for member import', [
-                'user_id' => $user->id,
-                'email' => $user->email,
-                'temporary_password' => $password,
-            ]);
+            // Store metadata for temporary emails
+            if ($isTemporaryEmail) {
+                Log::info('User account created with temporary email for member import', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                    'phone' => $data['phone'] ?? null,
+                    'name' => $data['name'],
+                ]);
+            } else {
+                Log::info('User account created for member import', [
+                    'user_id' => $user->id,
+                    'email' => $user->email,
+                ]);
+            }
 
             return $user;
         } catch (\Exception $e) {
             Log::error('Failed to create user account during member import', [
-                'email' => $data['email'],
+                'email' => $email,
                 'error' => $e->getMessage(),
             ]);
 
@@ -399,6 +828,8 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             'email' => $data['email'] ?? null,
             'phone' => $data['phone'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
+            'birthday_month' => $data['birthday_month'] ?? null,
+            'birthday_day' => $data['birthday_day'] ?? null,
             'anniversary' => $data['anniversary'] ?? null,
             'gender' => $data['gender'] ?? null,
             'marital_status' => $data['marital_status'] ?? 'single',
@@ -409,7 +840,7 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             'teci_status' => $data['teci_status'] ?? 'not_started',
             'growth_level' => $data['growth_level'] ?? 'new_believer',
             'leadership_trainings' => $leadershipTrainings,
-            'member_status' => $data['member_status'] ?? 'member',
+            'member_status' => $data['member_status'] ?? $this->defaultMemberStatus,
             // Guest form fields
             'preferred_call_time' => $data['preferred_call_time'] ?? null,
             'home_address' => $data['home_address'] ?? null,
@@ -419,20 +850,79 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             'staying_intention' => $data['staying_intention'] ?? null,
             'closest_location' => $data['closest_location'] ?? null,
             'additional_info' => $data['additional_info'] ?? null,
-            'registration_source' => 'imported',
+            'registration_source' => $this->registrationSource,
         ];
+    }
+
+    /**
+     * Compare existing member data with imported data.
+     */
+    private function compareMemberData(Member $existing, array $imported): array
+    {
+        $comparison = [
+            'matches' => [],
+            'differences' => [],
+        ];
+
+        $fieldsToCompare = [
+            'name',
+            'email',
+            'phone',
+            'branch_id',
+            'member_status',
+            'registration_source',
+            'gender',
+            'marital_status',
+            'date_of_birth',
+        ];
+
+        foreach ($fieldsToCompare as $field) {
+            $existingValue = $existing->$field ?? null;
+            $importedValue = $imported[$field] ?? null;
+
+            // Normalize for comparison
+            if ($field === 'branch_id' && $importedValue) {
+                // If branch_name is provided, try to resolve it
+                if (isset($imported['branch_name'])) {
+                    $branch = Branch::where('name', 'like', "%{$imported['branch_name']}%")->first();
+                    $importedValue = $branch?->id;
+                }
+            }
+
+            if ($existingValue == $importedValue) {
+                $comparison['matches'][] = [
+                    'field' => $field,
+                    'value' => $existingValue,
+                ];
+            } else {
+                $comparison['differences'][] = [
+                    'field' => $field,
+                    'existing' => $existingValue,
+                    'imported' => $importedValue,
+                ];
+            }
+        }
+
+        return $comparison;
     }
 
     /**
      * Add an error to the errors array.
      */
-    private function addError(int $row, string $type, string $message): void
+    private function addError(int $row, string $type, string|array $message): void
     {
-        $this->errors[] = [
-            'row' => $row,
-            'type' => $type,
-            'message' => $message,
-        ];
+        if (is_array($message)) {
+            $this->errors[] = array_merge([
+                'row' => $row,
+                'type' => $type,
+            ], $message);
+        } else {
+            $this->errors[] = [
+                'row' => $row,
+                'type' => $type,
+                'message' => $message,
+            ];
+        }
     }
 
     /**
@@ -556,7 +1046,7 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
                 round((count($this->successes) / (count($this->successes) + count($this->errors))) * 100, 2) : 0,
             'errors' => $this->errors,
             'successes' => $this->successes,
-            'welcome_emails_scheduled' => count($this->usersForWelcomeEmails),
+            'account_setup_emails_scheduled' => count($this->usersForAccountSetup),
         ];
     }
 
@@ -577,12 +1067,12 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
     }
 
     /**
-     * Send welcome emails to all imported users.
+     * Send account setup emails (password reset links) to all imported users.
      */
-    public function sendWelcomeEmails(): void
+    public function sendAccountSetupEmails(): void
     {
-        if (empty($this->usersForWelcomeEmails)) {
-            Log::info('No welcome emails to send - no users were created during import');
+        if (empty($this->usersForAccountSetup)) {
+            Log::info('No account setup emails to send - no users were created during import');
 
             return;
         }
@@ -590,28 +1080,28 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
         try {
             $branch = Branch::find($this->branchId);
             if (! $branch) {
-                Log::error('Branch not found for welcome emails', ['branch_id' => $this->branchId]);
+                Log::error('Branch not found for account setup emails', ['branch_id' => $this->branchId]);
 
                 return;
             }
 
-            // Dispatch bulk welcome email job
-            SendBulkWelcomeEmailsJob::dispatch(
+            // Dispatch bulk account setup email job
+            \App\Jobs\SendBulkAccountSetupEmailsJob::dispatch(
                 $branch,
-                $this->usersForWelcomeEmails,
+                $this->usersForAccountSetup,
                 5, // Process 5 emails at a time
                 30 // 30 seconds between batches
             );
 
-            Log::info('Welcome emails scheduled for imported members', [
+            Log::info('Account setup emails scheduled for imported members', [
                 'branch_id' => $this->branchId,
-                'users_count' => count($this->usersForWelcomeEmails),
+                'users_count' => count($this->usersForAccountSetup),
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Failed to schedule welcome emails', [
+            Log::error('Failed to schedule account setup emails', [
                 'branch_id' => $this->branchId,
-                'users_count' => count($this->usersForWelcomeEmails),
+                'users_count' => count($this->usersForAccountSetup),
                 'error' => $e->getMessage(),
             ]);
         }

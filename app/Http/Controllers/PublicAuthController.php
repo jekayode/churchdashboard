@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\GuestRegistrationRequest;
 use App\Http\Requests\ProfileCompletionRequest;
+use App\Models\GuestRegistrationAttempt;
 use App\Services\GuestRegistrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -32,10 +33,19 @@ final class PublicAuthController extends Controller
      */
     public function storeGuest(GuestRegistrationRequest $request): RedirectResponse
     {
-        try {
-            $user = $this->guestRegistrationService->registerGuest($request->validated());
+        $validated = $request->validated();
+        $attempt = $this->logGuestAttempt($validated, 'started');
 
-            // Auto-login the user
+        try {
+            $user = $this->guestRegistrationService->registerGuest($validated);
+
+            $attempt->update([
+                'status' => 'success',
+                'error_type' => null,
+                'error_message' => null,
+                'completed_at' => now(),
+            ]);
+
             Auth::login($user);
 
             return redirect()
@@ -43,7 +53,14 @@ final class PublicAuthController extends Controller
                 ->with('success', 'Welcome! Please complete your profile to get the most out of your experience.');
 
         } catch (\Illuminate\Database\QueryException $e) {
-            if ($e->getCode() == 23000) { // Duplicate entry
+            $attempt->update([
+                'status' => 'database_error',
+                'error_type' => 'query',
+                'error_message' => $e->getMessage(),
+                'completed_at' => now(),
+            ]);
+
+            if ($e->getCode() == 23000) {
                 if (str_contains($e->getMessage(), 'users_email_unique')) {
                     return redirect()
                         ->back()
@@ -60,6 +77,13 @@ final class PublicAuthController extends Controller
                 ->with('error', 'Registration failed due to a database error. Please try again.');
 
         } catch (\Exception $e) {
+            $attempt->update([
+                'status' => 'error',
+                'error_type' => get_class($e),
+                'error_message' => $e->getMessage(),
+                'completed_at' => now(),
+            ]);
+
             \Log::error('Guest registration error: '.$e->getMessage());
 
             return redirect()
@@ -67,6 +91,22 @@ final class PublicAuthController extends Controller
                 ->withInput()
                 ->with('error', 'Registration failed. Please try again.');
         }
+    }
+
+    /**
+     * Log a guest registration attempt for visibility by Guest Management.
+     */
+    private function logGuestAttempt(array $data, string $status): GuestRegistrationAttempt
+    {
+        return GuestRegistrationAttempt::create([
+            'email' => $data['email'] ?? null,
+            'first_name' => $data['first_name'] ?? null,
+            'surname' => $data['surname'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'branch_id' => isset($data['branch_id']) ? (int) $data['branch_id'] : null,
+            'status' => $status,
+            'payload' => $data,
+        ]);
     }
 
     /**

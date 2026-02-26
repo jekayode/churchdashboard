@@ -11,11 +11,14 @@
                 <button @click="cleanupOldFiles()" class="bg-yellow-500 hover:bg-yellow-700 text-white font-bold py-2 px-4 rounded">
                     Cleanup Old Files
                 </button>
+                <button @click="showBirthdayPopulateModal = true" class="bg-purple-500 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded">
+                    Populate Birthday Month/Day
+                </button>
             </div>
         </div>
     </x-slot>
 
-    <div class="py-12" x-data="importExportManager()">
+    <div class="py-12" x-data="importExportManager()" x-init="showBirthdayPopulateModal = false; populatingBirthday = false; birthdayPopulateResult = null">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <!-- Import Section -->
             <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg p-6 mb-6">
@@ -569,8 +572,12 @@
                 validating: false,
                 currentUser: @json(auth()->user()),
                 showStatsModal: false,
+                showBirthdayPopulateModal: false,
+                populatingBirthday: false,
+                birthdayPopulateResult: null,
+                birthdayDryRun: true,
                 isSuperAdmin: {{ auth()->user()->isSuperAdmin() ? 'true' : 'false' }},
-                
+
                 branches: [],
                 ministries: [],
                 stats: null,
@@ -985,6 +992,45 @@
                     } catch (error) {
                         console.error('Error cleaning up files:', error);
                         this.showNotification('Error cleaning up files.', 'error');
+                    }
+                },
+
+                async populateBirthdayMonthDay() {
+                    this.populatingBirthday = true;
+                    this.birthdayPopulateResult = null;
+
+                    try {
+                        const response = await fetch('{{ route('admin.import-export.populate-birthday-month-day') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                                'Accept': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                dry_run: this.birthdayDryRun || false,
+                                batch_size: 100
+                            })
+                        });
+
+                        const data = await response.json();
+                        this.birthdayPopulateResult = data;
+
+                        if (data.success) {
+                            this.showNotification(data.message || 'Birthday month/day population completed successfully!', 'success');
+                        } else {
+                            this.showNotification(data.message || 'Birthday month/day population failed.', 'error');
+                        }
+
+                    } catch (error) {
+                        console.error('Error populating birthday month/day:', error);
+                        this.birthdayPopulateResult = {
+                            success: false,
+                            message: 'Network error. Please check your connection and try again.'
+                        };
+                        this.showNotification('Network error. Please try again.', 'error');
+                    } finally {
+                        this.populatingBirthday = false;
                     }
                 },
 

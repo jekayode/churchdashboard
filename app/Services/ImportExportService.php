@@ -61,8 +61,8 @@ final class ImportExportService
             // Get import results
             $summary = $import->getImportSummary();
 
-            // Send welcome emails to imported users
-            $import->sendWelcomeEmails();
+            // Send account setup emails to imported users
+            $import->sendAccountSetupEmails();
 
             // Clean up temporary file
             Storage::disk('local')->delete($filePath);
@@ -72,7 +72,7 @@ final class ImportExportService
                 'total_processed' => $summary['total_processed'],
                 'successful' => $summary['successful_imports'],
                 'failed' => $summary['failed_imports'],
-                'welcome_emails_scheduled' => $summary['welcome_emails_scheduled'] ?? 0,
+                'account_setup_emails_scheduled' => $summary['account_setup_emails_scheduled'] ?? 0,
             ]);
 
             // Determine success based on whether there were any failures

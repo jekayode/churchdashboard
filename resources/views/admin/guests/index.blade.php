@@ -1,25 +1,25 @@
-<x-sidebar-layout title="{{ ($viewType ?? 'guests') === 'members' ? 'Member Management' : 'Guest Management' }}">
-    <div class="space-y-6" x-data="guestManagement()">
+<x-sidebar-layout title="Guest Management">
+    <div class="space-y-6" x-data="guestManagement()" x-init="showImportModal = false; importFile = null; importing = false; importResult = null; showEmailModal = false; sendingEmails = false; emailResult = null; selectedGuests = []; sendToAll = false">
         <!-- Header -->
         <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex justify-between items-center">
                 <div>
-                    <h1 class="text-2xl font-bold text-gray-900">{{ ($viewType ?? 'guests') === 'members' ? 'Member Management' : 'Guest Management' }}</h1>
-                    <p class="text-gray-600 mt-1">
-                        @if(($viewType ?? 'guests') === 'members')
-                            View and manage all members
-                        @else
-                            View and manage guests registered via the public registration form
-                        @endif
-                    </p>
+                    <h1 class="text-2xl font-bold text-gray-900">Guest Management</h1>
+                    <p class="text-gray-600 mt-1">View and manage guests registered via the public registration form</p>
                 </div>
-                <div class="flex gap-3">
-                    @if(($viewType ?? 'guests') === 'members')
-                        <button @click="showCreateModal = true" 
-                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors">
-                            Add Member
-                        </button>
-                    @endif
+                <div class="flex flex-wrap gap-3">
+                    <a href="{{ route('guests.attempts') }}"
+                       class="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        View Registration Attempts
+                    </a>
+                    <button @click="showImportModal = true" 
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        Import Guests
+                    </button>
+                    <button @click="showEmailModal = true" 
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
+                        Send Account Setup Emails
+                    </button>
                     <a :href="`{{ route('guests.export') }}?format=csv&${getFilterParams()}`" 
                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition-colors">
                         Export CSV
@@ -29,20 +29,6 @@
                         Export Excel
                     </a>
                 </div>
-            </div>
-        </div>
-
-        <!-- View Toggle -->
-        <div class="bg-white rounded-lg shadow-sm p-4">
-            <div class="flex gap-2">
-                <a href="{{ route('guests.index') }}" 
-                   class="px-4 py-2 rounded-lg transition-colors {{ ($viewType ?? 'guests') === 'guests' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                    Guests
-                </a>
-                <a href="{{ route('guests.members') }}" 
-                   class="px-4 py-2 rounded-lg transition-colors {{ ($viewType ?? 'guests') === 'members' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
-                    All Members
-                </a>
             </div>
         </div>
 
@@ -57,19 +43,6 @@
                                x-model="filters.search" 
                                placeholder="Name, email, or phone..."
                                class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                    </div>
-
-                    <!-- Date Range Preset -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-                        <select x-model="filters.date_range" 
-                                @change="handleDateRangeChange()"
-                                class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                            <option value="">Custom Range</option>
-                            <option value="last_week">Last Week</option>
-                            <option value="last_month">Last Month</option>
-                            <option value="last_quarter">Last Quarter</option>
-                        </select>
                     </div>
 
                     <!-- Date From -->
@@ -87,22 +60,6 @@
                                x-model="filters.date_to" 
                                class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
                     </div>
-
-                    @if(($viewType ?? 'guests') === 'members')
-                        <!-- Member Status -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Member Status</label>
-                            <select x-model="filters.member_status" 
-                                    class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="">All</option>
-                                <option value="visitor">Visitor</option>
-                                <option value="member">Member</option>
-                                <option value="volunteer">Volunteer</option>
-                                <option value="leader">Leader</option>
-                                <option value="minister">Minister</option>
-                            </select>
-                        </div>
-                    @endif
 
                     <!-- Staying Intention -->
                     <div>
@@ -161,7 +118,7 @@
             </form>
         </div>
 
-        <!-- Table -->
+        <!-- Guests Table -->
         <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -172,75 +129,47 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Branch</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registration Date</th>
-                            @if(($viewType ?? 'guests') === 'members')
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            @else
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staying Intention</th>
-                            @endif
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staying Intention</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        @php
-                            $items = ($viewType ?? 'guests') === 'members' ? ($members ?? collect()) : ($guests ?? collect());
-                        @endphp
-                        @forelse($items as $item)
+                        @forelse($guests as $guest)
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-medium text-gray-900">{{ $item->name }}</div>
+                                    <div class="text-sm font-medium text-gray-900">{{ $guest->name }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $item->email ?? 'N/A' }}</div>
+                                    <div class="text-sm text-gray-900">{{ $guest->email ?? 'N/A' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $item->phone ?? 'N/A' }}</div>
+                                    <div class="text-sm text-gray-900">{{ $guest->phone ?? 'N/A' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $item->branch->name ?? 'N/A' }}</div>
+                                    <div class="text-sm text-gray-900">{{ $guest->branch->name ?? 'N/A' }}</div>
+                                </td>
+
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm text-gray-900">{{ $guest->created_at->format('M d, Y') }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $item->created_at->format('M d, Y') }}</div>
-                                </td>
-                                @if(($viewType ?? 'guests') === 'members')
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 text-xs font-semibold rounded-full 
-                                            {{ $item->member_status === 'visitor' ? 'bg-yellow-100 text-yellow-800' : '' }}
-                                            {{ $item->member_status === 'member' ? 'bg-green-100 text-green-800' : '' }}
-                                            {{ $item->member_status === 'volunteer' ? 'bg-blue-100 text-blue-800' : '' }}
-                                            {{ $item->member_status === 'leader' ? 'bg-purple-100 text-purple-800' : '' }}
-                                            {{ $item->member_status === 'minister' ? 'bg-indigo-100 text-indigo-800' : '' }}">
-                                            {{ ucfirst($item->member_status ?? 'N/A') }}
-                                        </span>
-                                    </td>
-                                @else
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900">
-                                            @if($item->staying_intention)
-                                                {{ ucfirst(str_replace('-', ' ', $item->staying_intention)) }}
-                                            @else
-                                                N/A
-                                            @endif
-                                        </div>
-                                    </td>
-                                @endif
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <div class="flex gap-2">
-                                        @if(($viewType ?? 'guests') === 'members')
-                                            <button @click="editMember({{ $item->id }})" 
-                                                    class="text-indigo-600 hover:text-indigo-900">Edit</button>
-                                            <button @click="deleteMember({{ $item->id }})" 
-                                                    class="text-red-600 hover:text-red-900">Delete</button>
+                                    <div class="text-sm text-gray-900">
+                                        @if($guest->staying_intention)
+                                            {{ ucfirst(str_replace('-', ' ', $guest->staying_intention)) }}
                                         @else
-                                            <a href="{{ route('guests.show', $item) }}" 
-                                               class="text-indigo-600 hover:text-indigo-900">View Details</a>
+                                            N/A
                                         @endif
                                     </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <a href="{{ route('guests.show', $guest) }}" 
+                                       class="text-indigo-600 hover:text-indigo-900">View Details</a>
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="{{ ($viewType ?? 'guests') === 'members' ? '7' : '7' }}" class="px-6 py-4 text-center text-sm text-gray-500">
-                                    No {{ ($viewType ?? 'guests') === 'members' ? 'members' : 'guests' }} found.
+                                <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                    No guests found.
                                 </td>
                             </tr>
                         @endforelse
@@ -249,56 +178,318 @@
             </div>
 
             <!-- Pagination -->
-            @if(isset($items) && $items->hasPages())
+            @if($guests->hasPages())
                 <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-                    {{ $items->links() }}
+                    {{ $guests->links() }}
                 </div>
             @endif
+        </div>
+
+        <!-- Import Modal -->
+        <div x-show="showImportModal" 
+             x-cloak
+             class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+             @click.self="showImportModal = false">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Import Guests</h3>
+                    
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <label class="block text-sm font-medium text-gray-700">Select File</label>
+                            <a href="{{ route('guests.template') }}" 
+                               class="text-xs text-indigo-600 hover:text-indigo-800 underline">
+                                Download Template
+                            </a>
+                        </div>
+                        <input type="file" 
+                               @change="importFile = $event.target.files[0]"
+                               accept=".xlsx,.xls,.csv"
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                        <p class="mt-2 text-xs text-gray-500">Supported formats: Excel (.xlsx, .xls) or CSV. Max size: 10MB</p>
+                    </div>
+
+                    @if($isSuperAdmin)
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Branch</label>
+                        <select x-model="importBranchId" 
+                                class="w-full border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                            <option value="">Select Branch</option>
+                            @foreach(\App\Models\Branch::all() as $branch)
+                                <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+
+                    <!-- Import Result Messages -->
+                    <div x-show="importResult" class="mb-4">
+                        <div x-show="importResult && importResult.success" 
+                             class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+                            <p class="font-medium">Success!</p>
+                            <p x-text="importResult && importResult.message ? importResult.message : ''" class="text-sm mt-1"></p>
+                            <div x-show="importResult && importResult.summary" class="mt-2 text-xs space-y-1">
+                                <p>Processed: <span x-text="importResult && importResult.summary ? importResult.summary.total_processed : 0"></span></p>
+                                <p>Successful: <span x-text="importResult && importResult.summary ? importResult.summary.successful_imports : 0"></span></p>
+                                <p>Failed: <span x-text="importResult && importResult.summary ? importResult.summary.failed_imports : 0"></span></p>
+                                <p x-show="importResult && importResult.summary && importResult.summary.account_setup_emails_scheduled">
+                                    Account Setup Emails Scheduled: <span x-text="importResult && importResult.summary ? importResult.summary.account_setup_emails_scheduled : 0"></span>
+                                </p>
+                            </div>
+                            <div x-show="importResult && importResult.summary && importResult.summary.account_setup_emails_scheduled > 0" class="mt-3">
+                                <button @click="showEmailModal = true; showImportModal = false" 
+                                        class="text-xs bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded">
+                                    Send Account Setup Emails Now
+                                </button>
+                            </div>
+                        </div>
+                        <div x-show="importResult && !importResult.success" 
+                             class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                            <p class="font-medium">Error!</p>
+                            <p x-text="importResult && importResult.message ? importResult.message : 'An unknown error occurred'" class="text-sm mt-1"></p>
+                        </div>
+                        
+                        <!-- Duplicate Comparison Details -->
+                        <div x-show="importResult && importResult.summary && importResult.summary.errors && importResult.summary.errors.length > 0" class="mt-4 max-h-60 overflow-y-auto">
+                            <template x-for="(error, index) in (importResult && importResult.summary && importResult.summary.errors ? importResult.summary.errors : [])" :key="index">
+                                <div x-show="error.type === 'duplicate' && error.comparison" 
+                                     class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-2 text-xs">
+                                    <p class="font-medium text-yellow-800 mb-2">Row <span x-text="error.row"></span>: Duplicate Found</p>
+                                    <p class="text-yellow-700 mb-2" x-text="error.message"></p>
+                                    <div x-show="error.comparison.differences && error.comparison.differences.length > 0" class="mt-2">
+                                        <p class="font-medium text-yellow-800 mb-1">Differences:</p>
+                                        <template x-for="diff in error.comparison.differences" :key="diff.field">
+                                            <div class="ml-2 mb-1">
+                                                <span class="font-medium" x-text="diff.field"></span>:
+                                                <span class="text-red-600">Existing: <span x-text="diff.existing || 'N/A'"></span></span> →
+                                                <span class="text-green-600">Imported: <span x-text="diff.imported || 'N/A'"></span></span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    <div x-show="error.comparison.matches && error.comparison.matches.length > 0" class="mt-2">
+                                        <p class="font-medium text-yellow-800 mb-1">Matching Fields:</p>
+                                        <span x-for="match in error.comparison.matches" 
+                                              class="inline-block bg-green-100 text-green-700 px-2 py-1 rounded mr-1 mb-1 text-xs">
+                                            <span x-text="match.field"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button @click="showImportModal = false; importFile = null; importResult = null" 
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                            Close
+                        </button>
+                        <button @click="importGuests()" 
+                                :disabled="!canImport()"
+                                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+                            <span x-show="!importing">Import</span>
+                            <span x-show="importing">Importing...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Send Account Setup Emails Modal -->
+        <div x-show="showEmailModal" 
+             x-cloak
+             class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+             @click.self="showEmailModal = false">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Send Account Setup Emails</h3>
+                    
+                    <div class="mb-4">
+                        <label class="flex items-center">
+                            <input type="checkbox" 
+                                   x-model="sendToAll"
+                                   class="mr-2">
+                            <span class="text-sm text-gray-700">Send to all guests (with email addresses)</span>
+                        </label>
+                        <p class="mt-2 text-xs text-gray-500">Note: Guests with temporary email addresses (@church.local) will be skipped.</p>
+                    </div>
+
+                    <!-- Email Result Messages -->
+                    <div x-show="emailResult" class="mb-4">
+                        <div x-show="emailResult && emailResult.success" 
+                             class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded">
+                            <p class="font-medium">Success!</p>
+                            <p x-text="emailResult && emailResult.message ? emailResult.message : ''" class="text-sm mt-1"></p>
+                            <div x-show="emailResult && emailResult.data" class="mt-2 text-xs">
+                                <p>Total: <span x-text="emailResult && emailResult.data ? emailResult.data.total : 0"></span></p>
+                                <p>Sent: <span x-text="emailResult && emailResult.data ? emailResult.data.sent : 0"></span></p>
+                                <p>Skipped: <span x-text="emailResult && emailResult.data ? emailResult.data.skipped : 0"></span></p>
+                                <p>Failed: <span x-text="emailResult && emailResult.data ? emailResult.data.failed : 0"></span></p>
+                            </div>
+                        </div>
+                        <div x-show="emailResult && !emailResult.success" 
+                             class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+                            <p class="font-medium">Error!</p>
+                            <p x-text="emailResult && emailResult.message ? emailResult.message : 'An unknown error occurred'" class="text-sm mt-1"></p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3">
+                        <button @click="showEmailModal = false; emailResult = null; sendToAll = false" 
+                                class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors">
+                            Close
+                        </button>
+                        <button @click="sendAccountSetupEmails()" 
+                                :disabled="sendingEmails"
+                                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+                            <span x-show="!sendingEmails">Send Emails</span>
+                            <span x-show="sendingEmails">Sending...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
         function guestManagement() {
             return {
-                showCreateModal: false,
+                showImportModal: false,
+                importFile: null,
+                importing: false,
+                importResult: null,
+                importBranchId: @js($isSuperAdmin ? '' : ($branchId ?? '')),
                 filters: {
                     search: @js($filters['search'] ?? ''),
-                    date_range: @js($filters['date_range'] ?? ''),
                     date_from: @js($filters['date_from'] ?? ''),
                     date_to: @js($filters['date_to'] ?? ''),
                     staying_intention: @js($filters['staying_intention'] ?? ''),
                     discovery_source: @js($filters['discovery_source'] ?? ''),
                     gender: @js($filters['gender'] ?? ''),
-                    member_status: @js($filters['member_status'] ?? ''),
-                    view_type: @js($viewType ?? 'guests'),
                 },
-                handleDateRangeChange() {
-                    if (!this.filters.date_range) {
+                canImport() {
+                    if (!this.importFile || this.importing) {
+                        return false;
+                    }
+                    @if($isSuperAdmin)
+                    if (!this.importBranchId || this.importBranchId === '') {
+                        return false;
+                    }
+                    @endif
+                    return true;
+                },
+                async importGuests() {
+                    if (!this.importFile) return;
+                    @if($isSuperAdmin)
+                    if (!this.importBranchId) {
+                        alert('Please select a branch');
                         return;
                     }
-                    
-                    const now = new Date();
-                    let startDate;
-                    
-                    switch(this.filters.date_range) {
-                        case 'last_week':
-                            startDate = new Date(now);
-                            startDate.setDate(now.getDate() - 7);
-                            startDate.setDate(startDate.getDate() - startDate.getDay()); // Start of week
-                            break;
-                        case 'last_month':
-                            startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                            break;
-                        case 'last_quarter':
-                            const quarter = Math.floor(now.getMonth() / 3);
-                            startDate = new Date(now.getFullYear(), (quarter - 1) * 3, 1);
-                            break;
-                        default:
-                            return;
+                    @endif
+
+                    this.importing = true;
+                    this.importResult = null;
+
+                    const formData = new FormData();
+                    formData.append('file', this.importFile);
+                    @if($isSuperAdmin)
+                    formData.append('branch_id', this.importBranchId);
+                    @endif
+
+                    try {
+                        const response = await fetch('{{ route('guests.import') }}', {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            },
+                        });
+
+                        let data;
+                        const contentType = response.headers.get('content-type');
+                        if (contentType && contentType.includes('application/json')) {
+                            data = await response.json();
+                        } else {
+                            // If response is not JSON, get text and try to parse
+                            const text = await response.text();
+                            try {
+                                data = JSON.parse(text);
+                            } catch (e) {
+                                throw new Error('Server returned an invalid response');
+                            }
+                        }
+                        
+                        // Handle both success and error responses
+                        if (!response.ok) {
+                            // Handle validation errors or other error responses
+                            this.importResult = {
+                                success: false,
+                                message: data.message || 'Import failed. Please check the file and try again.',
+                                errors: data.errors || {},
+                                summary: data.summary || null
+                            };
+                        } else {
+                            this.importResult = data;
+                            
+                            if (data.success) {
+                                // Reload page after 2 seconds to show imported guests
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 2000);
+                            }
+                        }
+                    } catch (error) {
+                        this.importResult = {
+                            success: false,
+                            message: 'An error occurred during import: ' + error.message
+                        };
+                    } finally {
+                        this.importing = false;
                     }
-                    
-                    this.filters.date_from = startDate.toISOString().split('T')[0];
-                    this.filters.date_to = now.toISOString().split('T')[0];
+                },
+                async sendAccountSetupEmails() {
+                    this.sendingEmails = true;
+                    this.emailResult = null;
+
+                    const payload = {
+                        send_to_all: this.sendToAll,
+                        @if($isSuperAdmin)
+                        branch_id: this.importBranchId || null,
+                        @endif
+                    };
+
+                    if (!this.sendToAll && this.selectedGuests.length === 0) {
+                        this.emailResult = {
+                            success: false,
+                            message: 'Please select guests or choose "Send to all"'
+                        };
+                        this.sendingEmails = false;
+                        return;
+                    }
+
+                    if (!this.sendToAll) {
+                        payload.member_ids = this.selectedGuests;
+                    }
+
+                    try {
+                        const response = await fetch('{{ route('guests.send-setup-emails') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            },
+                            body: JSON.stringify(payload),
+                        });
+
+                        const data = await response.json();
+                        this.emailResult = data;
+                    } catch (error) {
+                        this.emailResult = {
+                            success: false,
+                            message: 'An error occurred while sending emails: ' + error.message
+                        };
+                    } finally {
+                        this.sendingEmails = false;
+                    }
                 },
                 applyFilters() {
                     const params = new URLSearchParams();
@@ -307,27 +498,18 @@
                             params.append(key, this.filters[key]);
                         }
                     });
-                    const baseUrl = this.filters.view_type === 'members' 
-                        ? '{{ route('guests.members') }}' 
-                        : '{{ route('guests.index') }}';
-                    window.location.href = baseUrl + '?' + params.toString();
+                    window.location.href = '{{ route('guests.index') }}?' + params.toString();
                 },
                 clearFilters() {
                     this.filters = {
                         search: '',
-                        date_range: '',
                         date_from: '',
                         date_to: '',
                         staying_intention: '',
                         discovery_source: '',
                         gender: '',
-                        member_status: '',
-                        view_type: this.filters.view_type,
                     };
-                    const baseUrl = this.filters.view_type === 'members' 
-                        ? '{{ route('guests.members') }}' 
-                        : '{{ route('guests.index') }}';
-                    window.location.href = baseUrl;
+                    window.location.href = '{{ route('guests.index') }}';
                 },
                 getFilterParams() {
                     const params = new URLSearchParams();
@@ -337,35 +519,10 @@
                         }
                     });
                     return params.toString();
-                },
-                editMember(id) {
-                    // TODO: Implement edit modal or redirect to edit page
-                    window.location.href = `/guests/members/${id}/edit`;
-                },
-                deleteMember(id) {
-                    if (confirm('Are you sure you want to delete this member?')) {
-                        fetch(`/guests/members/${id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                'Accept': 'application/json',
-                            },
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                window.location.reload();
-                            } else {
-                                alert('Failed to delete member: ' + (data.message || 'Unknown error'));
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('An error occurred while deleting the member');
-                        });
-                    }
                 }
             }
         }
     </script>
 </x-sidebar-layout>
+
+

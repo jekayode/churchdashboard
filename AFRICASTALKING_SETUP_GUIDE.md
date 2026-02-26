@@ -92,26 +92,3 @@ If you continue to have issues:
 2. Verify your sender ID is approved
 3. Ensure phone numbers are in correct format (+234...)
 4. Check the Africa's Talking dashboard for any account restrictions
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

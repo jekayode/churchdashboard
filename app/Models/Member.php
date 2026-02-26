@@ -33,6 +33,8 @@ final class Member extends Model implements HasMedia
         'email',
         'phone',
         'date_of_birth',
+        'birthday_month',
+        'birthday_day',
         'anniversary',
         'gender',
         'marital_status',
