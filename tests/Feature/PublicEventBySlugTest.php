@@ -118,7 +118,7 @@ final class PublicEventBySlugTest extends TestCase
         $response->assertHeader('Content-Type', 'image/svg+xml');
     }
 
-    public function test_super_admin_can_download_public_page_qr_high_res(): void
+    public function test_super_admin_can_download_public_page_qr_png(): void
     {
         Role::factory()->create(['name' => 'super_admin']);
         $admin = User::factory()->create();
@@ -143,19 +143,11 @@ final class PublicEventBySlugTest extends TestCase
         $response = $this->get('/api/events/'.$event->id.'/public-page-qr/download?pixels=512');
 
         $response->assertOk();
-        $contentType = (string) $response->headers->get('Content-Type');
-        $this->assertTrue(
-            str_starts_with($contentType, 'image/png')
-            || str_starts_with($contentType, 'image/svg+xml'),
-            'Expected PNG (imagick) or SVG fallback, got: '.$contentType
-        );
+        $response->assertHeader('Content-Type', 'image/png');
         $disposition = $response->headers->get('Content-Disposition');
         $this->assertIsString($disposition);
         $this->assertStringContainsString('attachment', $disposition);
-        $this->assertTrue(
-            str_contains($disposition, '-public-qr.png') || str_contains($disposition, '-public-qr.svg'),
-            'Expected downloadable PNG or SVG filename in Content-Disposition: '.$disposition
-        );
-        $this->assertNotEmpty($response->getContent());
+        $this->assertStringContainsString('.png', $disposition);
+        $this->assertStringStartsWith("\x89PNG\r\n\x1a\n", (string) $response->getContent());
     }
 }

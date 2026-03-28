@@ -16,6 +16,7 @@ use App\Models\User;
 use App\Services\ChurchServiceManager;
 use App\Support\EventPublicSlug;
 use App\Support\PublicEventPayload;
+use App\Support\QrCodePngViaGd;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -137,10 +138,9 @@ final class EventController extends Controller
     }
 
     /**
-     * High-resolution QR for download or print (authenticated staff).
+     * High-resolution PNG QR for download or print (authenticated staff).
      *
-     * Prefers PNG when the imagick extension is available (required by simple-qrcode for raster output).
-     * Falls back to SVG at the same logical size when imagick is missing (common on lean PHP images).
+     * Uses GD (not imagick) so PNG works on typical PHP images without ext-imagick.
      *
      * @param  Request  $request  expects optional pixels (256–4096, default 2048)
      */
@@ -157,31 +157,13 @@ final class EventController extends Controller
 
         $pixels = min(4096, max(256, (int) $request->query('pixels', 2048)));
         $slug = Str::slug($event->name ?: 'event');
+        $body = QrCodePngViaGd::generate($url, $pixels, 2);
 
-        try {
-            $body = QrCode::format('png')->size($pixels)->margin(2)->generate($url);
-
-            return response($body, 200, [
-                'Content-Type' => 'image/png',
-                'Content-Disposition' => 'attachment; filename="'.$slug.'-public-qr.png"',
-                'Cache-Control' => 'private, no-store',
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('PNG QR generation failed; serving SVG fallback', [
-                'event_id' => $event->id,
-                'pixels' => $pixels,
-                'exception' => $e::class,
-                'message' => $e->getMessage(),
-            ]);
-
-            $body = QrCode::format('svg')->size($pixels)->margin(2)->generate($url);
-
-            return response($body, 200, [
-                'Content-Type' => 'image/svg+xml; charset=utf-8',
-                'Content-Disposition' => 'attachment; filename="'.$slug.'-public-qr.svg"',
-                'Cache-Control' => 'private, no-store',
-            ]);
-        }
+        return response($body, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="'.$slug.'-public-qr.png"',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     /**
