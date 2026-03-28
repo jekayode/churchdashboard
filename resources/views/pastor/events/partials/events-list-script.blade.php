@@ -59,6 +59,13 @@
             }
         }
 
+        function closeViewEventModal() {
+            const modal = document.getElementById('viewEventModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
         async function loadBranches() {
             try {
                 const response = await fetch('/api/events/branches', {
