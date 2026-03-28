@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\EventPublicSlug;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
 
 final class Event extends Model
 {
@@ -22,6 +25,7 @@ final class Event extends Model
     protected $fillable = [
         'branch_id',
         'name',
+        'public_slug',
         'description',
         'type',
         'service_type',
@@ -36,6 +40,7 @@ final class Event extends Model
         'venue',
         'address',
         'location',
+        'cover_image_path',
         'start_date',
         'end_date',
         'max_capacity',
@@ -92,6 +97,7 @@ final class Event extends Model
         'total_registrations',
         'registrations_count',
         'checked_in_count',
+        'cover_image_url',
     ];
 
     /**
@@ -164,6 +170,37 @@ final class Event extends Model
     public function scopeByBranch($query, int $branchId)
     {
         return $query->where('branch_id', $branchId);
+    }
+
+    /**
+     * Events that may appear on the public calendar and detail pages.
+     */
+    public function scopePubliclyVisible(Builder $query): Builder
+    {
+        return $query
+            ->where('is_public', true)
+            ->where('status', 'active')
+            ->whereNotNull('public_slug')
+            ->where('public_slug', '!=', '')
+            ->whereHas('branch', function (Builder $branchQuery): void {
+                $branchQuery
+                    ->where('status', 'active')
+                    ->whereNotNull('public_code')
+                    ->where('public_code', '!=', '');
+            });
+    }
+
+    /**
+     * Resolve a publicly visible event by branch public code and event slug.
+     */
+    public static function findPubliclyVisibleByBranchCodeAndSlug(string $branchCode, string $eventSlug): self
+    {
+        return self::query()
+            ->where('public_slug', $eventSlug)
+            ->whereRelation('branch', 'public_code', $branchCode)
+            ->publiclyVisible()
+            ->with(['branch:id,name,logo,venue,phone,email,service_time,public_code,status'])
+            ->firstOrFail();
     }
 
     /**
@@ -244,6 +281,38 @@ final class Event extends Model
     public function isPublished(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Full URL for the optional event cover image.
+     */
+    public function getCoverImageUrlAttribute(): ?string
+    {
+        if ($this->cover_image_path === null || $this->cover_image_path === '') {
+            return null;
+        }
+
+        return Storage::disk('public')->url($this->cover_image_path);
+    }
+
+    /**
+     * Canonical public event page URL, or null if branch code / slug are missing.
+     */
+    public function getPublicDetailUrlAttribute(): ?string
+    {
+        $this->loadMissing('branch:id,public_code');
+
+        $code = $this->branch?->public_code;
+        $slug = $this->public_slug;
+
+        if ($code === null || $code === '' || $slug === null || $slug === '') {
+            return null;
+        }
+
+        return route('public.event.show', [
+            'branchCode' => $code,
+            'eventSlug' => $slug,
+        ], true);
     }
 
     /**
@@ -397,6 +466,7 @@ final class Event extends Model
                 'branch_id' => $this->branch_id,
                 'parent_event_id' => $this->id,
                 'name' => $this->name,
+                'public_slug' => EventPublicSlug::forRecurringInstance($this, $instanceDateTime),
                 'description' => $this->description,
                 'type' => $this->type,
                 'service_type' => $this->service_type,
@@ -404,6 +474,7 @@ final class Event extends Model
                 'service_time' => $this->service_time,
                 'service_name' => $this->service_name,
                 'location' => $this->location,
+                'cover_image_path' => $this->cover_image_path,
                 'start_date' => $instanceDateTime,
                 'end_date' => $instanceDateTime->copy()->addHour(), // Default 1 hour duration
                 'max_capacity' => $this->max_capacity,

@@ -40,6 +40,38 @@
                 </div>
             </div>
 
+            @php($event->loadMissing('branch'))
+            <div class="rounded border border-amber-100 bg-amber-50/80 p-4 space-y-3">
+                <h3 class="text-amber-900 font-semibold text-sm">Public page</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Public URL slug *</label>
+                        <input type="text" name="public_slug" value="{{ old('public_slug', $event->public_slug) }}" required
+                               pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+                               class="w-full border-gray-300 rounded font-mono text-sm"/>
+                        <p class="text-xs text-gray-600 mt-1">Path: <span class="font-mono">/event/{{ $event->branch?->public_code ?? 'code' }}/{{ old('public_slug', $event->public_slug) }}</span>. Changing the slug breaks old links.</p>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <input type="hidden" name="is_public" value="0">
+                        <input type="checkbox" name="is_public" value="1" id="adminIsPublic" class="mt-1 rounded border-gray-300" @checked(old('is_public', $event->is_public))>
+                        <label for="adminIsPublic" class="text-sm text-gray-700">Show on public events calendar</label>
+                    </div>
+                </div>
+                @if($event->public_detail_url)
+                    <div class="flex flex-wrap items-start gap-4 pt-2 border-t border-amber-200/60">
+                        <div class="flex flex-col items-start gap-2">
+                            <p class="text-xs font-medium text-gray-700 mb-1">QR (public page)</p>
+                            <img src="{{ url('/api/events/'.$event->id.'/public-page-qr') }}" width="96" height="96" alt="QR code" class="h-24 w-24 border border-gray-200 rounded bg-white">
+                            <a href="{{ url('/api/events/'.$event->id.'/public-page-qr/download?pixels=2048') }}" class="text-xs text-indigo-600 hover:underline">Download high-res PNG</a>
+                        </div>
+                        <div class="text-sm text-gray-700 break-all max-w-xl">
+                            <span class="font-medium">Link:</span>
+                            <a href="{{ $event->public_detail_url }}" target="_blank" rel="noopener" class="text-indigo-600 hover:underline">{{ $event->public_detail_url }}</a>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Event Type</label>

@@ -5,12 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Http\Requests\EventRequest;
+use App\Jobs\SendAccountSetupEmailJob;
+use App\Mail\PublicEventRegistrationConfirmationMail;
+use App\Mail\PublicEventRegistrationThankYouMail;
 use App\Models\Branch;
 use App\Models\Event;
 use App\Models\EventRegistration;
 use App\Models\Member;
 use App\Models\User;
 use App\Services\ChurchServiceManager;
+use App\Support\EventPublicSlug;
+use App\Support\PublicEventPayload;
 use Carbon\Carbon;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\JsonResponse;
@@ -19,8 +24,12 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Symfony\Component\HttpFoundation\Response;
 
 final class EventController extends Controller
 {
@@ -36,9 +45,9 @@ final class EventController extends Controller
     public function publicIndex(Request $request): JsonResponse
     {
         try {
-            $query = Event::with(['branch:id,name'])
+            $query = Event::with(['branch:id,name,public_code'])
                 ->withCount(['registrations', 'reports'])
-                ->where('is_published', true)
+                ->publiclyVisible()
                 ->where('start_date', '>=', now());
 
             // Apply filters
@@ -89,6 +98,69 @@ final class EventController extends Controller
                 'message' => 'Failed to retrieve events.',
             ], 500);
         }
+    }
+
+    /**
+     * Public JSON detail for an event (no authentication).
+     */
+    public function publicShow(string $branchCode, string $eventSlug): JsonResponse
+    {
+        $event = Event::findPubliclyVisibleByBranchCodeAndSlug($branchCode, $eventSlug);
+
+        return response()->json([
+            'success' => true,
+            'data' => PublicEventPayload::forEvent($event),
+            'message' => 'Event retrieved successfully.',
+        ]);
+    }
+
+    /**
+     * Compact SVG QR for on-screen preview (authenticated staff).
+     */
+    public function publicPageQrSvg(Event $event): Response
+    {
+        $this->authorize('view', $event);
+
+        $event->loadMissing('branch:id,public_code');
+
+        $url = $event->public_detail_url;
+        if ($url === null) {
+            abort(404, 'Public URL not available for this event.');
+        }
+
+        $svg = QrCode::format('svg')->size(120)->margin(1)->generate($url);
+
+        return response($svg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
+    }
+
+    /**
+     * High-resolution PNG QR for download or print (authenticated staff).
+     *
+     * @param  Request  $request  expects optional pixels (256–4096, default 2048)
+     */
+    public function publicPageQrPngDownload(Request $request, Event $event): Response
+    {
+        $this->authorize('view', $event);
+
+        $event->loadMissing('branch:id,public_code');
+
+        $url = $event->public_detail_url;
+        if ($url === null) {
+            abort(404, 'Public URL not available for this event.');
+        }
+
+        $pixels = min(4096, max(256, (int) $request->query('pixels', 2048)));
+        $png = QrCode::format('png')->size($pixels)->margin(2)->generate($url);
+        $safeName = Str::slug($event->name ?: 'event').'-public-qr.png';
+
+        return response($png, 200, [
+            'Content-Type' => 'image/png',
+            'Content-Disposition' => 'attachment; filename="'.$safeName.'"',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     /**
@@ -174,12 +246,16 @@ final class EventController extends Controller
 
             $event = Event::create($eventData);
 
+            $this->syncEventCoverImageFromRequest($request, $event);
+
             // Generate recurring instances if this is a recurring event
             if (! empty($validatedData['is_recurring'])) {
                 $this->generateRecurringInstancesForEvent($event, $validatedData);
             }
 
             DB::commit();
+
+            $event->refresh();
 
             // Load relationships for response
             $event->load(['branch:id,name']);
@@ -220,8 +296,9 @@ final class EventController extends Controller
         $this->authorize('view', $event);
 
         try {
+            $event->append('public_detail_url');
             $event->load([
-                'branch:id,name,venue',
+                'branch:id,name,venue,public_code',
                 'registrations' => function ($query) {
                     $query->with(['user:id,name', 'member:id,name'])
                         ->orderBy('registration_date', 'desc');
@@ -335,9 +412,12 @@ final class EventController extends Controller
 
             $event->update($eventData);
 
+            $this->syncEventCoverImageFromRequest($request, $event);
+
             DB::commit();
 
             // Load relationships for response
+            $event->refresh();
             $event->load(['branch:id,name']);
             $event->loadCount(['registrations', 'reports']);
 
@@ -901,7 +981,34 @@ final class EventController extends Controller
         $eventData['is_recurring'] = $validatedData['is_recurring'] ?? false;
         $eventData['has_multiple_services'] = $validatedData['has_multiple_services'] ?? false;
 
+        foreach (['cover_image', 'remove_cover', 'id'] as $stripKey) {
+            unset($eventData[$stripKey]);
+        }
+
         return $eventData;
+    }
+
+    private function syncEventCoverImageFromRequest(EventRequest $request, Event $event): void
+    {
+        if ($request->boolean('remove_cover')) {
+            $this->deleteStoredEventCoverImage($event);
+            $event->forceFill(['cover_image_path' => null])->saveQuietly();
+
+            return;
+        }
+
+        if ($request->hasFile('cover_image')) {
+            $this->deleteStoredEventCoverImage($event);
+            $path = $request->file('cover_image')->store('event-covers', 'public');
+            $event->forceFill(['cover_image_path' => $path])->saveQuietly();
+        }
+    }
+
+    private function deleteStoredEventCoverImage(Event $event): void
+    {
+        if ($event->cover_image_path && Storage::disk('public')->exists($event->cover_image_path)) {
+            Storage::disk('public')->delete($event->cover_image_path);
+        }
     }
 
     /**
@@ -958,6 +1065,11 @@ final class EventController extends Controller
             $instanceData['parent_event_id'] = $parentEvent->id;
             $instanceData['is_recurring'] = false; // Instances are not recurring themselves
 
+            $instanceStart = Carbon::parse($instanceData['start_date']);
+            $instanceData['public_slug'] = EventPublicSlug::forRecurringInstance($parentEvent, $instanceStart);
+            $instanceData['is_recurring_instance'] = true;
+            $instanceData['cover_image_path'] = $parentEvent->cover_image_path;
+
             Event::create($instanceData);
 
             $occurrenceCount++;
@@ -1006,9 +1118,10 @@ final class EventController extends Controller
         $validated = $request->validated();
 
         try {
-            // Minimal reuse: assign and save
-            $event->fill($validated);
+            $eventData = $this->transformEventData($validated);
+            $event->fill($eventData);
             $event->save();
+            $this->syncEventCoverImageFromRequest($request, $event);
 
             // If recurring and fields present, optionally (re)generate instances is manual via button
             return redirect()->route('admin.events.edit', $event)->with('status', 'Event updated.');
@@ -1375,13 +1488,13 @@ final class EventController extends Controller
             $user = Auth::user();
 
             if ($user->isSuperAdmin()) {
-                $branches = Branch::select('id', 'name', 'venue')
+                $branches = Branch::query()
+                    ->select(['id', 'name', 'venue', 'public_code'])
                     ->orderBy('name')
                     ->get();
             } else {
-                // For non-super admins, return only their branch
                 $userBranch = $user->getPrimaryBranch();
-                $branches = $userBranch ? collect([$userBranch->only(['id', 'name', 'venue'])]) : collect([]);
+                $branches = $userBranch ? collect([$userBranch->only(['id', 'name', 'venue', 'public_code'])]) : collect([]);
             }
 
             return response()->json([
@@ -1463,19 +1576,21 @@ final class EventController extends Controller
      * Public event registration for non-authenticated users.
      * Creates user account and member record automatically.
      */
-    public function publicRegister(Request $request, Event $event): JsonResponse
+    public function publicRegister(Request $request, string $branchCode, string $eventSlug): JsonResponse
     {
         try {
-            // Validate the event is available for registration
-            if (! $event->isPublished()) {
+            $publicEvent = Event::findPubliclyVisibleByBranchCodeAndSlug($branchCode, $eventSlug);
+            $publicEvent->loadMissing('branch');
+
+            if (! $publicEvent->is_public || ! $publicEvent->isPublished() || ! $publicEvent->branch || ! $publicEvent->branch->isActive()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'This event is not available for registration.',
-                ], 400);
+                ], 404);
             }
 
             // Validate the event is upcoming
-            if (! $event->isUpcoming()) {
+            if (! $publicEvent->isUpcoming()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Registration is no longer available for this event.',
@@ -1500,7 +1615,7 @@ final class EventController extends Controller
             }
 
             // Check for duplicate registration by email
-            $existingRegistration = EventRegistration::where('event_id', $event->id)
+            $existingRegistration = EventRegistration::where('event_id', $publicEvent->id)
                 ->where('email', $request->email)
                 ->first();
 
@@ -1535,7 +1650,7 @@ final class EventController extends Controller
                     'name' => $request->name,
                     'email' => $request->email,
                     'phone' => $request->phone,
-                    'branch_id' => $event->branch_id, // Associate with event's branch
+                    'branch_id' => $publicEvent->branch_id, // Associate with event's branch
                     'status' => 'visitor',
                     'date_joined' => now(),
                 ]);
@@ -1543,7 +1658,7 @@ final class EventController extends Controller
                 Log::info('Public user account created for event registration', [
                     'user_id' => $user->id,
                     'member_id' => $member->id,
-                    'event_id' => $event->id,
+                    'event_id' => $publicEvent->id,
                     'email' => $request->email,
                 ]);
             } else {
@@ -1556,7 +1671,7 @@ final class EventController extends Controller
                         'name' => $user->name,
                         'email' => $user->email,
                         'phone' => $user->phone ?? $request->phone,
-                        'branch_id' => $event->branch_id,
+                        'branch_id' => $publicEvent->branch_id,
                         'status' => 'visitor',
                         'date_joined' => now(),
                     ]);
@@ -1565,7 +1680,7 @@ final class EventController extends Controller
 
             // Create event registration
             $registration = EventRegistration::create([
-                'event_id' => $event->id,
+                'event_id' => $publicEvent->id,
                 'user_id' => $user->id,
                 'member_id' => $member->id,
                 'name' => $request->name,
@@ -1578,14 +1693,34 @@ final class EventController extends Controller
             DB::commit();
 
             Log::info('Public event registration created successfully', [
-                'event_id' => $event->id,
+                'event_id' => $publicEvent->id,
                 'registration_id' => $registration->id,
                 'user_id' => $user->id,
                 'member_id' => $member->id,
             ]);
 
-            // Check if user was just created
             $userWasCreated = $user->wasRecentlyCreated;
+            $recipientName = (string) $request->name;
+
+            try {
+                if ($userWasCreated) {
+                    Mail::to($user->email)->send(
+                        new PublicEventRegistrationConfirmationMail($publicEvent, $registration, $recipientName)
+                    );
+                    SendAccountSetupEmailJob::dispatch($user);
+                } else {
+                    Mail::to($user->email)->send(
+                        new PublicEventRegistrationThankYouMail($publicEvent, $recipientName)
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Post-registration email failed: '.$e->getMessage(), [
+                    'event_id' => $publicEvent->id,
+                    'registration_id' => $registration->id,
+                    'user_id' => $user->id,
+                    'user_was_created' => $userWasCreated,
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -1604,7 +1739,7 @@ final class EventController extends Controller
             DB::rollBack();
 
             Log::error('Error in public event registration: '.$e->getMessage(), [
-                'event_id' => $event->id,
+                'event_id' => $publicEvent->id,
                 'request_data' => $request->all(),
                 'trace' => $e->getTraceAsString(),
             ]);

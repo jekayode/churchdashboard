@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Branch;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Str;
 
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Event>
@@ -17,20 +19,24 @@ class EventFactory extends Factory
     public function definition(): array
     {
         $startDate = $this->faker->dateTimeBetween('now', '+3 months');
-        $endDate = $this->faker->dateTimeBetween($startDate, $startDate->format('Y-m-d H:i:s') . ' +4 hours');
+        $endDate = $this->faker->dateTimeBetween($startDate, $startDate->format('Y-m-d H:i:s').' +4 hours');
+        $name = $this->faker->sentence(3);
 
         return [
-            'name' => $this->faker->sentence(3),
+            'branch_id' => Branch::factory(),
+            'name' => $name,
+            'public_slug' => Str::slug($name).'-'.$this->faker->unique()->numerify('####'),
             'description' => $this->faker->paragraph,
+            'type' => 'other',
             'location' => $this->faker->address,
             'start_date' => $startDate,
             'end_date' => $endDate,
-            'frequency' => $this->faker->randomElement(['once', 'weekly', 'monthly']),
-            'registration_type' => $this->faker->randomElement(['link', 'custom_form']),
-            'status' => 'published',
-            'branch_id' => 1, // Will be overridden in tests
-            'created_at' => now(),
-            'updated_at' => now(),
+            'frequency' => 'once',
+            'registration_type' => 'simple',
+            'status' => 'active',
+            'is_public' => false,
+            'is_recurring' => false,
+            'is_recurring_instance' => false,
         ];
     }
 }

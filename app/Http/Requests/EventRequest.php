@@ -27,10 +27,20 @@ final class EventRequest extends FormRequest
     {
         // Get the event ID for updates (handle both ID and model binding)
         $eventId = null;
+        $eventModel = null;
         if ($this->route('event')) {
-            $eventId = is_object($this->route('event')) 
-                ? $this->route('event')->id 
+            $eventModel = is_object($this->route('event')) ? $this->route('event') : null;
+            $eventId = $eventModel !== null
+                ? $eventModel->id
                 : $this->route('event');
+        }
+
+        $branchIdForSlug = $this->input('branch_id');
+        if (! $branchIdForSlug && ! Auth::user()->isSuperAdmin()) {
+            $branchIdForSlug = Auth::user()->getPrimaryBranch()?->id;
+        }
+        if (! $branchIdForSlug && $eventModel !== null) {
+            $branchIdForSlug = $eventModel->branch_id;
         }
 
         return [
@@ -40,7 +50,7 @@ final class EventRequest extends FormRequest
                 'exists:branches,id',
                 function ($attribute, $value, $fail) {
                     $user = Auth::user();
-                    if (!$user->isSuperAdmin()) {
+                    if (! $user->isSuperAdmin()) {
                         $userBranch = $user->getPrimaryBranch();
                         if ($value && $userBranch && $userBranch->id !== (int) $value) {
                             $fail('You can only create events for your assigned branch.');
@@ -55,28 +65,28 @@ final class EventRequest extends FormRequest
                 function ($attribute, $value, $fail) use ($eventId) {
                     // Get branch_id from request or user's primary branch
                     $branchId = $this->input('branch_id');
-                    
+
                     // If branch_id is not in the request, get it from the user's primary branch
-                    if (!$branchId && !Auth::user()->isSuperAdmin()) {
+                    if (! $branchId && ! Auth::user()->isSuperAdmin()) {
                         $userBranch = Auth::user()->getPrimaryBranch();
                         $branchId = $userBranch ? $userBranch->id : null;
                     }
-                    
+
                     // If we still don't have a branch_id, we can't validate uniqueness
-                    if (!$branchId) {
+                    if (! $branchId) {
                         return; // Skip validation if no branch context
                     }
-                    
+
                     // Check for existing events with the same name in the same branch
                     $query = \App\Models\Event::where('name', $value)
-                                              ->where('branch_id', $branchId)
-                                              ->whereNull('deleted_at');
-                    
+                        ->where('branch_id', $branchId)
+                        ->whereNull('deleted_at');
+
                     // If we're updating an event, exclude the current event
                     if ($eventId) {
                         $query->where('id', '!=', $eventId);
                     }
-                    
+
                     if ($query->exists()) {
                         $fail('An event with this name already exists in the selected branch. Please choose a different name or add additional details (e.g., date, time) to make it unique.');
                     }
@@ -93,7 +103,7 @@ final class EventRequest extends FormRequest
                 'date',
                 function ($attribute, $value, $fail) {
                     // Only require future dates for new events
-                    if (!$this->route('event') && strtotime($value) <= time()) {
+                    if (! $this->route('event') && strtotime($value) <= time()) {
                         $fail('Event start date must be in the future for new events.');
                     }
                 },
@@ -124,7 +134,30 @@ final class EventRequest extends FormRequest
                 Rule::in(['active', 'completed', 'cancelled']),
             ],
             'is_public' => 'boolean',
-            
+            'public_slug' => [
+                'required',
+                'string',
+                'max:200',
+                'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+                function (string $attribute, mixed $value, \Closure $fail) use ($eventId, $branchIdForSlug): void {
+                    if (! $branchIdForSlug) {
+                        return;
+                    }
+                    $query = \App\Models\Event::query()
+                        ->where('branch_id', (int) $branchIdForSlug)
+                        ->where('public_slug', (string) $value)
+                        ->whereNull('deleted_at');
+                    if ($eventId) {
+                        $query->where('id', '!=', $eventId);
+                    }
+                    if ($query->exists()) {
+                        $fail('This URL slug is already used for another event in this branch. Choose a different slug.');
+                    }
+                },
+            ],
+            'cover_image' => ['nullable', 'image', 'max:5120'],
+            'remove_cover' => ['sometimes', 'boolean'],
+
             // Recurring event fields
             'is_recurring' => 'boolean',
             'frequency' => [
@@ -149,7 +182,7 @@ final class EventRequest extends FormRequest
                 'min:1',
                 'max:100',
             ],
-            
+
             // Service-specific fields
             'service_type' => [
                 'nullable',
@@ -163,7 +196,7 @@ final class EventRequest extends FormRequest
                 'date_format:H:i',
                 'after:service_time',
             ],
-            
+
             // Multiple services fields
             'has_multiple_services' => 'boolean',
             'second_service_name' => [
@@ -209,7 +242,7 @@ final class EventRequest extends FormRequest
             'custom_form_fields.required_if' => 'Custom form fields are required when registration type is "form".',
             'status.required' => 'Event status is required.',
             'status.in' => 'Invalid event status selected.',
-            
+
             // Recurring event messages
             'frequency.required_if' => 'Frequency is required for recurring events.',
             'frequency.in' => 'Invalid frequency selected. Choose weekly, bi-weekly, or monthly.',
@@ -218,13 +251,13 @@ final class EventRequest extends FormRequest
             'recurrence_end_date.after' => 'Recurrence end date must be after the event start date.',
             'max_occurrences.min' => 'Maximum occurrences must be at least 1.',
             'max_occurrences.max' => 'Maximum occurrences cannot exceed 100.',
-            
+
             // Service-specific messages
             'service_type.in' => 'Invalid service type selected.',
             'service_time.date_format' => 'Service time must be in HH:MM format.',
             'service_end_time.date_format' => 'Service end time must be in HH:MM format.',
             'service_end_time.after' => 'Service end time must be after service start time.',
-            
+
             // Multiple services messages
             'second_service_name.required_if' => 'Second service name is required when multiple services is enabled.',
             'second_service_time.required_if' => 'Second service time is required when multiple services is enabled.',
@@ -253,25 +286,28 @@ final class EventRequest extends FormRequest
             'registration_link' => 'registration link',
             'custom_form_fields' => 'custom form fields',
             'status' => 'status',
-            
+
             // Recurring event attributes
             'is_recurring' => 'recurring event',
             'frequency' => 'frequency',
             'day_of_week' => 'day of week',
             'recurrence_end_date' => 'recurrence end date',
             'max_occurrences' => 'maximum occurrences',
-            
+
             // Service-specific attributes
             'service_type' => 'service type',
             'service_name' => 'service name',
             'service_time' => 'service time',
             'service_end_time' => 'service end time',
-            
+
             // Multiple services attributes
             'has_multiple_services' => 'multiple services',
             'second_service_name' => 'second service name',
             'second_service_time' => 'second service time',
             'second_service_end_time' => 'second service end time',
+            'public_slug' => 'public URL slug',
+            'cover_image' => 'cover image',
+            'remove_cover' => 'remove cover image',
         ];
     }
 
@@ -281,7 +317,7 @@ final class EventRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         // If user is not super admin, set branch_id to their primary branch
-        if (!Auth::user()->isSuperAdmin()) {
+        if (! Auth::user()->isSuperAdmin()) {
             $userBranch = Auth::user()->getPrimaryBranch();
             if ($userBranch) {
                 $this->merge([
@@ -304,10 +340,17 @@ final class EventRequest extends FormRequest
             ]);
         }
 
+        if ($this->registration_type === 'none') {
+            $this->merge([
+                'registration_link' => null,
+                'custom_form_fields' => null,
+            ]);
+        }
+
         // Set service_type based on event type
         if ($this->type === 'service') {
             // Default to Sunday Service for service events if not already set
-            if (!$this->filled('service_type')) {
+            if (! $this->filled('service_type')) {
                 $this->merge([
                     'service_type' => 'Sunday Service',
                 ]);
@@ -327,7 +370,7 @@ final class EventRequest extends FormRequest
         }
 
         // Clear recurring fields if not recurring
-        if (!$this->is_recurring) {
+        if (! $this->is_recurring) {
             $this->merge([
                 'frequency' => null,
                 'day_of_week' => null,
@@ -337,7 +380,7 @@ final class EventRequest extends FormRequest
         }
 
         // Clear second service fields if not multiple services
-        if (!$this->has_multiple_services) {
+        if (! $this->has_multiple_services) {
             $this->merge([
                 'second_service_name' => null,
                 'second_service_time' => null,
@@ -345,4 +388,4 @@ final class EventRequest extends FormRequest
             ]);
         }
     }
-} 
+}

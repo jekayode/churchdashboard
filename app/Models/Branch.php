@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 final class Branch extends Model
 {
@@ -22,6 +24,7 @@ final class Branch extends Model
      */
     protected $fillable = [
         'name',
+        'public_code',
         'logo',
         'venue',
         'service_time',
@@ -113,6 +116,22 @@ final class Branch extends Model
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    /**
+     * Public URL for the branch logo, if set.
+     */
+    public function getLogoUrlAttribute(): ?string
+    {
+        if ($this->logo === null || $this->logo === '') {
+            return null;
+        }
+
+        if (Str::startsWith($this->logo, ['http://', 'https://'])) {
+            return $this->logo;
+        }
+
+        return Storage::disk('public')->url($this->logo);
     }
 
     /**

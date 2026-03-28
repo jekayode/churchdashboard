@@ -17,7 +17,8 @@ class BranchFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->company . ' Branch',
+            'name' => $this->faker->company.' Branch',
+            'public_code' => strtolower($this->faker->unique()->lexify('????')),
             'venue' => $this->faker->address,
             'service_time' => $this->faker->randomElement(['9:00 AM', '10:30 AM', '6:00 PM']),
             'phone' => $this->faker->phoneNumber,

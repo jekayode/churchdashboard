@@ -1,4 +1,4 @@
-<x-app-layout>
+<x-sidebar-layout title="Event Details">
     <x-slot name="header">
         <div class="flex justify-between items-center">
             <h2 class="font-semibold text-xl text-gray-800 leading-tight">
@@ -259,6 +259,19 @@
                     const startDate = new Date(event.start_date_time || event.start_date);
                     const endDate = (event.end_date_time || event.end_date) ? new Date(event.end_date_time || event.end_date) : null;
                     
+                    const qrBlock = event.public_detail_url ? `
+                        <div class="md:col-span-3 pt-4 border-t border-gray-200 flex flex-wrap items-start gap-4">
+                            <div class="flex flex-col items-start gap-2">
+                                <div class="text-sm font-medium text-gray-500 mb-1">Public page QR</div>
+                                <img src="/api/events/${eventId}/public-page-qr" width="96" height="96" alt="QR" class="h-24 w-24 border border-gray-200 rounded-md bg-white">
+                                <a href="/api/events/${eventId}/public-page-qr/download?pixels=2048" class="text-xs text-indigo-600 hover:underline">Download high-res PNG</a>
+                            </div>
+                            <div class="text-sm text-gray-700 break-all max-w-md">
+                                <div class="font-medium text-gray-500 mb-1">Public link</div>
+                                <a href=${JSON.stringify(event.public_detail_url)} class="text-indigo-600 hover:underline" target="_blank" rel="noopener">${event.public_detail_url}</a>
+                            </div>
+                        </div>` : '';
+
                     document.getElementById('eventDetails').innerHTML = `
                         <div>
                             <h3 class="text-lg font-medium text-gray-900">${event.name}</h3>
@@ -274,6 +287,7 @@
                             <div class="text-sm text-gray-900">${event.location}</div>
                             <div class="text-sm text-gray-600">Capacity: ${event.max_capacity || 'Unlimited'}</div>
                         </div>
+                        ${qrBlock}
                     `;
                 }
             } catch (error) {
@@ -584,4 +598,4 @@
             };
         }
     </script>
-</x-app-layout> 
+</x-sidebar-layout-layout> 

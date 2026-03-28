@@ -197,6 +197,8 @@
                 
                 <form id="registrationForm" onsubmit="handleRegistrationSubmit(event)" class="space-y-4">
                     <input type="hidden" id="eventId" name="event_id">
+                    <input type="hidden" id="registerBranchCode" name="branch_code" value="">
+                    <input type="hidden" id="registerEventSlug" name="event_slug" value="">
                     
                     <div id="customFormFields">
                         <!-- Form fields will be generated here -->
@@ -311,6 +313,15 @@
             }
         }
 
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
         function renderEventsGrid(events) {
             const grid = document.getElementById('eventsGrid');
             
@@ -331,18 +342,27 @@
                     day: 'numeric'
                 });
                 const formattedTime = event.start_time || '';
+                const detailUrl = (event.public_url && event.branch_code && event.public_slug)
+                    ? event.public_url
+                    : (event.branch_code && event.public_slug ? `/event/${event.branch_code}/${event.public_slug}` : '#');
 
                 return `
                     <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
                         <div class="p-6">
-                            <div class="flex justify-between items-start mb-3">
-                                <h3 class="text-lg font-semibold text-gray-900">${event.name}</h3>
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
-                                    ${event.service_type || 'Event'}
+                            ${event.cover_image_url ? `
+                            <a href="${detailUrl}" class="block mb-4 -mx-6 -mt-6 first:rounded-t-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-inset rounded-t-lg">
+                                <img src="${escapeHtml(event.cover_image_url)}" alt="" class="w-full h-40 object-cover" loading="lazy" width="800" height="320">
+                            </a>` : ''}
+                            <div class="flex justify-between items-start mb-3 gap-2">
+                                <h3 class="text-lg font-semibold text-gray-900 leading-tight">
+                                    <a href="${detailUrl}" class="hover:text-indigo-600 focus:outline-none focus:underline">${escapeHtml(event.name)}</a>
+                                </h3>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 shrink-0">
+                                    ${escapeHtml(event.service_type || event.type || 'Event')}
                                 </span>
                             </div>
                             
-                            <p class="text-gray-600 text-sm mb-4">${event.branch?.name || 'Join us for this exciting event!'}</p>
+                            <p class="text-gray-600 text-sm mb-4">${escapeHtml(event.branch?.name || 'Join us for this exciting event!')}</p>
                             
                             <div class="space-y-2 text-sm text-gray-500 mb-4">
                                 <div class="flex items-center">
@@ -365,7 +385,7 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
-                                        ${event.location}
+                                        ${escapeHtml(event.location)}
                                     </div>
                                 ` : ''}
                             </div>
@@ -386,6 +406,8 @@
             currentEvent = event;
             document.getElementById('registrationModalTitle').textContent = `Register for ${event.name}`;
             document.getElementById('eventId').value = event.id;
+            document.getElementById('registerBranchCode').value = event.branch_code || '';
+            document.getElementById('registerEventSlug').value = event.public_slug || '';
             
             // Generate form fields
             const fieldsContainer = document.getElementById('customFormFields');
@@ -515,8 +537,19 @@
                 registrationData.custom_fields = customFields;
             }
             
+            const branchCode = formData.get('branch_code');
+            const eventSlug = formData.get('event_slug');
+            const registerPath = branchCode && eventSlug
+                ? `/public-api/event/${encodeURIComponent(branchCode)}/${encodeURIComponent(String(eventSlug))}/register`
+                : null;
+
+            if (!registerPath) {
+                showNotification('This event cannot be registered for (missing public link).', 'error');
+                return;
+            }
+
             try {
-                const response = await fetch(`/public-api/events/${eventId}/register`, {
+                const response = await fetch(registerPath, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\Event;
 use App\Models\Branch;
+use App\Models\Event;
+use App\Support\EventPublicSlug;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 final class ChurchServiceManager
 {
@@ -36,8 +38,11 @@ final class ChurchServiceManager
             'branch_id' => $branch->id,
         ]);
 
+        $slugBase = $eventData['public_slug'] ?? Str::slug((string) ($eventData['name'] ?? 'service'));
+        $eventData['public_slug'] = EventPublicSlug::uniqueInBranch($branch->id, $slugBase);
+
         // Ensure we have a proper start_date
-        if (!isset($eventData['start_date']) || !$eventData['start_date']) {
+        if (! isset($eventData['start_date']) || ! $eventData['start_date']) {
             $nextSunday = Carbon::now()->next(Carbon::SUNDAY);
             if (isset($eventData['service_time'])) {
                 $serviceTime = Carbon::createFromFormat('H:i', $eventData['service_time']);
@@ -86,8 +91,11 @@ final class ChurchServiceManager
             'branch_id' => $branch->id,
         ]);
 
+        $slugBase = $eventData['public_slug'] ?? Str::slug((string) ($eventData['name'] ?? 'service'));
+        $eventData['public_slug'] = EventPublicSlug::uniqueInBranch($branch->id, $slugBase);
+
         // Ensure we have a proper start_date
-        if (!isset($eventData['start_date']) || !$eventData['start_date']) {
+        if (! isset($eventData['start_date']) || ! $eventData['start_date']) {
             $dayOfWeek = $eventData['day_of_week'];
             $nextServiceDay = Carbon::now()->next($dayOfWeek);
             if (isset($eventData['service_time'])) {
@@ -120,7 +128,7 @@ final class ChurchServiceManager
      */
     public function generateRecurringInstances(Event $event, int $weeksAhead = 12): int
     {
-        if (!$event->is_recurring) {
+        if (! $event->is_recurring) {
             return 0;
         }
 
@@ -137,7 +145,7 @@ final class ChurchServiceManager
         $query = Event::where('branch_id', $branch->id)
             ->whereIn('service_type', ['Sunday Service', 'MidWeek']);
 
-        if (!$includeInstances) {
+        if (! $includeInstances) {
             $query->where('is_recurring_instance', false);
         }
 
@@ -180,7 +188,7 @@ final class ChurchServiceManager
             'description' => 'Weekly Sunday worship service',
             'service_time' => '10:00',
             'service_name' => 'Main Service',
-            'location' => $branch->name . ' Sanctuary',
+            'location' => $branch->name.' Sanctuary',
             'max_capacity' => 200,
         ]);
 
@@ -190,7 +198,7 @@ final class ChurchServiceManager
             'description' => 'Weekly midweek prayer and Bible study',
             'service_time' => '19:00',
             'service_name' => 'Prayer & Bible Study',
-            'location' => $branch->name . ' Fellowship Hall',
+            'location' => $branch->name.' Fellowship Hall',
             'max_capacity' => 100,
             'day_of_week' => 3, // Wednesday
         ]);
@@ -211,9 +219,9 @@ final class ChurchServiceManager
         $services = [];
 
         foreach ($servicesData as $index => $serviceData) {
-            $serviceData['service_name'] = $serviceData['service_name'] ?? 
+            $serviceData['service_name'] = $serviceData['service_name'] ??
                 ($index === 0 ? 'First Service' : 'Second Service');
-            
+
             $services[] = $this->createSundayService($branch, $serviceData);
         }
 
@@ -244,4 +252,4 @@ final class ChurchServiceManager
 
         return $totalCreated;
     }
-} 
+}

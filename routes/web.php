@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MinisterDashboardController;
+use App\Http\Controllers\Pastor\EventFormController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
@@ -191,6 +192,10 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
 
         return view('pastor.events.index', compact('isSuperAdmin'));
     })->name('events');
+
+    Route::get('/events/create', [EventFormController::class, 'create'])->name('events.create');
+
+    Route::get('/events/{event}/edit', [EventFormController::class, 'edit'])->name('events.edit');
 
     Route::get('/events/{event}/registrations', function ($eventId) {
         return view('pastor.events.registrations', compact('eventId'));
@@ -444,6 +449,11 @@ Route::middleware(['auth'])->get('/api/members/search', function (\Illuminate\Ht
     });
 })->name('api.members.search');
 
+// Public event detail: /event/{branchCode}/{slug} (not under /public)
+Route::get('/event/{branchCode}/{eventSlug}', [App\Http\Controllers\PublicEventController::class, 'show'])
+    ->where(['branchCode' => '[a-z0-9]+', 'eventSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*'])
+    ->name('public.event.show');
+
 // Public Routes (accessible to all)
 Route::prefix('public')->name('public.')->group(function () {
     Route::get('/events', function () {
@@ -505,11 +515,11 @@ Route::middleware('auth')->group(function () {
 
 // Public event routes (no authentication required)
 Route::prefix('public-api')->group(function () {
-    Route::prefix('events')->group(function () {
-        Route::get('/', [App\Http\Controllers\EventController::class, 'publicIndex']); // Public can view events
-        Route::get('/{event}', [App\Http\Controllers\EventController::class, 'publicShow']); // Public can view event details
-        Route::post('/{event}/register', [App\Http\Controllers\EventController::class, 'publicRegister']); // Public registration
-    });
+    Route::get('/events', [App\Http\Controllers\EventController::class, 'publicIndex']);
+    Route::get('/event/{branchCode}/{eventSlug}', [App\Http\Controllers\EventController::class, 'publicShow'])
+        ->where(['branchCode' => '[a-z0-9]+', 'eventSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*']);
+    Route::post('/event/{branchCode}/{eventSlug}/register', [App\Http\Controllers\EventController::class, 'publicRegister'])
+        ->where(['branchCode' => '[a-z0-9]+', 'eventSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*']);
 });
 
 // Public check-in routes

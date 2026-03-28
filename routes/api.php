@@ -160,16 +160,16 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::prefix('small-group-reports')->group(function () {
         Route::get('/', [SmallGroupMeetingReportController::class, 'index']);
         Route::post('/', [SmallGroupMeetingReportController::class, 'store']);
-        
+
         // Analytics and statistics (must be before parameterized routes)
         Route::get('/statistics', [SmallGroupMeetingReportController::class, 'getAttendanceStatistics']);
         Route::get('/trends', [SmallGroupMeetingReportController::class, 'getTrends']);
         Route::get('/comparison', [SmallGroupMeetingReportController::class, 'getComparison']);
         Route::get('/analytics/statistics', [SmallGroupMeetingReportController::class, 'getAttendanceStatistics']);
         Route::get('/analytics/compare', [SmallGroupMeetingReportController::class, 'compareAttendance']);
-        
+
         Route::get('/my-groups', [SmallGroupMeetingReportController::class, 'getMySmallGroups']);
-        
+
         // Parameterized routes (must be after specific routes)
         Route::get('/{report}', [SmallGroupMeetingReportController::class, 'show']);
         Route::put('/{report}', [SmallGroupMeetingReportController::class, 'update']);
@@ -356,9 +356,12 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         // Recurring event management
         Route::post('/generate-recurring-instances', [EventController::class, 'generateRecurringInstances']);
 
+        Route::get('/{event}/public-page-qr/download', [EventController::class, 'publicPageQrPngDownload']);
+        Route::get('/{event}/public-page-qr', [EventController::class, 'publicPageQrSvg']);
+
         Route::get('/{event}', [EventController::class, 'show']);
         Route::get('/{event}/details', [EventController::class, 'getEventDetails']);
-        Route::put('/{event}', [EventController::class, 'update']);
+        Route::match(['put', 'post'], '/{event}', [EventController::class, 'update']);
         Route::delete('/{event}', [EventController::class, 'destroy']);
 
         // Event registration
@@ -377,7 +380,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
 Route::prefix('welcome')->group(function () {
     Route::get('/branches', function () {
         return \App\Models\Branch::query()
-            ->select(['id', 'name', 'venue', 'service_time', 'phone', 'email'])
+            ->select(['id', 'name', 'public_code', 'venue', 'service_time', 'phone', 'email'])
             ->where('status', 'active')
             ->orderBy('name')
             ->get();
@@ -403,10 +406,8 @@ Route::prefix('welcome')->group(function () {
 
     Route::get('/events', function (\Illuminate\Http\Request $request) {
         $query = \App\Models\Event::query()
-            ->select(['id', 'branch_id', 'name', 'type', 'service_type', 'start_date', 'end_date', 'service_time as start_time', 'service_end_time as end_time', 'location'])
-            ->with(['branch:id,name'])
-            ->where('is_public', true)
-            ->whereHas('branch', fn ($q) => $q->where('status', 'active'));
+            ->with(['branch:id,name,public_code,logo,venue,phone,email,service_time'])
+            ->publiclyVisible();
 
         if ($request->filled('branch_id')) {
             $query->where('branch_id', (int) $request->get('branch_id'));
@@ -423,8 +424,16 @@ Route::prefix('welcome')->group(function () {
             $query->whereDate('start_date', '>=', now()->toDateString());
         }
 
-        return $query->orderBy('start_date')->limit(50)->get();
+        $events = $query->orderBy('start_date')->limit(50)->get();
+
+        return $events->map(fn (\App\Models\Event $event) => \App\Support\PublicEventPayload::forEvent($event))->values();
     });
+
+    Route::get('/event/{branchCode}/{eventSlug}', function (string $branchCode, string $eventSlug) {
+        $event = \App\Models\Event::findPubliclyVisibleByBranchCodeAndSlug($branchCode, $eventSlug);
+
+        return \App\Support\PublicEventPayload::forEvent($event);
+    })->where(['branchCode' => '[a-z0-9]+', 'eventSlug' => '[a-z0-9]+(?:-[a-z0-9]+)*']);
 });
 
 // Authenticated member utilities

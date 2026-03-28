@@ -31,6 +31,13 @@ final class BranchRequest extends FormRequest
                 'max:255',
                 Rule::unique('branches', 'name')->ignore($branchId)->whereNull('deleted_at'),
             ],
+            'public_code' => [
+                'nullable',
+                'string',
+                'max:32',
+                'regex:/^[a-z0-9]+$/',
+                Rule::unique('branches', 'public_code')->ignore($branchId),
+            ],
             'logo' => [
                 'nullable',
                 'string',
@@ -80,6 +87,7 @@ final class BranchRequest extends FormRequest
     {
         return [
             'name' => 'branch name',
+            'public_code' => 'public branch code',
             'venue' => 'venue location',
             'service_time' => 'service time',
             'phone' => 'phone number',
@@ -103,4 +111,4 @@ final class BranchRequest extends FormRequest
             'status.in' => 'The status must be active, inactive, or suspended.',
         ];
     }
-} 
+}

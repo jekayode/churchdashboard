@@ -4,24 +4,24 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Facades\Gate;
-use App\Models\User;
 use App\Models\Branch;
+use App\Models\Department;
 use App\Models\Event;
 use App\Models\Member;
 use App\Models\Ministry;
-use App\Models\Department;
-use App\Models\SmallGroup;
 use App\Models\Projection;
-use App\Policies\UserPolicy;
+use App\Models\SmallGroup;
+use App\Models\User;
 use App\Policies\BranchPolicy;
+use App\Policies\DepartmentPolicy;
 use App\Policies\EventPolicy;
 use App\Policies\MemberPolicy;
 use App\Policies\MinistryPolicy;
-use App\Policies\DepartmentPolicy;
-use App\Policies\SmallGroupPolicy;
 use App\Policies\ProjectionPolicy;
+use App\Policies\SmallGroupPolicy;
+use App\Policies\UserPolicy;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
 
 final class AppServiceProvider extends ServiceProvider
 {
