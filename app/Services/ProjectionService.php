@@ -67,13 +67,28 @@ final class ProjectionService
      * Compute branch actuals for a given year (or custom range).
      * Returns totals for attendance, guests, converts.
      */
+    /**
+     * Event report types that count toward branch attendance actuals.
+     * Includes all types users can select when filing reports, plus legacy "service".
+     *
+     * @return array<int, string>
+     */
+    public static function attendanceReportEventTypes(): array
+    {
+        return array_values(array_unique(array_merge(
+            EventReport::EVENT_TYPES,
+            ['service', 'Sunday Service', 'Mid-Week Service'],
+        )));
+    }
+
     public function computeBranchActuals(int $branchId, int $year, ?string $startDate = null, ?string $endDate = null): array
     {
-        $key = sprintf('proj:actuals:branch:%d:%s:%s', $branchId, $startDate ?: (string) $year, $endDate ?: '');
+        // v3: widened event_type filter + second_service online in sums; bump key to invalidate stale cache
+        $key = sprintf('proj:actuals:branch:%d:%s:%s:v3', $branchId, $startDate ?: (string) $year, $endDate ?: '');
 
         return $this->cache->remember($key, 900, function () use ($branchId, $year, $startDate, $endDate) {
             $query = EventReport::query()
-                ->whereIn('event_reports.event_type', ['service', 'Sunday Service', 'Mid-Week Service'])
+                ->whereIn('event_reports.event_type', self::attendanceReportEventTypes())
                 ->join('events', 'events.id', '=', 'event_reports.event_id')
                 ->where('events.branch_id', $branchId);
 
@@ -88,6 +103,7 @@ final class ProjectionService
                 'event_reports.first_time_guests', 'event_reports.second_service_first_time_guests',
                 'event_reports.converts', 'event_reports.second_service_converts',
                 'event_reports.second_service_attendance_male', 'event_reports.second_service_attendance_female', 'event_reports.second_service_attendance_children',
+                'event_reports.second_service_attendance_online',
             ]);
 
             $attendance = 0;
@@ -98,6 +114,7 @@ final class ProjectionService
             foreach ($rows as $r) {
                 $attendance += (int) $r->attendance_male + (int) $r->attendance_female + (int) $r->attendance_children + (int) $r->attendance_online;
                 $attendance += (int) ($r->second_service_attendance_male ?? 0) + (int) ($r->second_service_attendance_female ?? 0) + (int) ($r->second_service_attendance_children ?? 0);
+                $attendance += (int) ($r->second_service_attendance_online ?? 0);
                 $guests += (int) ($r->first_time_guests ?? 0) + (int) ($r->second_service_first_time_guests ?? 0);
                 $converts += (int) ($r->converts ?? 0) + (int) ($r->second_service_converts ?? 0);
                 $reportCount++;
@@ -120,10 +137,10 @@ final class ProjectionService
      */
     public function computeNetworkActuals(int $year, ?string $startDate = null, ?string $endDate = null): array
     {
-        $key = sprintf('proj:actuals:network:%s:%s', $startDate ?: (string) $year, $endDate ?: '');
+        $key = sprintf('proj:actuals:network:%s:%s:v3', $startDate ?: (string) $year, $endDate ?: '');
 
         return $this->cache->remember($key, 900, function () use ($year, $startDate, $endDate) {
-            $query = EventReport::query()->whereIn('event_type', ['service', 'Sunday Service', 'Mid-Week Service']);
+            $query = EventReport::query()->whereIn('event_type', self::attendanceReportEventTypes());
 
             if ($startDate && $endDate) {
                 $query->whereBetween('report_date', [$startDate, $endDate]);
@@ -136,6 +153,7 @@ final class ProjectionService
                 'first_time_guests', 'second_service_first_time_guests',
                 'converts', 'second_service_converts',
                 'second_service_attendance_male', 'second_service_attendance_female', 'second_service_attendance_children',
+                'second_service_attendance_online',
             ]);
 
             $attendance = 0;
@@ -146,6 +164,7 @@ final class ProjectionService
             foreach ($rows as $r) {
                 $attendance += (int) $r->attendance_male + (int) $r->attendance_female + (int) $r->attendance_children + (int) $r->attendance_online;
                 $attendance += (int) ($r->second_service_attendance_male ?? 0) + (int) ($r->second_service_attendance_female ?? 0) + (int) ($r->second_service_attendance_children ?? 0);
+                $attendance += (int) ($r->second_service_attendance_online ?? 0);
                 $guests += (int) ($r->first_time_guests ?? 0) + (int) ($r->second_service_first_time_guests ?? 0);
                 $converts += (int) ($r->converts ?? 0) + (int) ($r->second_service_converts ?? 0);
                 $reportCount++;

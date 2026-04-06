@@ -155,7 +155,9 @@
                     search: document.getElementById('searchInput').value,
                     status: document.getElementById('statusFilter').value,
                     type: document.getElementById('typeFilter').value,
-                    date_filter: document.getElementById('dateFilter').value
+                    date_filter: document.getElementById('dateFilter').value,
+                    sort_by: 'created_at',
+                    sort_order: 'desc',
                 });
 
                 // Add branch filter if super admin

@@ -197,9 +197,13 @@ final class EventController extends Controller
                 });
             }
 
-            // Apply sorting
+            // Apply sorting (whitelist columns to avoid arbitrary ORDER BY)
+            $allowedSortColumns = ['start_date', 'created_at', 'name', 'status', 'id'];
             $sortBy = $request->get('sort_by', 'start_date');
-            $sortOrder = $request->get('sort_order', 'asc');
+            if (! in_array($sortBy, $allowedSortColumns, true)) {
+                $sortBy = 'start_date';
+            }
+            $sortOrder = strtolower((string) $request->get('sort_order', 'asc')) === 'desc' ? 'desc' : 'asc';
             $query->orderBy($sortBy, $sortOrder);
 
             // Paginate results

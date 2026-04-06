@@ -101,7 +101,7 @@
         </nav>
 
         <!-- Main Content -->
-        <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
 
             <nav class="mb-6 sm:mb-8 text-sm" aria-label="Breadcrumb">
                 <a href="{{ route('public.events') }}" class="text-[#F1592A] hover:underline font-medium">Events</a>

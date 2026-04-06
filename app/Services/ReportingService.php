@@ -275,7 +275,7 @@ final class ReportingService
                 ->where('event_type', 'Sunday Service')  // Only include Sunday Service events for stats cards
                 ->whereBetween('report_date', [$dateRange['start'], $dateRange['end']]);
 
-            // Use database aggregation for better performance
+            // Use database aggregation for better performance (totals include in-person + online for both services)
             $aggregated = $query->selectRaw('
                 COUNT(*) as report_count,
                 SUM(attendance_male + COALESCE(second_service_attendance_male, 0)) as total_male,
@@ -284,19 +284,14 @@ final class ReportingService
                 SUM(COALESCE(attendance_online, 0) + COALESCE(second_service_attendance_online, 0)) as total_online,
                 SUM(COALESCE(first_time_guests, 0) + COALESCE(second_service_first_time_guests, 0)) as total_guests,
                 SUM(COALESCE(converts, 0) + COALESCE(second_service_converts, 0)) as total_converts,
-                AVG(attendance_male + attendance_female + attendance_children + 
-                    COALESCE(second_service_attendance_male, 0) + 
-                    COALESCE(second_service_attendance_female, 0) + 
-                    COALESCE(second_service_attendance_children, 0)) as avg_attendance
+                AVG(
+                    attendance_male + attendance_female + attendance_children + COALESCE(attendance_online, 0) +
+                    COALESCE(second_service_attendance_male, 0) +
+                    COALESCE(second_service_attendance_female, 0) +
+                    COALESCE(second_service_attendance_children, 0) +
+                    COALESCE(second_service_attendance_online, 0)
+                ) as avg_attendance
             ')->first();
-
-            // Sunday Service specific aggregation
-            $sundayStats = $query->where('event_type', 'Sunday Service')
-                ->selectRaw('AVG(attendance_male + attendance_female + attendance_children + 
-                    COALESCE(second_service_attendance_male, 0) + 
-                    COALESCE(second_service_attendance_female, 0) + 
-                    COALESCE(second_service_attendance_children, 0)) as sunday_avg')
-                ->first();
 
             $reportCount = (int) ($aggregated->report_count ?? 0);
             $totalMale = (int) ($aggregated->total_male ?? 0);
@@ -304,19 +299,16 @@ final class ReportingService
             $totalChildren = (int) ($aggregated->total_children ?? 0);
             $totalOnline = (int) ($aggregated->total_online ?? 0);
 
-            // Calculate total attendance from individual totals (fixes Laravel query builder issue)
-            $totalAttendance = $totalMale + $totalFemale + $totalChildren;
+            $totalAttendance = $totalMale + $totalFemale + $totalChildren + $totalOnline;
 
-            // Ensure numeric values for averages
             $avgAttendance = (float) ($aggregated->avg_attendance ?? 0);
-            $sundayAvg = (float) ($sundayStats->sunday_avg ?? 0);
 
             return [
                 'total_attendance' => $totalAttendance,
                 'total_first_time_guests' => (int) ($aggregated->total_guests ?? 0),
                 'total_converts' => (int) ($aggregated->total_converts ?? 0),
                 'average_attendance' => round($avgAttendance, 2),
-                'sunday_service_average' => round($sundayAvg, 2),
+                'sunday_service_average' => round($avgAttendance, 2),
                 'totals_by_gender' => [
                     'male' => $totalMale,
                     'female' => $totalFemale,
@@ -355,6 +347,7 @@ final class ReportingService
                     'male' => 0,
                     'female' => 0,
                     'children' => 0,
+                    'online' => 0,
                 ],
             ];
         }

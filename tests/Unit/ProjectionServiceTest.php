@@ -330,4 +330,40 @@ final class ProjectionServiceTest extends TestCase
         $this->assertEquals(125, $q1['previous']['attendance']);
         $this->assertEquals(28.0, $q1['delta']['attendance']); // (160-125)/125 * 100
     }
+
+    public function test_quarter_comparison_includes_all_selectable_event_types(): void
+    {
+        $branch = Branch::factory()->create();
+        $event = Event::factory()->create(['branch_id' => $branch->id]);
+
+        EventReport::factory()->create([
+            'event_id' => $event->id,
+            'event_type' => 'Sunday Service',
+            'report_date' => '2024-01-15',
+            'attendance_male' => 10,
+            'attendance_female' => 10,
+            'attendance_children' => 5,
+            'attendance_online' => 0,
+            'first_time_guests' => 1,
+            'converts' => 0,
+        ]);
+
+        EventReport::factory()->create([
+            'event_id' => $event->id,
+            'event_type' => 'Prayer Meeting',
+            'report_date' => '2023-01-15',
+            'attendance_male' => 20,
+            'attendance_female' => 20,
+            'attendance_children' => 10,
+            'attendance_online' => 0,
+            'first_time_guests' => 2,
+            'converts' => 1,
+        ]);
+
+        $result = $this->service->quarterComparison($branch->id, 2024);
+
+        $q1 = $result[0];
+        $this->assertEquals(50, $q1['previous']['attendance'], 'Prior-year rows filed as Prayer Meeting must be counted');
+        $this->assertEquals(25, $q1['current']['attendance']);
+    }
 }

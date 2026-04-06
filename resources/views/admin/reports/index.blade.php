@@ -493,6 +493,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Event</label>
+                            <input type="search" id="eventSelectSearch" placeholder="Search events by name…" autocomplete="off" class="mt-1 mb-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
                             <select id="eventSelect" name="event_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                                 <option value="">Select Event</option>
                                 <!-- Events will be loaded dynamically -->
@@ -640,6 +641,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Event</label>
+                            <input type="search" id="editEventSelectSearch" placeholder="Search events by name…" autocomplete="off" class="mt-1 mb-1 block w-full border-gray-300 rounded-md shadow-sm text-sm">
                             <select id="editEventSelect" name="event_id" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                                 <option value="">Select Event</option>
                                 <!-- Events will be loaded dynamically -->
@@ -857,6 +859,7 @@
             loadEventReports();
             loadEventTypes();
             loadEvents();
+            setupReportEventSearchListeners();
             loadTrendData();
             
             // Event listeners
@@ -1708,50 +1711,95 @@
             }
         }
 
+        function debounceReportEventsAdmin(fn, ms) {
+            let t;
+            return function (...args) {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), ms);
+            };
+        }
+
+        function reportEventsBranchIdAdmin() {
+            const branchSelect = document.getElementById('branchSelect');
+
+            return branchSelect ? branchSelect.value : '';
+        }
+
+        async function populateReportEventSelectAdmin(selectEl, branchId, search) {
+            if (!selectEl) {
+                return;
+            }
+            const params = new URLSearchParams({
+                per_page: '100',
+                sort_by: 'created_at',
+                sort_order: 'desc',
+            });
+            if (branchId) {
+                params.append('branch_id', branchId);
+            }
+            if (search && search.trim()) {
+                params.append('search', search.trim());
+            }
+
+            const response = await fetch('/api/events?' + params.toString(), {
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                },
+            });
+            const data = await response.json();
+            if (!data.success || !data.data) {
+                return;
+            }
+            const events = data.data.data || data.data;
+            selectEl.innerHTML = '<option value="">Select Event</option>';
+            if (!Array.isArray(events)) {
+                return;
+            }
+            events.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                const title = event.title || event.name;
+                const date = event.event_date || event.start_date;
+                option.textContent = `${title} - ${new Date(date).toLocaleDateString()}`;
+                selectEl.appendChild(option);
+            });
+        }
+
         async function loadEvents() {
             try {
-                // Get branch filter if available (for Super Admin)
-                const branchSelect = document.getElementById('branchSelect');
-                const branchId = branchSelect ? branchSelect.value : '';
-                
-                // Build URL with branch filter parameter
-                const params = new URLSearchParams();
-                if (branchId) {
-                    params.append('branch_id', branchId);
+                const branchId = reportEventsBranchIdAdmin();
+                const createSearch = document.getElementById('eventSelectSearch');
+                const editSearch = document.getElementById('editEventSelectSearch');
+                if (createSearch) {
+                    createSearch.value = '';
                 }
-                
-                const url = `/api/events${params.toString() ? '?' + params.toString() : ''}`;
-                const response = await fetch(url);
-                const data = await response.json();
-                
-                if (data.success && data.data) {
-                    const eventSelects = document.querySelectorAll('#eventSelect, #editEventSelect');
-                    // Handle both paginated response (data.data.data) and direct array (data.data)
-                    const events = data.data.data || data.data;
-                    
-                    // Clear existing options except the first one for each select
-                    eventSelects.forEach(eventSelect => {
-                        eventSelect.innerHTML = '<option value="">Select Event</option>';
-                        
-                        if (Array.isArray(events)) {
-                            events.forEach(event => {
-                                const option = document.createElement('option');
-                                option.value = event.id;
-                                // Use 'name' field if 'title' doesn't exist
-                                const title = event.title || event.name;
-                                const date = event.event_date || event.start_date;
-                                option.textContent = `${title} - ${new Date(date).toLocaleDateString()}`;
-                                eventSelect.appendChild(option);
-                            });
-                        } else {
-                            console.warn('Events is not an array:', events);
-                        }
-                    });
-                } else {
-                    console.warn('Events data not in expected format:', data);
+                if (editSearch) {
+                    editSearch.value = '';
                 }
+                await Promise.all([
+                    populateReportEventSelectAdmin(document.getElementById('eventSelect'), branchId, ''),
+                    populateReportEventSelectAdmin(document.getElementById('editEventSelect'), branchId, ''),
+                ]);
             } catch (error) {
                 console.error('Error loading events:', error);
+            }
+        }
+
+        function setupReportEventSearchListeners() {
+            const branchId = () => reportEventsBranchIdAdmin();
+            const createSearch = document.getElementById('eventSelectSearch');
+            const editSearch = document.getElementById('editEventSelectSearch');
+            if (createSearch) {
+                createSearch.addEventListener('input', debounceReportEventsAdmin(() => {
+                    populateReportEventSelectAdmin(document.getElementById('eventSelect'), branchId(), createSearch.value);
+                }, 300));
+            }
+            if (editSearch) {
+                editSearch.addEventListener('input', debounceReportEventsAdmin(() => {
+                    populateReportEventSelectAdmin(document.getElementById('editEventSelect'), branchId(), editSearch.value);
+                }, 300));
             }
         }
 
@@ -1764,6 +1812,10 @@
             document.getElementById('createReportModal').classList.add('hidden');
             document.getElementById('createReportForm').reset();
             document.getElementById('secondServiceFields').classList.add('hidden');
+            const createSearch = document.getElementById('eventSelectSearch');
+            if (createSearch) {
+                createSearch.value = '';
+            }
         }
 
         async function handleCreateReport(e) {
@@ -1857,8 +1909,23 @@
             // Store the report ID for updating
             document.getElementById('editReportForm').dataset.reportId = report.id;
             
-            // Populate basic fields
-            document.getElementById('editEventSelect').value = report.event_id || '';
+            // Populate basic fields — ensure selected event exists in dropdown (may not be in latest 100)
+            const editEventSelect = document.getElementById('editEventSelect');
+            if (report.event_id && report.event) {
+                const exists = [...editEventSelect.options].some(o => String(o.value) === String(report.event_id));
+                if (!exists) {
+                    const opt = document.createElement('option');
+                    opt.value = report.event_id;
+                    const ev = report.event;
+                    const title = ev.name || ev.title || 'Event';
+                    const dateRaw = ev.start_date || ev.start_date_time || ev.event_date;
+                    opt.textContent = dateRaw
+                        ? `${title} - ${new Date(dateRaw).toLocaleDateString()}`
+                        : title;
+                    editEventSelect.appendChild(opt);
+                }
+            }
+            editEventSelect.value = report.event_id || '';
             
             // Format date properly for input field (YYYY-MM-DD)
             if (report.report_date) {
@@ -1896,7 +1963,7 @@
             document.getElementById('editMaleAttendance').value = report.attendance_male || 0;
             document.getElementById('editFemaleAttendance').value = report.attendance_female || 0;
             document.getElementById('editChildrenAttendance').value = report.attendance_children || 0;
-            document.getElementById('editOnlineAttendance').value = report.online_attendance || 0;
+            document.getElementById('editOnlineAttendance').value = report.attendance_online ?? report.online_attendance ?? 0;
             document.getElementById('editFirstTimeGuests').value = report.first_time_guests || 0;
             document.getElementById('editConverts').value = report.converts || 0;
             document.getElementById('editCars').value = report.number_of_cars || 0;
@@ -1953,6 +2020,10 @@
             document.getElementById('editReportModal').classList.add('hidden');
             document.getElementById('editReportForm').reset();
             document.getElementById('editSecondServiceFields').classList.add('hidden');
+            const editSearch = document.getElementById('editEventSelectSearch');
+            if (editSearch) {
+                editSearch.value = '';
+            }
         }
 
         async function handleEditReport(e) {
