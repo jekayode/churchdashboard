@@ -51,11 +51,12 @@
     <nav class="bg-[var(--biz-secondary)] text-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
-                <a href="{{ route('biz.landing') }}" class="flex items-center gap-3 font-semibold text-lg">
-                    @if($settings->logo_url ?? null)
-                        <img src="{{ $settings->logo_url }}" alt="Directory" class="h-8 w-auto">
-                    @endif
-                    <span>{{ $settings->tagline ? 'Biz Directory' : 'Biz Directory' }}</span>
+                <a href="{{ route('biz.landing') }}" class="flex items-center shrink-0" aria-label="Church Business Directory">
+                    <img
+                        src="{{ $settings->logo_url ?? asset('img/lifepoint-logo-white.png') }}"
+                        alt="{{ $settings->tagline ?: 'Church Business Directory' }}"
+                        class="h-9 w-auto max-w-[220px] object-contain"
+                    >
                 </a>
                 <div class="flex items-center gap-4 text-sm">
                     <a href="{{ route('biz.landing') }}" class="hover:text-orange-300">Browse</a>

@@ -10,7 +10,13 @@
 <body class="font-sans antialiased bg-gray-50 text-slate-800">
     <header class="builders-site-header py-4">
         <div class="max-w-3xl mx-auto px-4 flex items-center justify-between">
-            <a href="{{ route('builders.create') }}" class="font-semibold text-lg text-white">Lifepointe GLK Builders</a>
+            <a href="{{ route('builders.create') }}" class="flex items-center shrink-0" aria-label="Lifepointe GLK">
+                <img
+                    src="{{ asset('img/lifepoint-logo-white.png') }}"
+                    alt="Lifepointe GLK"
+                    class="h-9 w-auto max-w-[200px] object-contain"
+                >
+            </a>
             @auth
                 <a href="{{ route('builders.account') }}" class="text-sm">My pack</a>
             @else
