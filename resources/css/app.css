@@ -18,3 +18,58 @@
         font-family: 'Clash Display', Sans-serif;
     }
 }
+
+/* Builders public pages — explicit colors so header/buttons stay visible if utility classes are missing from the build */
+.builders-site-header {
+    background-color: #111827;
+    color: #ffffff;
+}
+
+.builders-site-header a {
+    color: #fdeadd;
+}
+
+.builders-site-header a:hover {
+    color: #ffffff;
+}
+
+.builders-hero {
+    background: linear-gradient(135deg, #f1592a 0%, #e2421a 100%);
+    color: #ffffff;
+}
+
+.builders-hero p {
+    color: rgba(255, 255, 255, 0.92);
+}
+
+.builders-primary-btn {
+    display: inline-block;
+    background-color: #f1592a;
+    color: #ffffff !important;
+    border: none;
+    cursor: pointer;
+}
+
+.builders-primary-btn:hover {
+    background-color: #e2421a;
+}
+
+.builders-secondary-btn {
+    display: inline-block;
+    background-color: #ffffff;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    cursor: pointer;
+}
+
+.builders-secondary-btn:hover {
+    background-color: #f9fafb;
+}
+
+.builders-step-active {
+    background-color: #f1592a;
+}
+
+.builders-step-current {
+    background-color: #fad1bb;
+}

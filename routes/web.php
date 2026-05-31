@@ -115,8 +115,15 @@ Route::middleware(['auth', 'verified', 'role:super_admin'])->prefix('admin')->na
     })->name('finances');
 
     Route::get('/users', function () {
-        return view('admin.users.index');
+        return view('admin.users.index', [
+            'isSuperAdmin' => true,
+            'fixedBranchId' => null,
+        ]);
     })->name('users');
+
+    Route::get('/roles', function () {
+        return view('admin.roles.index');
+    })->name('roles');
 
     Route::get('/reports', [ReportingController::class, 'index'])->name('reports');
     Route::get('/reports/dashboard', [ReportingController::class, 'superAdminDashboard'])->name('reports.dashboard');
@@ -185,6 +192,15 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
 
         return view('pastor.members.index', compact('isSuperAdmin'));
     })->name('members');
+
+    Route::get('/users', function () {
+        $user = Auth::user();
+
+        return view('pastor.users.index', [
+            'isSuperAdmin' => $user->isSuperAdmin(),
+            'fixedBranchId' => $user->getActiveBranchId(),
+        ]);
+    })->name('users');
 
     Route::get('/events', function () {
         $user = Auth::user();
@@ -535,5 +551,8 @@ Route::prefix('public/reports')->group(function () {
     Route::get('/events/{token}', [\App\Http\Controllers\PublicReportController::class, 'getEvents'])
         ->name('public.reports.events');
 });
+
+require __DIR__.'/biz.php';
+require __DIR__.'/builders.php';
 
 require __DIR__.'/auth.php';

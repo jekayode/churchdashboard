@@ -8,6 +8,11 @@
     $isMinistryLeader = $user?->isMinistryLeader();
     $isDepartmentLeader = $user?->isDepartmentLeader();
     $isChurchMember = $user?->isChurchMember();
+    $isDirectoryAdmin = $user?->isDirectoryAdmin();
+    $canManageBuilders = $user?->canManageBuilders() ?? false;
+    $ownsBusinesses = $user?->ownsBusinesses() ?? false;
+    $canManageRoles = $user?->hasPermission('roles.manage') ?? false;
+    $canAssignUserRoles = $user?->hasPermission('users.assign_role') ?? false;
     
     // Check if ministry leader is eligible for guest management
     $canManageGuests = false;
@@ -60,6 +65,9 @@
                     <a href="{{ route('pastor.members') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">All Members</a>
                     <a href="{{ route('guests.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700 {{ request()->routeIs('guests.*') ? 'bg-green-50 text-green-700' : '' }}">Guest Management</a>
                     <a href="{{ route('pastor.import-export') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Import Members</a>
+                    @if($canAssignUserRoles)
+                        <a href="{{ route('pastor.users') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700 {{ request()->routeIs('pastor.users') ? 'bg-green-50 text-green-700' : '' }}">User Roles</a>
+                    @endif
                 </div>
             </div>
 
@@ -284,6 +292,31 @@
                 </div>
             </div>
 
+            @if($canManageRoles || $canAssignUserRoles)
+                <div x-data="{ open: false }">
+                    <button @click="open = !open"
+                            class="flex items-center justify-between w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 transition-colors duration-200 {{ request()->routeIs('admin.users*') || request()->routeIs('admin.roles*') ? 'bg-green-100 text-green-700' : '' }}">
+                        <div class="flex items-center">
+                            <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                            </svg>
+                            Users & Roles
+                        </div>
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div x-show="open" class="ml-8 mt-2 space-y-1">
+                        @if($canAssignUserRoles)
+                            <a href="{{ route('admin.users') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700 {{ request()->routeIs('admin.users') ? 'bg-green-50 text-green-700' : '' }}">Manage Users</a>
+                        @endif
+                        @if($canManageRoles)
+                            <a href="{{ route('admin.roles') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700 {{ request()->routeIs('admin.roles') ? 'bg-green-50 text-green-700' : '' }}">Roles & Permissions</a>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             <!-- Submission Links -->
             <a href="{{ route('admin.reports') }}#submission-links" 
                class="flex items-center px-4 py-3 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 transition-colors duration-200">
@@ -392,6 +425,58 @@
                 Events
             </a>
         @endif
+
+        <!-- Business Directory -->
+        <div x-data="{ open: false }">
+            <button @click="open = !open"
+                    class="flex items-center justify-between w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 transition-colors duration-200">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                    </svg>
+                    Biz Directory
+                </div>
+                <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+            <div x-show="open" x-transition class="ml-8 mt-2 space-y-1">
+                <a href="{{ route('biz.landing') }}" target="_blank" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Browse Directory</a>
+                @if($isDirectoryAdmin)
+                    <a href="{{ route('admin.biz.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Directory Admin</a>
+                @endif
+                @if($ownsBusinesses)
+                    <a href="{{ route('biz.owner') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">My Businesses</a>
+                @endif
+                <a href="{{ route('biz.messages') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Directory Inbox</a>
+                <a href="{{ route('biz.favorites') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">My Favorites</a>
+            </div>
+        </div>
+
+        <!-- Builders Community -->
+        <div x-data="{ open: false }">
+            <button @click="open = !open"
+                    class="flex items-center justify-between w-full px-4 py-3 text-gray-700 rounded-lg hover:bg-green-50 hover:text-green-700 transition-colors duration-200">
+                <div class="flex items-center">
+                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Builders Community
+                </div>
+                <svg class="w-4 h-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                </svg>
+            </button>
+            <div x-show="open" x-transition class="ml-8 mt-2 space-y-1">
+                <a href="{{ route('builders.create') }}" target="_blank" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Registration form</a>
+                @auth
+                    <a href="{{ route('builders.account') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">My Starter Pack</a>
+                @endauth
+                @if($canManageBuilders)
+                    <a href="{{ route('admin.builders.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-green-50 hover:text-green-700">Builders Admin</a>
+                @endif
+            </div>
+        </div>
 
         <!-- Settings - Always visible -->
         <div x-data="{ open: false }">

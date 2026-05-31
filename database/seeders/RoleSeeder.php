@@ -45,6 +45,16 @@ final class RoleSeeder extends Seeder
                 'display_name' => 'Public User',
                 'description' => 'Limited access to public events and registration',
             ],
+            [
+                'name' => 'directory_admin',
+                'display_name' => 'Directory Admin',
+                'description' => 'Manage the church business directory, categories, listings, and reviews',
+            ],
+            [
+                'name' => 'business_care_leader',
+                'display_name' => 'Business Care Leader',
+                'description' => 'Manage the Builders Community and Business Starter Pack program',
+            ],
         ];
 
         foreach ($roles as $roleData) {

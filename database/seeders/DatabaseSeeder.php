@@ -34,6 +34,8 @@ final class DatabaseSeeder extends Seeder
         // Run seeders in dependency order
         $this->call([
             RoleSeeder::class,
+            PermissionSeeder::class,
+            RolePermissionSeeder::class,
             BranchSeeder::class,
             MemberSeeder::class,
             MinistrySeeder::class,
@@ -48,7 +50,7 @@ final class DatabaseSeeder extends Seeder
         $superAdminRole = \App\Models\Role::where('name', 'super_admin')->first();
         if ($superAdmin && $superAdminRole) {
             $superAdmin->roles()->syncWithoutDetaching([
-                $superAdminRole->id => ['branch_id' => null]
+                $superAdminRole->id => ['branch_id' => null],
             ]);
         }
 

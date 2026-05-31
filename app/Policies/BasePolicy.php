@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Policies;
 
 use App\Models\User;
+use App\Support\PermissionCatalog;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 abstract class BasePolicy
@@ -17,6 +18,15 @@ abstract class BasePolicy
     protected function isSuperAdmin(User $user): bool
     {
         return $user->isSuperAdmin();
+    }
+
+    protected function hasPermission(User $user, string $name, ?int $branchId = null): bool
+    {
+        if (! PermissionCatalog::isPermissionAbility($name)) {
+            return false;
+        }
+
+        return $user->hasPermission($name, $branchId);
     }
 
     /**
@@ -72,8 +82,8 @@ abstract class BasePolicy
      */
     protected function hasLeadershipPrivileges(User $user): bool
     {
-        return $this->hasAdminPrivileges($user) || 
-               $this->isMinistryLeader($user) || 
+        return $this->hasAdminPrivileges($user) ||
+               $this->isMinistryLeader($user) ||
                $this->isDepartmentLeader($user);
     }
 
@@ -89,8 +99,8 @@ abstract class BasePolicy
 
         // Get user's primary branch
         $userBranch = $user->getPrimaryBranch();
-        
-        if (!$userBranch) {
+
+        if (! $userBranch) {
             return false;
         }
 
@@ -123,6 +133,7 @@ abstract class BasePolicy
             $modelUser = \App\Models\User::find($model->user_id);
             if ($modelUser) {
                 $modelUserBranch = $modelUser->getPrimaryBranch();
+
                 return $modelUserBranch && $userBranch->id === $modelUserBranch->id;
             }
         }
@@ -181,8 +192,8 @@ abstract class BasePolicy
     public function view(User $user, mixed $model): bool
     {
         // Users can view resources they own or manage, or if they're in the same branch
-        return $this->ownsResource($user, $model) || 
-               $this->canManage($user, $model) || 
+        return $this->ownsResource($user, $model) ||
+               $this->canManage($user, $model) ||
                $this->belongsToSameBranch($user, $model);
     }
 
@@ -212,4 +223,4 @@ abstract class BasePolicy
         // Only users with management privileges can delete
         return $this->canManage($user, $model);
     }
-} 
+}

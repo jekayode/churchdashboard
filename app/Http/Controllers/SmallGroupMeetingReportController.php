@@ -11,6 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 final class SmallGroupMeetingReportController extends Controller
 {
@@ -50,9 +51,9 @@ final class SmallGroupMeetingReportController extends Controller
             $query->byStatus($request->status);
         }
 
-        // Apply date filtering - handle multiple parameter names
-        $startDate = $request->get('start_date') ?: $request->get('from_date');
-        $endDate = $request->get('end_date') ?: $request->get('to_date');
+        // Apply date filtering - handle multiple parameter names (reports dashboard uses date_from/date_to)
+        $startDate = $request->get('start_date') ?: $request->get('from_date') ?: $request->get('date_from');
+        $endDate = $request->get('end_date') ?: $request->get('to_date') ?: $request->get('date_to');
         $dateFilter = $request->get('date_filter');
 
         if ($dateFilter === 'custom' && $startDate && $endDate) {
@@ -351,6 +352,8 @@ final class SmallGroupMeetingReportController extends Controller
             'end_date' => 'nullable|date|after_or_equal:start_date',
             'from_date' => 'nullable|date',
             'to_date' => 'nullable|date|after_or_equal:from_date',
+            'date_from' => 'nullable|date',
+            'date_to' => 'nullable|date|after_or_equal:date_from',
             'branch_id' => 'nullable|integer|exists:branches,id',
             'small_group_id' => 'nullable|integer|exists:small_groups,id',
             'status' => 'nullable|in:pending,approved,rejected',
@@ -385,10 +388,10 @@ final class SmallGroupMeetingReportController extends Controller
             $query->forSmallGroup($request->small_group_id);
         }
 
-        // Apply date filtering - handle both 'period' and 'date_filter' parameter names
+        // Apply date filtering - handle both 'period' and 'date_filter' parameter names (reports dashboard uses date_from/date_to)
         $period = $request->get('period') ?: $request->get('date_filter', 'this_week');
-        $startDate = $request->get('start_date') ?: $request->get('from_date');
-        $endDate = $request->get('end_date') ?: $request->get('to_date');
+        $startDate = $request->get('start_date') ?: $request->get('from_date') ?: $request->get('date_from');
+        $endDate = $request->get('end_date') ?: $request->get('to_date') ?: $request->get('date_to');
 
         if ($period === 'custom' && $startDate && $endDate) {
             $query->inDateRange($startDate, $endDate);
@@ -401,8 +404,8 @@ final class SmallGroupMeetingReportController extends Controller
         }
         // If $period is 'all' or empty, no date filtering is applied
 
-        // Get statistics
-        $statistics = $query->selectRaw('
+        // Get statistics (clone builder so aggregates are not merged with later selectRaw calls)
+        $statistics = $query->clone()->selectRaw('
             COUNT(*) as total_meetings,
             COALESCE(SUM(total_attendance), 0) as total_attendance,
             COALESCE(SUM(male_attendance), 0) as total_male,
@@ -415,22 +418,38 @@ final class SmallGroupMeetingReportController extends Controller
         ')->first();
 
         // Get trend data (weekly breakdown)
-        $trendData = $query->selectRaw('
-            WEEK(meeting_date, 1) as week_number,
-            YEAR(meeting_date) as year,
-            DATE(DATE_SUB(meeting_date, INTERVAL WEEKDAY(meeting_date) DAY)) as week_start,
-            COALESCE(SUM(total_attendance), 0) as attendance,
-            COALESCE(SUM(first_time_guests), 0) as guests,
-            COALESCE(SUM(converts), 0) as converts,
-            COUNT(*) as meetings
-        ')
-            ->groupBy('year', 'week_number', 'week_start')
-            ->orderBy('year')
-            ->orderBy('week_number')
-            ->get();
+        if (DB::connection()->getDriverName() === 'sqlite') {
+            $trendData = $query->clone()->selectRaw('
+                CAST(strftime(\'%Y\', meeting_date) AS INTEGER) as year,
+                CAST(strftime(\'%W\', meeting_date) AS INTEGER) as week_number,
+                date(MIN(meeting_date)) as week_start,
+                COALESCE(SUM(total_attendance), 0) as attendance,
+                COALESCE(SUM(first_time_guests), 0) as guests,
+                COALESCE(SUM(converts), 0) as converts,
+                COUNT(*) as meetings
+            ')
+                ->groupBy('year', 'week_number')
+                ->orderBy('year')
+                ->orderBy('week_number')
+                ->get();
+        } else {
+            $trendData = $query->clone()->selectRaw('
+                WEEK(meeting_date, 1) as week_number,
+                YEAR(meeting_date) as year,
+                DATE(DATE_SUB(meeting_date, INTERVAL WEEKDAY(meeting_date) DAY)) as week_start,
+                COALESCE(SUM(total_attendance), 0) as attendance,
+                COALESCE(SUM(first_time_guests), 0) as guests,
+                COALESCE(SUM(converts), 0) as converts,
+                COUNT(*) as meetings
+            ')
+                ->groupBy('year', 'week_number', 'week_start')
+                ->orderBy('year')
+                ->orderBy('week_number')
+                ->get();
+        }
 
         // Get top performing groups (fix duplicate issue by separating grouping from eager loading)
-        $topGroupsData = $query->selectRaw('
+        $topGroupsData = $query->clone()->selectRaw('
                 small_group_id,
                 COALESCE(SUM(total_attendance), 0) as total_attendance,
                 COALESCE(SUM(first_time_guests), 0) as total_guests,

@@ -1709,6 +1709,27 @@
             }
         }
 
+        async function refreshSmallGroupsStatsFromReportFilters() {
+            const dateFrom = document.getElementById('dateFromFilter').value;
+            const dateTo = document.getElementById('dateToFilter').value;
+            const branchId = @json(Auth::user()->getActiveBranchId());
+            let params;
+            if (dateFrom && dateTo) {
+                params = new URLSearchParams({
+                    period: 'custom',
+                    date_from: dateFrom,
+                    date_to: dateTo
+                });
+            } else {
+                const period = document.getElementById('periodSelect').value;
+                params = new URLSearchParams({ period });
+            }
+            if (branchId) {
+                params.append('branch_id', branchId);
+            }
+            await loadSmallGroupsStats(params);
+        }
+
         // Pagination state variables
         let currentPage = 1;
         let currentPerPage = 20;
@@ -1762,6 +1783,8 @@
                     if (dateFrom && dateTo) {
                         loadFilteredChartData(dateFrom, dateTo, branchId);
                     }
+
+                    await refreshSmallGroupsStatsFromReportFilters();
                 }
             } catch (error) {
                 console.error('Error loading event reports:', error);

@@ -15,12 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         ]);
-        
+
         // Register custom middleware aliases
         $middleware->alias([
             'branch.scope' => \App\Http\Middleware\BranchScopeMiddleware::class,
             'authorize.resource' => \App\Http\Middleware\AuthorizeResourceMiddleware::class,
             'role' => \App\Http\Middleware\RoleBasedAccess::class,
+            'manage.builders' => \App\Http\Middleware\ManageBuilders::class,
+            'permission' => \App\Http\Middleware\PermissionBasedAccess::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

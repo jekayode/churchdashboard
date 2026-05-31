@@ -45,6 +45,51 @@ final class Role extends Model
             ->withTimestamps();
     }
 
+    public function permissions(): BelongsToMany
+    {
+        return $this->belongsToMany(Permission::class, 'role_permissions')
+            ->withTimestamps();
+    }
+
+    public function hasPermission(string $name): bool
+    {
+        if ($this->relationLoaded('permissions')) {
+            return $this->permissions->contains('name', $name);
+        }
+
+        return $this->permissions()->where('name', $name)->exists();
+    }
+
+    /**
+     * @param  array<int>  $permissionIds
+     */
+    public function syncPermissions(array $permissionIds): void
+    {
+        $this->permissions()->sync($permissionIds);
+    }
+
+    public function isSystemRole(): bool
+    {
+        return in_array($this->name, self::systemRoleNames(), true);
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function systemRoleNames(): array
+    {
+        return [
+            'super_admin',
+            'branch_pastor',
+            'ministry_leader',
+            'department_leader',
+            'church_member',
+            'public_user',
+            'directory_admin',
+            'business_care_leader',
+        ];
+    }
+
     /**
      * Scope to get roles by name.
      */

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Support\PermissionCatalog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Collection;
 use Laravel\Sanctum\HasApiTokens;
 
 final class User extends Authenticatable
@@ -264,6 +266,8 @@ final class User extends Authenticatable
         $roleHierarchy = [
             'super_admin',
             'branch_pastor',
+            'directory_admin',
+            'business_care_leader',
             'ministry_leader',
             'department_leader',
             'church_member',
@@ -316,6 +320,134 @@ final class User extends Authenticatable
     public function sendPasswordResetNotification($token): void
     {
         $this->notify(new \App\Notifications\ChurchPasswordResetNotification($token));
+    }
+
+    /**
+     * Businesses owned by this user.
+     */
+    public function businesses(): HasMany
+    {
+        return $this->hasMany(Business::class, 'owner_user_id');
+    }
+
+    public function ownsBusinesses(): bool
+    {
+        return $this->businesses()->exists();
+    }
+
+    public function isDirectoryAdmin(): bool
+    {
+        return $this->isSuperAdmin()
+            || $this->hasRole('branch_pastor')
+            || $this->hasRole('directory_admin');
+    }
+
+    /** @var array<string, bool>|null */
+    private ?array $permissionMemo = null;
+
+    public function hasPermission(string $name, ?int $branchId = null): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        $cacheKey = $name.':'.($branchId ?? 'all');
+
+        if ($this->permissionMemo !== null && array_key_exists($cacheKey, $this->permissionMemo)) {
+            return $this->permissionMemo[$cacheKey];
+        }
+
+        $allowed = $this->resolvePermission($name, $branchId);
+        $this->permissionMemo[$cacheKey] = $allowed;
+
+        return $allowed;
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function allPermissions(?int $branchId = null): Collection
+    {
+        if ($this->isSuperAdmin()) {
+            return collect(PermissionCatalog::names());
+        }
+
+        $names = [];
+
+        $roles = $this->rolesForBranch($branchId)->with('permissions')->get();
+
+        foreach ($roles as $role) {
+            foreach ($role->permissions as $permission) {
+                $names[$permission->name] = true;
+            }
+        }
+
+        return collect(array_keys($names));
+    }
+
+    private function resolvePermission(string $name, ?int $branchId): bool
+    {
+        foreach ($this->rolesForBranch($branchId)->get() as $role) {
+            if ($role->hasPermission($name)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<Role, $this>
+     */
+    private function rolesForBranch(?int $branchId): BelongsToMany
+    {
+        $query = $this->roles()->with('permissions');
+
+        if ($branchId !== null) {
+            $query->where(function ($q) use ($branchId): void {
+                $q->where('user_roles.branch_id', $branchId)
+                    ->orWhereNull('user_roles.branch_id');
+            });
+        }
+
+        return $query;
+    }
+
+    public function canManageBuilders(): bool
+    {
+        if ($this->isSuperAdmin()
+            || $this->hasRole('branch_pastor')
+            || $this->hasRole('directory_admin')
+            || $this->hasRole('business_care_leader')) {
+            return true;
+        }
+
+        $memberId = $this->member?->id;
+
+        if (! $memberId) {
+            return false;
+        }
+
+        return Ministry::query()
+            ->where('leader_id', $memberId)
+            ->where('name', 'like', '%Care%')
+            ->where('status', 'active')
+            ->exists();
+    }
+
+    public function builderRegistration(): HasOne
+    {
+        return $this->hasOne(BuilderRegistration::class);
+    }
+
+    public function businessLikes(): HasMany
+    {
+        return $this->hasMany(BusinessLike::class);
+    }
+
+    public function businessReviews(): HasMany
+    {
+        return $this->hasMany(BusinessReview::class);
     }
 
     /**

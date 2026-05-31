@@ -374,6 +374,30 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/{event}/registrations/{registration}/qr-code', [EventController::class, 'generateQrCode']);
         Route::get('/{event}/registrations/{registration}/qr-code/download', [EventController::class, 'downloadQrCode']);
     });
+
+    Route::prefix('admin')->name('api.admin.')->group(function (): void {
+        Route::middleware('permission:roles.view,roles.manage')->group(function (): void {
+            Route::get('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'index']);
+        });
+
+        Route::middleware('permission:roles.manage')->group(function (): void {
+            Route::get('/permissions', [\App\Http\Controllers\Admin\PermissionController::class, 'index']);
+            Route::post('/roles', [\App\Http\Controllers\Admin\RoleController::class, 'store']);
+            Route::put('/roles/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'update']);
+            Route::delete('/roles/{role}', [\App\Http\Controllers\Admin\RoleController::class, 'destroy']);
+            Route::get('/roles/{role}/permissions', [\App\Http\Controllers\Admin\RoleController::class, 'permissions']);
+            Route::put('/roles/{role}/permissions', [\App\Http\Controllers\Admin\RoleController::class, 'syncPermissions']);
+        });
+
+        Route::middleware('permission:users.view,users.assign_role')->group(function (): void {
+            Route::get('/users', [\App\Http\Controllers\Admin\UserRoleController::class, 'index']);
+        });
+
+        Route::middleware('permission:users.assign_role')->group(function (): void {
+            Route::post('/users/{user}/roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'assign']);
+            Route::delete('/users/{user}/roles', [\App\Http\Controllers\Admin\UserRoleController::class, 'revoke']);
+        });
+    });
 });
 
 // Public endpoints for welcome page
