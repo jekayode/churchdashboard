@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace App\Notifications;
 
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 
-final class BuilderAccountActivationNotification extends Notification implements ShouldQueue
+final class BuilderAccountActivationNotification extends Notification
 {
-    use Queueable;
-
     public function via(object $notifiable): array
     {
         return ['mail'];

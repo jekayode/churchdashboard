@@ -5,15 +5,11 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Models\BuilderRegistration;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-final class BuilderRegistrationReceivedNotification extends Notification implements ShouldQueue
+final class BuilderRegistrationReceivedNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(public BuilderRegistration $registration) {}
 
     public function via(object $notifiable): array

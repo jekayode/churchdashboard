@@ -14,6 +14,7 @@ use App\Notifications\BuilderAccountActivationNotification;
 use App\Notifications\BuilderPackReadyNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
@@ -56,9 +57,12 @@ final class BuilderRegistrationTest extends TestCase
     #[Test]
     public function new_email_creates_user_and_sends_activation_notification(): void
     {
+        Queue::fake();
         Notification::fake();
 
         $response = $this->post(route('builders.store'), $this->validPayload('newbuilder@example.com'));
+
+        Queue::assertNothingPushed();
 
         $response->assertRedirect(route('builders.thank-you'));
 
@@ -81,6 +85,7 @@ final class BuilderRegistrationTest extends TestCase
     #[Test]
     public function existing_email_updates_registration_and_sends_pack_ready_notification(): void
     {
+        Queue::fake();
         Notification::fake();
 
         $user = User::factory()->create([
@@ -91,6 +96,8 @@ final class BuilderRegistrationTest extends TestCase
         $response = $this->post(route('builders.store'), $this->validPayload('existing@example.com'));
 
         $response->assertRedirect(route('builders.thank-you'));
+
+        Queue::assertNothingPushed();
 
         $this->assertEquals(1, User::query()->where('email', 'existing@example.com')->count());
         $this->assertDatabaseHas('builder_registrations', [
