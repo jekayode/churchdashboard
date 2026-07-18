@@ -228,24 +228,36 @@ Separate Lovable/Supabase app by another pastor. **Not just check-in** — it ha
 
 ---
 
-## ⚠️ Security advisories — needs a decision (found 2026-07-18)
+## Security advisories — ✅ CLEARED (2026-07-18)
 
-`composer audit` reports **12 advisories across 8 packages**. Surfaced while
-installing the R2 adapter; all pre-existing. Two matter for this project:
+`composer audit` reported **12 advisories across 8 packages** (all pre-existing,
+surfaced while installing the R2 adapter). Now reports **none**.
 
-- **`phpoffice/phpspreadsheet` 1.30.4 — CRITICAL** (CVE-2026-45034, a patch bypass
-  for CVE-2026-34084). This sits directly under `maatwebsite/excel`, which parses
-  **user-uploaded spreadsheets** in the member import. Latest is 5.9.0, so fixing it
-  means upgrading `maatwebsite/excel` to a line that supports PhpSpreadsheet 2.x+ —
-  a real change with regression risk across the import/export suite.
-- **`spatie/laravel-medialibrary` — HIGH + medium.** Relevant now that Stage 2 widened
-  media use to sermons, series, events and small groups.
+Done on branch `chore/security-dependency-upgrades`.
 
-Also: `laravel/framework` (medium, signed-URL path confusion), `phpunit/phpunit`
-(high, dev-only), `guzzlehttp/*`, `psy/psysh`, `symfony/yaml`.
+The critical one needed far less than feared: **`phpoffice/phpspreadsheet`**
+(CVE-2026-45034 — a patch bypass, reachable from the user-uploaded spreadsheets in
+member import) affects `<=1.30.4`, and **1.30.6 is patched while still satisfying
+`maatwebsite/excel`'s `^1.29.9`**. No move to PhpSpreadsheet 2.x+ and no
+`maatwebsite/excel` 4.x-dev was required — the feared major upgrade was avoidable.
 
-**Not attempted as part of Stage 2** — a dependency upgrade of this size deserves its
-own branch and a full regression pass, not a bolt-on. Recommended before launch.
+| Package | Change | Severity |
+|---|---|---|
+| phpoffice/phpspreadsheet | 1.30.4 → 1.30.6 | **critical** |
+| spatie/laravel-medialibrary | 11.15.0 → 11.23.2 | high + medium |
+| phpunit/phpunit | 11.5.22 → 11.5.56 | high (dev-only) |
+| laravel/framework | 12.61.0 → 12.64.0 | medium |
+| guzzlehttp/guzzle | 7.10.5 → 7.15.1 | medium ×2 |
+| guzzlehttp/psr7 | 2.10.4 → 2.13.0 | medium |
+| maatwebsite/excel | 3.1.64 → 3.1.69 | — |
+| psy/psysh, symfony/yaml | updated | medium, low |
+
+All within existing `composer.json` constraints — none widened.
+
+**Verified beyond the suite:** exported 361 real members to `.xlsx` and read the file
+back with PhpSpreadsheet (362 rows, values intact). The tests use CSV fixtures, but
+Excel is PhpSpreadsheet's actual job, so it needed exercising directly.
+Suite unchanged at 425 passed.
 
 ---
 
