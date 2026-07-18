@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MinisterDashboardController;
 use App\Http\Controllers\Pastor\EventFormController;
+use App\Http\Controllers\Pastor\SeriesController as SeriesWebController;
 use App\Http\Controllers\Pastor\SermonController as SermonWebController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
@@ -226,6 +227,14 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
     Route::put('/sermons/{sermon}', [SermonWebController::class, 'update'])->name('sermons.update');
     Route::delete('/sermons/{sermon}', [SermonWebController::class, 'destroy'])->name('sermons.destroy');
     Route::delete('/sermons/{sermon}/media/{media}', [SermonWebController::class, 'destroyMedia'])->name('sermons.media.destroy');
+
+    // Sermon series
+    Route::get('/series', [SeriesWebController::class, 'index'])->name('series');
+    Route::get('/series/create', [SeriesWebController::class, 'create'])->name('series.create');
+    Route::post('/series', [SeriesWebController::class, 'store'])->name('series.store');
+    Route::get('/series/{series}/edit', [SeriesWebController::class, 'edit'])->name('series.edit');
+    Route::put('/series/{series}', [SeriesWebController::class, 'update'])->name('series.update');
+    Route::delete('/series/{series}', [SeriesWebController::class, 'destroy'])->name('series.destroy');
 
     Route::get('/finances', function () {
         return view('pastor.finances.index');

@@ -90,6 +90,8 @@
                     <a href="{{ route('pastor.small-groups.reports') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">Life Group Reports</a>
                     <a href="{{ route('pastor.events') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">Events</a>
                     <a href="#" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">Public Events</a>
+                    <a href="{{ route('pastor.sermons') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.sermons*') ? 'bg-church-50 text-church-700' : '' }}">Sermons</a>
+                    <a href="{{ route('pastor.series') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.series*') ? 'bg-church-50 text-church-700' : '' }}">Sermon Series</a>
                 </div>
             </div>
 
@@ -220,6 +222,8 @@
                     <a href="{{ route('admin.small-groups') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">Life Groups</a>
                     <a href="{{ route('admin.small-groups.reports') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">Life Group Reports</a>
                     <a href="{{ route('admin.events') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">Events</a>
+                    <a href="{{ route('pastor.sermons') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.sermons*') ? 'bg-church-50 text-church-700' : '' }}">Sermons</a>
+                    <a href="{{ route('pastor.series') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.series*') ? 'bg-church-50 text-church-700' : '' }}">Sermon Series</a>
                 </div>
             </div>
 
