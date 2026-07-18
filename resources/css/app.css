@@ -7,6 +7,12 @@
     h1, h2 {
         font-family: 'Amaranth', 'Quicksand', sans-serif;
     }
+
+    /* Alpine needs this to actually hide x-cloak elements until it boots;
+       without it, every x-cloak element flashes visible on page load. */
+    [x-cloak] {
+        display: none !important;
+    }
 }
 
 /* Builders public pages — explicit colors so header/buttons stay visible if utility classes are missing from the build */

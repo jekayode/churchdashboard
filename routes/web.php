@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MinisterDashboardController;
 use App\Http\Controllers\Pastor\EventFormController;
+use App\Http\Controllers\Pastor\SermonController as SermonWebController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
@@ -216,6 +217,15 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
     Route::get('/events/{event}/registrations', function ($eventId) {
         return view('pastor.events.registrations', compact('eventId'));
     })->name('events.registrations');
+
+    // Sermon library — feeds the member app's "Watch" tab
+    Route::get('/sermons', [SermonWebController::class, 'index'])->name('sermons');
+    Route::get('/sermons/create', [SermonWebController::class, 'create'])->name('sermons.create');
+    Route::post('/sermons', [SermonWebController::class, 'store'])->name('sermons.store');
+    Route::get('/sermons/{sermon}/edit', [SermonWebController::class, 'edit'])->name('sermons.edit');
+    Route::put('/sermons/{sermon}', [SermonWebController::class, 'update'])->name('sermons.update');
+    Route::delete('/sermons/{sermon}', [SermonWebController::class, 'destroy'])->name('sermons.destroy');
+    Route::delete('/sermons/{sermon}/media/{media}', [SermonWebController::class, 'destroyMedia'])->name('sermons.media.destroy');
 
     Route::get('/finances', function () {
         return view('pastor.finances.index');

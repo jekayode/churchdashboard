@@ -84,7 +84,30 @@ groups, profile, visit (newcomers), plus an onboarding flow.
 
 ---
 
-## Stage 2 — Sermon library (backend + pastor admin UI)
+## Stage 2 — Sermon library (backend + pastor admin UI) — ✅ DONE (2026-07-18)
+
+Backend, member API and the pastor admin UI are all in. Pastors can create and
+publish sermons from the dashboard, and what they publish reaches the app.
+
+**Pastor UI:** `pastor/sermons` (index with search + series filter) and a create/edit
+form covering details, cover/recording/slides upload, a repeatable Bible-passage
+builder, draft-vs-published, and a live-stream toggle. `SermonPolicy`/`SeriesPolicy`
+scope everything to the pastor's branch; network-wide sermons stay with super admins.
+
+**Test gate — passed:** 17 pastor-UI tests (authorization, validation, uploads,
+passage replacement, branch scoping, delete) plus an end-to-end check that a
+published sermon appears in `/api/me/sermons` and an unpublished one does not.
+Suite: **442 passed**.
+
+**Two bugs caught while testing, both real:**
+- `required_if:is_live,1` never fired because `prepareForValidation` casts `is_live`
+  to a boolean, which never equals the string `"1"` — live sermons could be saved
+  with no stream URL. Now `required_if_accepted:is_live`.
+- `[x-cloak]` had **no CSS rule anywhere**, so Alpine never hid cloaked elements.
+  This affected 4 pre-existing pages too (builders form, roles, guests, permissions),
+  all of which flashed hidden content on load. Fixed once in `app.css`.
+
+### Original plan (for reference)
 
 **Build**
 - [ ] Models + migrations: `Series` (name, description, cover, tone), `Sermon` (title,

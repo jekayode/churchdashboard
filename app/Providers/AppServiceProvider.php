@@ -50,6 +50,8 @@ final class AppServiceProvider extends ServiceProvider
         DirectoryCategory::class => DirectoryCategoryPolicy::class,
         DirectorySetting::class => DirectorySettingPolicy::class,
         \App\Models\BusinessReview::class => BusinessReviewPolicy::class,
+        \App\Models\Sermon::class => \App\Policies\SermonPolicy::class,
+        \App\Models\Series::class => \App\Policies\SeriesPolicy::class,
     ];
 
     /**
