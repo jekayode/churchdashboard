@@ -21,7 +21,7 @@
             @endphp
 
             <!-- Welcome Section -->
-            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-church-500 to-secondary-500 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
                     <h3 class="text-2xl font-bold mb-2">Welcome, {{ $user->name }}!</h3>
                     <p class="text-indigo-100">Ministry Leader - Equipping the Saints</p>
@@ -116,7 +116,7 @@
                             <div class="border border-gray-200 rounded-lg p-4">
                                 <div class="flex items-center justify-between mb-3">
                                     <h5 class="font-medium text-gray-900">{{ $ministry->name }}</h5>
-                                    <span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
+                                    <span class="px-2 py-1 text-xs bg-blue-100 text-church-700 rounded-full">
                                         {{ \App\Models\Department::where('ministry_id', $ministry->id)->count() }} Departments
                                     </span>
                                 </div>
@@ -140,7 +140,7 @@
                                 </div>
                                 
                                 <div class="mt-4 flex space-x-2">
-                                    <a href="#" class="text-blue-600 hover:text-blue-800 text-sm">Manage Departments</a>
+                                    <a href="#" class="text-church-600 hover:text-church-700 text-sm">Manage Departments</a>
                                     <a href="#" class="text-green-600 hover:text-green-800 text-sm">View Events</a>
                                 </div>
                             </div>

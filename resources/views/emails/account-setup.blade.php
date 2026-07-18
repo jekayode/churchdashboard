@@ -1,4 +1,4 @@
-@php($appName = $appName ?? config('app.name', 'Church Dashboard'))
+@php($appName = $appName ?? config('app.name', 'LifePointe'))
 <!doctype html>
 <html>
   <body style="font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; line-height:1.6; color:#111827;">

@@ -9,8 +9,8 @@
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-        <link rel="preload" href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-        <noscript><link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet"></noscript>
+        <link rel="preload" href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" rel="stylesheet"></noscript>
 
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -47,7 +47,7 @@
                                         Dashboard
                                     </a>
                                 @else
-                                    <a href="{{ route('login') }}" class="bg-[#F1592A] hover:bg-[#E54A1A] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                                    <a href="{{ route('login') }}" class="bg-[#DD5D20] hover:bg-[#C24E16] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
                                         Login
                                     </a>
                                 @endauth

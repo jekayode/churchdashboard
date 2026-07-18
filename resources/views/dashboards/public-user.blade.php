@@ -11,12 +11,12 @@
             @endphp
 
             <!-- Welcome Hero Section -->
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-church-500 to-secondary-500 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-8 text-white">
                     <h3 class="text-3xl font-bold mb-2">Welcome to {{ $branch->name ?? 'Our Church' }}!</h3>
                     <p class="text-blue-100 text-lg">Discover our community, join our events, and grow in faith together.</p>
                     <div class="mt-4">
-                        <a href="#events" class="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
+                        <a href="#events" class="bg-white text-church-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors">
                             Explore Events
                         </a>
                     </div>
@@ -136,7 +136,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div class="text-center">
                             <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-6 h-6 text-church-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                 </svg>

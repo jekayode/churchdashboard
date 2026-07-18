@@ -15,7 +15,7 @@
                             <p style="margin:0 0 8px 0;font-size:15px;color:#374151;">Hi {{ $recipientName }},</p>
                             <p style="margin:0 0 16px 0;font-size:15px;color:#374151;">You are confirmed for <strong>{{ $eventName }}</strong>.</p>
                             <p style="margin:0 0 20px 0;font-size:14px;color:#6b7280;">We look forward to seeing you there.</p>
-                            <a href="{{ $eventPageUrl }}" style="display:inline-block;background:#F1592A;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 20px;border-radius:8px;">View event</a>
+                            <a href="{{ $eventPageUrl }}" style="display:inline-block;background:#DD5D20;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 20px;border-radius:8px;">View event</a>
                         </td>
                     </tr>
                 </table>

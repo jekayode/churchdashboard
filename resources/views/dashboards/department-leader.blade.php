@@ -7,7 +7,7 @@
             @endphp
 
             <!-- Welcome Section -->
-            <div class="bg-gradient-to-r from-teal-600 to-green-600 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-church-500 to-secondary-500 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
                     <h3 class="text-2xl font-bold mb-2">Welcome, {{ $user->name }}!</h3>
                     <p class="text-teal-100">Department Leader - Building Strong Teams</p>
@@ -139,7 +139,7 @@
                                 </div>
                                 
                                 <div class="flex space-x-2">
-                                    <a href="#" class="text-blue-600 hover:text-blue-800 text-sm">Manage Team</a>
+                                    <a href="#" class="text-church-600 hover:text-church-700 text-sm">Manage Team</a>
                                     <a href="#" class="text-green-600 hover:text-green-800 text-sm">View Schedule</a>
                                 </div>
                             </div>
@@ -205,7 +205,7 @@
                                     <p class="text-xs text-gray-500">Youth Department</p>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-xs text-blue-600 font-medium">Due Friday</p>
+                                    <p class="text-xs text-church-600 font-medium">Due Friday</p>
                                     <p class="text-xs text-gray-400">Medium Priority</p>
                                 </div>
                             </div>
@@ -223,7 +223,7 @@
                         </div>
                         
                         <div class="mt-4">
-                            <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All Tasks</a>
+                            <a href="#" class="text-church-600 hover:text-church-700 text-sm font-medium">View All Tasks</a>
                         </div>
                     </div>
                 </div>

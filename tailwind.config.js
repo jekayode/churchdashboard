@@ -12,39 +12,48 @@ export default {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'Figtree', ...defaultTheme.fontFamily.sans],
+                // LifePointe brand: Body/UI → Quicksand · Headings → Amaranth · Script accent → Pacifico
+                sans: ['Quicksand', 'Trebuchet MS', ...defaultTheme.fontFamily.sans],
                 serif: ['Playfair Display', 'Georgia', ...defaultTheme.fontFamily.serif],
-                display: ['Clash Display', 'Inter', ...defaultTheme.fontFamily.sans],
+                display: ['Amaranth', 'Quicksand', ...defaultTheme.fontFamily.sans],
+                script: ['Pacifico', 'Playball', 'cursive'],
             },
             colors: {
-                // Church Brand Colors - Primary Green
+                // LifePointe Brand Colors - Primary Burnt Orange (#DD5D20)
                 church: {
-                    50: '#f4f9e8',
-                    100: '#e6f2c6',
-                    200: '#d1e690',
-                    300: '#b8d750',
-                    400: '#a5cc3e',
-                    500: '#9DC83B', // Primary brand color
-                    600: '#8bb332',
-                    700: '#759928',
-                    800: '#5f7d20',
-                    900: '#4d651a',
-                    950: '#293609',
+                    50: '#fdf3ec',
+                    100: '#fae3d3',
+                    200: '#f5c5a6',
+                    300: '#efa274',
+                    400: '#e77e45',
+                    500: '#DD5D20', // Burnt Orange — primary / action
+                    600: '#C24E16', // hover / pressed
+                    700: '#a03f12',
+                    800: '#7A3B12', // Support brown
+                    900: '#62300f',
+                    950: '#351806',
                 },
-                // Church Secondary Colors - Orange
+                // LifePointe Secondary - Amber Yellow (#F79000)
                 secondary: {
-                    50: '#fef6f0',
-                    100: '#fdeadd',
-                    200: '#fad1bb',
-                    300: '#f6b08e',
-                    400: '#f18560',
-                    500: '#F1592A', // Secondary brand color
-                    600: '#e2421a',
-                    700: '#bc3216',
-                    800: '#962a18',
-                    900: '#792517',
-                    950: '#411009',
+                    50: '#fff8eb',
+                    100: '#feeecc',
+                    200: '#fddb99',
+                    300: '#fbc35c',
+                    400: '#f9a928',
+                    500: '#F79000', // Amber Yellow — highlight
+                    600: '#d97a00',
+                    700: '#b36200',
+                    800: '#8c4d00',
+                    900: '#733f02',
+                    950: '#422301',
                 },
+                // LifePointe Neutrals
+                cream: {
+                    DEFAULT: '#FBF4EA', // default page background
+                    deep: '#EFE3CF',    // borders, dividers, muted fills
+                },
+                ink: '#241813',        // Warm Ink — body text & headings
+                lemon: '#B6DF19',      // decorative accent ONLY, never text
                 // Spiritual/Sacred Colors (keeping golden theme)
                 sacred: {
                     50: '#fefce8',
@@ -73,33 +82,37 @@ export default {
                     900: '#14532d',
                     950: '#052e16',
                 },
-                // Prayer/Worship Colors (keeping purple theme)
+                // Prayer/Worship Colors - LifePointe Spiritual Purple (#6B3FA0)
                 worship: {
-                    50: '#faf5ff',
-                    100: '#f3e8ff',
-                    200: '#e9d5ff',
-                    300: '#d8b4fe',
-                    400: '#c084fc',
-                    500: '#a855f7',
-                    600: '#9333ea',
-                    700: '#7c3aed',
-                    800: '#6b21a8',
-                    900: '#581c87',
-                    950: '#3b0764',
+                    50: '#f4effa',
+                    100: '#e8dff4',
+                    200: '#cdb9e7',
+                    300: '#ac8bd4',
+                    400: '#8a5fbe',
+                    500: '#6B3FA0', // Spiritual accent
+                    600: '#5a3488',
+                    700: '#4a2b70',
+                    800: '#3a2158',
+                    900: '#2c1943',
+                    950: '#180d26',
                 },
-                // Ministry/Service Colors (using secondary orange tones)
+                // Ministry/Service Colors (LifePointe burnt orange tones)
                 ministry: {
-                    50: '#fef6f0',
-                    100: '#fdeadd',
-                    200: '#fad1bb',
-                    300: '#f6b08e',
-                    400: '#f18560',
-                    500: '#F1592A',
-                    600: '#e2421a',
-                    700: '#bc3216',
-                    800: '#962a18',
-                    900: '#792517',
-                    950: '#411009',
+                    50: '#fdf3ec',
+                    100: '#fae3d3',
+                    200: '#f5c5a6',
+                    300: '#efa274',
+                    400: '#e77e45',
+                    500: '#DD5D20',
+                    600: '#C24E16',
+                    700: '#a03f12',
+                    800: '#7A3B12',
+                    900: '#62300f',
+                    950: '#351806',
+                },
+                // Alert / energy (LifePointe red)
+                danger: {
+                    500: '#D5341A',
                 },
             },
             spacing: {
@@ -112,8 +125,8 @@ export default {
                 '5xl': '2.5rem',
             },
             boxShadow: {
-                'church': '0 10px 25px -3px rgba(157, 200, 59, 0.1), 0 4px 6px -2px rgba(157, 200, 59, 0.05)',
-                'secondary': '0 10px 25px -3px rgba(241, 89, 42, 0.1), 0 4px 6px -2px rgba(241, 89, 42, 0.05)',
+                'church': '0 10px 25px -3px rgba(221, 93, 32, 0.1), 0 4px 6px -2px rgba(221, 93, 32, 0.05)',
+                'secondary': '0 10px 25px -3px rgba(247, 144, 0, 0.1), 0 4px 6px -2px rgba(247, 144, 0, 0.05)',
                 'sacred': '0 10px 25px -3px rgba(234, 179, 8, 0.1), 0 4px 6px -2px rgba(234, 179, 8, 0.05)',
                 'worship': '0 10px 25px -3px rgba(168, 85, 247, 0.1), 0 4px 6px -2px rgba(168, 85, 247, 0.05)',
             },
@@ -146,19 +159,19 @@ export default {
                     textShadow: '0 4px 8px rgba(0,0,0,0.12), 0 2px 4px rgba(0,0,0,0.08)',
                 },
                 '.gradient-church': {
-                    background: 'linear-gradient(135deg, #9DC83B 0%, #8bb332 100%)',
+                    background: 'linear-gradient(135deg, #DD5D20 0%, #C24E16 100%)',
                 },
                 '.gradient-secondary': {
-                    background: 'linear-gradient(135deg, #F1592A 0%, #e2421a 100%)',
+                    background: 'linear-gradient(135deg, #F79000 0%, #d97a00 100%)',
                 },
                 '.gradient-sacred': {
-                    background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
+                    background: 'linear-gradient(135deg, #F79000 0%, #d97a00 100%)',
                 },
                 '.gradient-worship': {
-                    background: 'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
+                    background: 'linear-gradient(135deg, #6B3FA0 0%, #5a3488 100%)',
                 },
                 '.gradient-brand': {
-                    background: 'linear-gradient(135deg, #9DC83B 0%, #F1592A 100%)',
+                    background: 'linear-gradient(135deg, #DD5D20 0%, #F79000 100%)',
                 },
             }
             addUtilities(newUtilities)
