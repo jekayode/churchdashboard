@@ -9,6 +9,7 @@ use App\Http\Resources\SeriesResource;
 use App\Http\Resources\SermonResource;
 use App\Models\Series;
 use App\Models\Sermon;
+use App\Services\BibleService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -93,6 +94,53 @@ final class SermonController extends Controller
         return response()->json([
             'success' => true,
             'data' => new SermonResource($sermon),
+        ]);
+    }
+
+    /**
+     * Scripture text for a sermon's passages — the app's "read along" toggle.
+     *
+     * Kept off the sermon payload so the list and detail screens stay fast; the
+     * text is only fetched when a member actually opens it.
+     */
+    public function passages(Request $request, Sermon $sermon, BibleService $bible): JsonResponse
+    {
+        $member = $this->currentMember($request);
+
+        if (! $this->isVisibleTo($sermon, $member->branch_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This sermon is not available.',
+            ], 404);
+        }
+
+        $validated = $request->validate([
+            'translation' => ['nullable', 'string', 'in:'.implode(',', array_keys($bible->translations()))],
+        ]);
+
+        $translation = $validated['translation'] ?? null;
+
+        $passages = $sermon->passages->map(function ($passage) use ($bible, $translation): array {
+            $text = $bible->passage($passage->reference, $translation);
+
+            return [
+                'id' => $passage->id,
+                'reference' => $passage->reference,
+                // null when the lookup fails or scripture is unconfigured; the
+                // app still shows the reference itself.
+                'text' => $text['content'] ?? null,
+                'copyright' => $text['copyright'] ?? null,
+                'translation' => $text['translation'] ?? null,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $passages,
+            'meta' => [
+                'scripture_available' => $bible->isConfigured(),
+                'translations' => $bible->translations(),
+            ],
         ]);
     }
 

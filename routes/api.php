@@ -93,6 +93,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/sermons/series', [MeSermonController::class, 'series'])->name('sermons.series');
         Route::get('/sermons/saved', [MeSermonController::class, 'saved'])->name('sermons.saved');
         Route::get('/sermons/{sermon}', [MeSermonController::class, 'show'])->name('sermons.show');
+        Route::get('/sermons/{sermon}/passages', [MeSermonController::class, 'passages'])->name('sermons.passages');
         Route::post('/sermons/{sermon}/save', [MeSermonController::class, 'save'])->name('sermons.save');
         Route::delete('/sermons/{sermon}/save', [MeSermonController::class, 'unsave'])->name('sermons.unsave');
 

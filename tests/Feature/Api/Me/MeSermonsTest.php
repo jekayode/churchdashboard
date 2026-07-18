@@ -219,4 +219,55 @@ final class MeSermonsTest extends TestCase
             ->assertJsonPath('data.is_live', true)
             ->assertJsonPath('data.live_url', 'https://example.test/live');
     }
+
+    public function test_passages_endpoint_returns_scripture_text(): void
+    {
+        \Illuminate\Support\Facades\Http::fake([
+            'rest.api.bible/*' => \Illuminate\Support\Facades\Http::response([
+                'data' => [
+                    'reference' => 'Psalms 1:1-3',
+                    'content' => '[1] Oh, the joys of those who do not follow the advice of the wicked...',
+                    'copyright' => 'Holy Bible, New Living Translation',
+                ],
+            ]),
+        ]);
+        config()->set('bible.key', 'test-key');
+
+        $sermon = Sermon::factory()->create();
+        SermonPassage::factory()->create(['sermon_id' => $sermon->id, 'reference' => 'Psalm 1:1-3', 'position' => 0]);
+
+        Sanctum::actingAs($this->user);
+
+        $this->getJson("/api/me/sermons/{$sermon->id}/passages")
+            ->assertOk()
+            ->assertJsonPath('data.0.reference', 'Psalm 1:1-3')
+            ->assertJsonPath('data.0.copyright', 'Holy Bible, New Living Translation')
+            ->assertJsonPath('meta.scripture_available', true);
+    }
+
+    public function test_passages_endpoint_still_returns_references_when_scripture_is_unavailable(): void
+    {
+        config()->set('bible.key', null);
+
+        $sermon = Sermon::factory()->create();
+        SermonPassage::factory()->create(['sermon_id' => $sermon->id, 'reference' => 'Psalm 1:1-3', 'position' => 0]);
+
+        Sanctum::actingAs($this->user);
+
+        // The reference must survive even with no scripture provider.
+        $this->getJson("/api/me/sermons/{$sermon->id}/passages")
+            ->assertOk()
+            ->assertJsonPath('data.0.reference', 'Psalm 1:1-3')
+            ->assertJsonPath('data.0.text', null)
+            ->assertJsonPath('meta.scripture_available', false);
+    }
+
+    public function test_passages_endpoint_rejects_unknown_translation(): void
+    {
+        $sermon = Sermon::factory()->create();
+        Sanctum::actingAs($this->user);
+
+        $this->getJson("/api/me/sermons/{$sermon->id}/passages?translation=FAKE")
+            ->assertUnprocessable();
+    }
 }
