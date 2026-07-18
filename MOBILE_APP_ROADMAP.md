@@ -49,29 +49,81 @@ Each stage has a **build scope** and a **test gate**. We do not move to the next
 
 ---
 
+## Mobile app design — reviewed 2026-07-18
+
+Design lives in the Claude Design project (`prototype/` folder); handoff bundle is
+`LifePointe Design System-handoff.zip` in the repo root (gitignored — 16 MB).
+
+**Decision: implement the design at Stage 5, not before** — there is no app to
+implement into until then, and the screens depend on APIs from Stages 2–4. But the
+design has already been reviewed, and Stages 2–4 below are revised to match it.
+
+**App shell:** 5 tabs — Home · Watch (sermons) · Read (devotional/plan) · Give · More.
+Overlay screens: sermon player (supports a `live` flag), event detail, events list,
+groups, profile, visit (newcomers), plus an onboarding flow.
+
+**Decisions taken:**
+- **Give stays Phase 2.** The tab exists in the shell from v1 but links out to the
+  existing giving page (webview). Full Paystack integration lands after launch so a
+  payments sub-project cannot delay the app.
+- **One reading-plan model covers both.** A `ReadingPlan` may be a 365-day
+  Bible-in-a-year (passage references + "What Now?" questions, imported from the
+  existing WhatsApp content) *or* a short written devotional series like
+  "Rooted — Day 12 of 21" (focus verse, body paragraphs, reflection prompt).
+  Members follow a plan; the streak spans whichever plan they are on.
+
+**Gaps the design exposed (folded into the stages below):**
+- Cover images are needed on sermons, series, events and small groups. Today only
+  `Member` and `Business` use Spatie media — `Event` and `SmallGroup` have none.
+- Sermons need duration, speaker, series, cover image and a `is_live` flag.
+- Series/events/groups carry a `tone` accent colour (orange/purple/amber/lemon).
+- Events should expose **spots remaining** (capacity − registrations).
+- Profile stats imply **saved/bookmarked sermons** and a per-year giving total.
+- Groups display an **area** (Sangotedo, Ajah, Ikate) — confirm whether the existing
+  `location` field covers this or a separate field is needed.
+
+---
+
 ## Stage 2 — Sermon library (backend + pastor admin UI)
 
 **Build**
-- [ ] Models + migrations: `Series`, `Sermon` (title, preacher, date, series_id, description), `SermonPassage` (book/chapter/verses, order)
-- [ ] Media via Spatie: audio recording, slides (PDF/images) — configure S3-compatible disk
-- [ ] Pastor web UI: create/edit sermon, upload recording + slides, attach passages
-- [ ] Member API: `GET /api/sermons` with filters (series, preacher, search, sort), `GET /api/sermons/{id}` incl. media URLs + passages
+- [ ] Models + migrations: `Series` (name, description, cover, tone), `Sermon` (title,
+      preacher/speaker, date, series_id, description, duration, `is_live`, tone),
+      `SermonPassage` (book/chapter/verses, order)
+- [ ] Media via Spatie: audio/video recording, slides (PDF/images), **cover image** on
+      both Sermon and Series — configure S3-compatible disk
+- [ ] **Add Spatie media to `Event` and `SmallGroup`** (cover images) — required by the design
+- [ ] Saved/bookmarked sermons per member (drives the "Messages saved" profile stat)
+- [ ] Pastor web UI: create/edit sermon, upload recording + slides + cover, attach passages
+- [ ] Member API: `GET /api/sermons` with filters (series, preacher, search, sort),
+      `GET /api/sermons/{id}` incl. media URLs + passages; `POST/DELETE /api/me/sermons/{id}/save`
+- [ ] Add `spots_remaining` to the member event payload
 
 **Test gate**
-- [ ] Feature tests: CRUD, filters, authorization (only pastors create)
+- [ ] Feature tests: CRUD, filters, authorization (only pastors create), save/unsave
 - [ ] Upload a real sermon recording + slide deck; confirm playback URL works and large files stream (no memory blowup)
 - [ ] Passages return in order
 
 ---
 
-## Stage 3 — Bible-in-a-year reading plan + streak
+## Stage 3 — Reading plans + streak
+
+Supports **both** plan types behind one model (decision 2026-07-18):
+a 365-day Bible-in-a-year of passage references, and short written devotional
+series ("Rooted — Day 12 of 21").
 
 **Build**
-- [ ] Models: `ReadingPlan`, `ReadingDay` (date, passages JSON, study_questions richtext), `MemberReadingProgress` (member, day, completed_at)
+- [ ] Models: `ReadingPlan` (name, description, length, type: `passages` | `devotional`, cover, tone),
+      `ReadingDay` (plan_id, day_number, optional date, passages JSON, title, focus_verse,
+      body richtext, reflection_prompt, study_questions richtext),
+      `MemberReadingProgress` (member, reading_day, completed_at),
+      `MemberPlanEnrolment` (member, plan, started_at)
 - [ ] Excel bulk import (Maatwebsite — already installed): 365 days in one upload
-- [ ] Streak logic service: current streak, longest streak, timezone-safe day boundaries
-- [ ] Member API: `GET /api/me/reading/today`, `GET /api/me/reading/{date}`, `POST /api/me/reading/{date}/complete`, `GET /api/me/reading/streak`
-- [ ] **Decision:** Bible text source — API.Bible integration vs references-only v1
+- [ ] Streak logic service: current streak, longest streak, timezone-safe day boundaries; streak spans plans
+- [ ] Member API: `GET /api/me/reading/today`, `GET /api/me/reading/plan` (the day list with
+      done/today flags for the "The Plan" tab), `GET /api/me/reading/{date|day}`,
+      `POST /api/me/reading/{day}/complete`, `GET /api/me/reading/streak`, plan enrol/switch
+- [ ] **Open decision:** Bible text source — API.Bible integration vs references-only v1
 
 **Test gate**
 - [ ] Import the real 2026 plan spreadsheet end-to-end; spot-check July 17 renders correctly (passages + "What Now?" questions)
@@ -93,12 +145,16 @@ Each stage has a **build scope** and a **test gate**. We do not move to the next
 
 ---
 
-## Stage 5 — Expo app skeleton
+## Stage 5 — Expo app skeleton (implement the design here)
 
 **Build**
 - [ ] Expo + TypeScript project, NativeWind theme generated from LifePointe tokens
 - [ ] Auth flow: login → store Sanctum token (SecureStore) → auto-refresh → logout
-- [ ] Tab navigation shell: Home · Bible · Sermons · Events · Profile
+- [ ] Tab navigation shell per the design: **Home · Watch · Read · Give · More**
+      (Give links out to the existing giving page until Phase 2)
+- [ ] Onboarding flow + light/dark theme support (the prototype ships both)
+- [ ] Port the prototype screens (`prototype/screens1-3.jsx`, `onboarding.jsx`, `kit.jsx`)
+      to React Native — match the visuals, not the prototype's internal structure
 - [ ] API client (axios + TanStack Query) pointed at the Laravel API
 
 **Test gate**
