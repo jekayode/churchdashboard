@@ -89,6 +89,7 @@ final class BranchReportToken extends Model
             'email' => $email,
             'allowed_events' => $allowedEvents,
             'expires_at' => $expiresAt,
+            'is_active' => true,
             'is_team_token' => false,
         ]);
     }

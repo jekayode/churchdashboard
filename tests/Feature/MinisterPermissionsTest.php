@@ -17,6 +17,13 @@ final class MinisterPermissionsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
+    }
+
     private function makeBranchWithMinister(string $category): array
     {
         $branch = Branch::factory()->create();

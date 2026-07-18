@@ -340,7 +340,7 @@ final class PerformanceControllerTest extends TestCase
         EventReport::factory()->create([
             'event_id' => $event->id,
             'event_type' => 'service',
-            'report_date' => '2025-01-15',
+            'report_date' => now()->startOfYear()->addDays(14)->format('Y-m-d'),
             'attendance_male' => 50,
             'attendance_female' => 60,
             'attendance_children' => 30,
@@ -367,7 +367,7 @@ final class PerformanceControllerTest extends TestCase
         EventReport::factory()->create([
             'event_id' => $event->id,
             'event_type' => 'service',
-            'report_date' => '2025-01-15',
+            'report_date' => now()->startOfYear()->addDays(14)->format('Y-m-d'),
             'attendance_male' => 50,
             'attendance_female' => 60,
             'attendance_children' => 30,

@@ -64,11 +64,11 @@ class GuestRegistrationAttemptTest extends TestCase
 
         $response = $this->post(route('public.guest-register.store'), $payload);
 
+        // A duplicate email is now caught by validation rather than a DB error
         $response->assertRedirect();
-        $response->assertSessionHas('error');
+        $response->assertSessionHasErrors('email');
         $this->assertDatabaseHas('guest_registration_attempts', [
             'email' => 'existing@example.com',
-            'status' => 'database_error',
         ]);
     }
 

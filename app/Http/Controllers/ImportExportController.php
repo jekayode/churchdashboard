@@ -70,8 +70,17 @@ final class ImportExportController extends Controller
             // Validate request
             $request->validate([
                 'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-                'branch_id' => 'nullable|integer|exists:branches,id',
+                'branch_id' => 'required|integer|exists:branches,id',
             ]);
+
+            // Branch pastors may only import into their own branch
+            if ($user->isBranchPastor() && ! $user->isSuperAdmin()
+                && (int) $request->input('branch_id') !== $user->getActiveBranchId()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only import members to your own branch.',
+                ], 403);
+            }
 
             // Determine branch ID
             $branchId = $this->getBranchId($request);

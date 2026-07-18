@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Branch;
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -13,22 +15,38 @@ final class AuthenticationTest extends TestCase
 {
     use RefreshDatabase, WithFaker;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
+    }
+
     public function test_user_can_register(): void
     {
+        $branch = Branch::factory()->create();
+        $role = Role::where('name', 'church_member')->firstOrFail();
+
         $userData = [
             'name' => $this->faker->name,
             'email' => $this->faker->unique()->safeEmail,
             'password' => 'password123',
             'password_confirmation' => 'password123',
+            'branch_id' => $branch->id,
+            'role_id' => $role->id,
+            'device_name' => 'test-device',
         ];
 
         $response = $this->postJson('/api/auth/register', $userData);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
+                'success',
                 'message',
-                'user' => ['id', 'name', 'email'],
-                'token',
+                'data' => [
+                    'user' => ['id', 'name', 'email'],
+                    'token',
+                ],
             ]);
 
         $this->assertDatabaseHas('users', [
@@ -45,13 +63,17 @@ final class AuthenticationTest extends TestCase
         $response = $this->postJson('/api/auth/login', [
             'email' => $user->email,
             'password' => 'password123',
+            'device_name' => 'test-device',
         ]);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
+                'success',
                 'message',
-                'user' => ['id', 'name', 'email'],
-                'token',
+                'data' => [
+                    'user' => ['id', 'name', 'email'],
+                    'token',
+                ],
             ]);
     }
 
@@ -62,6 +84,7 @@ final class AuthenticationTest extends TestCase
         $response = $this->postJson('/api/auth/login', [
             'email' => $user->email,
             'password' => 'wrong-password',
+            'device_name' => 'test-device',
         ]);
 
         $response->assertStatus(422)
@@ -79,7 +102,9 @@ final class AuthenticationTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'user' => ['id', 'name', 'email'],
+                'data' => [
+                    'user' => ['id', 'name', 'email'],
+                ],
             ]);
     }
 
@@ -101,7 +126,7 @@ final class AuthenticationTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'message' => 'Logged out successfully',
+                'message' => 'Logout successful',
             ]);
 
         // Verify token is revoked by checking the database
@@ -115,18 +140,18 @@ final class AuthenticationTest extends TestCase
     {
         $user = User::factory()->create();
         $token1 = $user->createToken('test-token-1')->plainTextToken;
-        $token2 = $user->createToken('test-token-2')->plainTextToken;
+        $user->createToken('test-token-2');
 
         // Verify tokens exist before revocation
         $this->assertDatabaseCount('personal_access_tokens', 2);
 
         $response = $this->withHeaders([
             'Authorization' => 'Bearer ' . $token1,
-        ])->postJson('/api/auth/revoke-all-tokens');
+        ])->postJson('/api/auth/logout-all');
 
         $response->assertStatus(200)
             ->assertJson([
-                'message' => 'All tokens revoked successfully',
+                'message' => 'Logged out from all devices',
             ]);
 
         // Verify all tokens are revoked by checking the database
