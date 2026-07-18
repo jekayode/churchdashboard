@@ -227,15 +227,48 @@ final class ReadingPlanManagementTest extends TestCase
         $this->put(route('pastor.reading-plans.days.update', [$plan, $day]), ['study_question_1' => 'x'])->assertForbidden();
     }
 
-    public function test_pastor_cannot_rewrite_a_network_wide_plan(): void
+    public function test_any_branch_pastor_can_rewrite_a_network_wide_plan(): void
     {
-        // Shared plans belong to super admins so one branch can't change them for all.
+        // Shared plans are maintained by whichever pastor is doing the writing,
+        // so a branch pastor may edit them even though they own no branch.
         $shared = ReadingPlan::factory()->create(['branch_id' => null]);
         $day = ReadingDay::factory()->create(['reading_plan_id' => $shared->id, 'day_number' => 1]);
 
         $this->actingAs($this->pastor)
-            ->put(route('pastor.reading-plans.days.update', [$shared, $day]), ['study_question_1' => 'x'])
-            ->assertForbidden();
+            ->put(route('pastor.reading-plans.days.update', [$shared, $day]), [
+                'study_question_1' => 'Written by the branch pastor',
+            ])->assertRedirect();
+
+        $this->assertSame('Written by the branch pastor', $day->refresh()->study_question_1);
+    }
+
+    public function test_a_rewrite_records_who_made_it(): void
+    {
+        // With several pastors able to edit shared content, changes are attributable.
+        $day = $this->day('0718');
+
+        $this->actingAs($this->pastor)
+            ->put(route('pastor.reading-plans.days.update', [$this->plan, $day]), [
+                'study_question_1' => 'Rewritten by me',
+            ])->assertRedirect();
+
+        $day->refresh();
+
+        $this->assertSame($this->pastor->id, $day->questions_updated_by);
+        $this->assertSame($this->pastor->name, $day->questionsAuthor->name);
+    }
+
+    public function test_editing_only_a_reference_records_no_author(): void
+    {
+        $day = $this->day('0718');
+
+        $this->actingAs($this->pastor)
+            ->put(route('pastor.reading-plans.days.update', [$this->plan, $day]), [
+                'study_question_1' => $day->study_question_1,
+                'psalm' => 'PSALM 23:1-6',
+            ])->assertRedirect();
+
+        $this->assertNull($day->refresh()->questions_updated_by);
     }
 
     public function test_a_day_from_another_plan_is_not_reachable(): void

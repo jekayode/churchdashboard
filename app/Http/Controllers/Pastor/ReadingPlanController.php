@@ -81,7 +81,7 @@ final class ReadingPlanController extends Controller
 
         return view('pastor.reading-plans.day-form', [
             'plan' => $plan,
-            'day' => $day,
+            'day' => $day->load('questionsAuthor'),
             'previous' => $plan->days()->where('day_number', '<', $day->day_number)->orderByDesc('day_number')->first(),
             'next' => $plan->days()->where('day_number', '>', $day->day_number)->orderBy('day_number')->first(),
         ]);
@@ -115,6 +115,7 @@ final class ReadingPlanController extends Controller
 
         if ($questionsChanged) {
             $day->questions_updated_at = now();
+            $day->questions_updated_by = Auth::id();
         }
 
         $day->save();

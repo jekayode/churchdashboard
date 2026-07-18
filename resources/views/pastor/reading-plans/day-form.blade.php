@@ -64,7 +64,7 @@
                     </div>
                     @if ($day->hasOwnQuestions())
                         <span class="inline-flex shrink-0 items-center rounded-full bg-church-100 px-2.5 py-0.5 text-xs font-medium text-church-800">
-                            Your own · {{ $day->questions_updated_at->diffForHumans() }}
+                            Rewritten {{ $day->questions_updated_at->diffForHumans() }}@if ($day->questionsAuthor) by {{ $day->questionsAuthor->name }}@endif
                         </span>
                     @else
                         <span class="inline-flex shrink-0 items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">

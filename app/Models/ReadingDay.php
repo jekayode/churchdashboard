@@ -21,7 +21,7 @@ final class ReadingDay extends Model
         'reading_plan_id', 'day_number', 'month_day', 'label',
         'old_testament', 'new_testament', 'psalm', 'proverbs', 'passages',
         'title', 'focus_verse', 'body', 'reflection_prompt',
-        'study_question_1', 'study_question_2', 'questions_updated_at', 'source_url',
+        'study_question_1', 'study_question_2', 'questions_updated_at', 'questions_updated_by', 'source_url',
     ];
 
     /**
@@ -39,6 +39,14 @@ final class ReadingDay extends Model
     public function hasOwnQuestions(): bool
     {
         return $this->questions_updated_at !== null;
+    }
+
+    /**
+     * The pastor who last rewrote this day's questions.
+     */
+    public function questionsAuthor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'questions_updated_by');
     }
 
     public function plan(): BelongsTo
