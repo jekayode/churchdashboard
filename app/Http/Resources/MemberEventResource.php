@@ -29,6 +29,9 @@ final class MemberEventResource extends JsonResource
             'start_date' => $this->resource->start_date?->toIso8601String(),
             'end_date' => $this->resource->end_date?->toIso8601String(),
             'max_capacity' => $this->resource->max_capacity,
+            // null when the event is uncapped; the app shows "N spots left".
+            'spots_remaining' => $this->resource->spots_remaining,
+            'cover_url' => $this->resource->cover_url,
             'registration_type' => $this->resource->registration_type,
             // The pastor's form-builder definition, so the app can render the
             // same custom fields natively.

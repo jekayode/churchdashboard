@@ -135,6 +135,16 @@ final class Member extends Model implements HasMedia
     /**
      * Get the small groups this member belongs to.
      */
+    /**
+     * Sermons this member has saved for later.
+     */
+    public function savedSermons(): BelongsToMany
+    {
+        return $this->belongsToMany(Sermon::class, 'member_saved_sermons')
+            ->withPivot('saved_at')
+            ->withTimestamps();
+    }
+
     public function smallGroups(): BelongsToMany
     {
         return $this->belongsToMany(SmallGroup::class, 'member_small_groups')

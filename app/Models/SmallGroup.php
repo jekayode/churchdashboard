@@ -10,10 +10,30 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-final class SmallGroup extends Model
+final class SmallGroup extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
+
+    /**
+     * Cover image shown on the app's group cards.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('cover')
+            ->singleFile()
+            ->useDisk(config('filesystems.media_disk', 'public'));
+    }
+
+    /**
+     * Public URL of the group cover, if one has been uploaded.
+     */
+    public function getCoverUrlAttribute(): ?string
+    {
+        return $this->getFirstMedia('cover')?->getUrl();
+    }
 
     /**
      * The attributes that are mass assignable.

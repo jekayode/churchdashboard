@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Me\EventController as MeEventController;
 use App\Http\Controllers\Api\Me\ProfileController as MeProfileController;
+use App\Http\Controllers\Api\Me\SermonController as MeSermonController;
 use App\Http\Controllers\Api\Me\SmallGroupController as MeSmallGroupController;
 use App\Http\Controllers\Api\SmallGroupJoinRequestController;
 use App\Http\Controllers\BranchController;
@@ -86,6 +87,14 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/events/registered', [MeEventController::class, 'registered'])->name('events.registered');
         Route::post('/events/{event}/register', [MeEventController::class, 'register'])->name('events.register');
         Route::delete('/events/{event}/register', [MeEventController::class, 'cancel'])->name('events.cancel');
+
+        // Sermons (the app's "Watch" tab)
+        Route::get('/sermons', [MeSermonController::class, 'index'])->name('sermons.index');
+        Route::get('/sermons/series', [MeSermonController::class, 'series'])->name('sermons.series');
+        Route::get('/sermons/saved', [MeSermonController::class, 'saved'])->name('sermons.saved');
+        Route::get('/sermons/{sermon}', [MeSermonController::class, 'show'])->name('sermons.show');
+        Route::post('/sermons/{sermon}/save', [MeSermonController::class, 'save'])->name('sermons.save');
+        Route::delete('/sermons/{sermon}/save', [MeSermonController::class, 'unsave'])->name('sermons.unsave');
 
         // Small groups
         Route::get('/small-groups', [MeSmallGroupController::class, 'index'])->name('small-groups.index');

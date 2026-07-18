@@ -27,6 +27,7 @@ final class MemberSmallGroupResource extends JsonResource
             // Time-of-day only; the column is a TIME, so avoid leaking today's date.
             'meeting_time' => $this->resource->meeting_time?->format('H:i'),
             'location' => $this->resource->location,
+            'cover_url' => $this->resource->cover_url,
             'status' => $this->resource->status,
             'members_count' => $this->whenCounted('members'),
             'leader' => $this->whenLoaded('leader', fn (): ?array => $this->resource->leader === null ? null : [
