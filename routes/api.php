@@ -3,6 +3,10 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\Me\EventController as MeEventController;
+use App\Http\Controllers\Api\Me\ProfileController as MeProfileController;
+use App\Http\Controllers\Api\Me\SmallGroupController as MeSmallGroupController;
+use App\Http\Controllers\Api\SmallGroupJoinRequestController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CommunicationLogController;
 use App\Http\Controllers\CommunicationPerformanceController;
@@ -60,6 +64,41 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     // User API route
     Route::get('/user', function () {
         return new \App\Http\Resources\UserResource(auth()->user()->load('roles'));
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Member self-service ("me") routes — consumed by the mobile app
+    |--------------------------------------------------------------------------
+    |
+    | Every endpoint here is scoped to the authenticated user's own Member
+    | profile and branch. Leadership-facing management lives in the resource
+    | route groups further below.
+    |
+    */
+    Route::prefix('me')->name('api.me.')->group(function () {
+        // Profile
+        Route::get('/', [MeProfileController::class, 'show'])->name('show');
+        Route::put('/profile', [MeProfileController::class, 'update'])->name('profile.update');
+
+        // Events
+        Route::get('/events', [MeEventController::class, 'index'])->name('events.index');
+        Route::get('/events/registered', [MeEventController::class, 'registered'])->name('events.registered');
+        Route::post('/events/{event}/register', [MeEventController::class, 'register'])->name('events.register');
+        Route::delete('/events/{event}/register', [MeEventController::class, 'cancel'])->name('events.cancel');
+
+        // Small groups
+        Route::get('/small-groups', [MeSmallGroupController::class, 'index'])->name('small-groups.index');
+        Route::get('/small-groups/available', [MeSmallGroupController::class, 'available'])->name('small-groups.available');
+        Route::get('/small-groups/join-requests', [MeSmallGroupController::class, 'joinRequests'])->name('small-groups.join-requests');
+        Route::post('/small-groups/{smallGroup}/join-request', [MeSmallGroupController::class, 'requestToJoin'])->name('small-groups.join-request');
+    });
+
+    // Leadership review of small group join requests
+    Route::prefix('small-group-join-requests')->name('api.small-group-join-requests.')->group(function () {
+        Route::get('/', [SmallGroupJoinRequestController::class, 'index'])->name('index');
+        Route::post('/{joinRequest}/approve', [SmallGroupJoinRequestController::class, 'approve'])->name('approve');
+        Route::post('/{joinRequest}/decline', [SmallGroupJoinRequestController::class, 'decline'])->name('decline');
     });
 
     // Church management API routes

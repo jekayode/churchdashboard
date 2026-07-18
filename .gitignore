@@ -56,3 +56,6 @@ README_SANCTUM.md
 # Task files
 # tasks.json
 # tasks/ 
+
+# Design handoff archives (large binaries)
+*-handoff.zip

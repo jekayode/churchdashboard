@@ -22,22 +22,30 @@ Each stage has a **build scope** and a **test gate**. We do not move to the next
 
 ---
 
-## Stage 1 — Member-facing API layer (`me/*`)
+## Stage 1 — Member-facing API layer (`me/*`) — ✅ DONE (2026-07-18)
 *The mobile app's contract with the backend. Sanctum token auth already works (`AuthController::login` issues Bearer tokens).*
 
-**Build**
-- [ ] `GET /api/me` — profile (member + user + branch)
-- [ ] `PUT /api/me/profile` — update own profile
-- [ ] `GET /api/me/events` — upcoming events for my branch; `POST /api/me/events/{event}/register` + cancel
-      *(`/api/events/{event}/register` already accepts `custom_fields` — app renders the pastor's form-builder JSON natively)*
-- [ ] `GET /api/me/small-group` — my group, next meeting, members
-- [ ] **Small group self-join flow (new):** `GET /api/me/small-groups/available` → `POST /join-request` → leader approve/decline in dashboard (join_requests table)
-- [ ] API Resources for consistent JSON shapes; rate limiting; proper 401/403 responses
+**Built**
+- [x] `GET /api/me` — profile (member + branch); 404 when no member profile is linked
+- [x] `PUT /api/me/profile` — self-service update. Allow-list only: branch, member_status, growth_level and teci_status are **not** self-editable
+- [x] `GET /api/me/events` — upcoming events for my branch, paginated, each flagged `is_registered`
+- [x] `GET /api/me/events/registered` — my registrations
+- [x] `POST|DELETE /api/me/events/{event}/register` — register / cancel. Enforces branch match, capacity, duplicate registration, and `registration_type: none`
+- [x] **Form-builder round-trip:** the event payload carries the pastor's `custom_form_fields` so the app renders the form natively, and submissions are validated server-side against that same definition (types + select options)
+- [x] `GET /api/me/small-groups` — my groups with members
+- [x] `GET /api/me/small-groups/available` — active groups in my branch I'm not in, with my `join_request_status`
+- [x] **Small group self-join flow (new):** `POST /api/me/small-groups/{group}/join-request` → leader reviews via `GET /api/small-group-join-requests` + `/approve` `/decline`. Approval adds the member to the group in a transaction.
+- [x] New table/model: `small_group_join_requests` (pending/approved/declined, message, response_note, reviewer, reviewed_at)
+- [x] API Resources for consistent shapes (`MemberProfileResource`, `MemberEventResource`, `MemberSmallGroupResource`)
 
-**Test gate**
-- [ ] PHPUnit feature tests per endpoint (auth required, branch scoping, cannot see other members' data)
-- [ ] Manual smoke test with curl/Postman using a real token from `/api/auth/login`
-- [ ] `php artisan test` fully green
+**Test gate — passed**
+- [x] 33 feature tests across 4 classes: auth required on every route, branch scoping, cross-member isolation, and review authorization (leader ✓, branch pastor ✓ own branch only, applicant ✗ own request, stranger ✗)
+- [x] Manual smoke test with a real Sanctum token against the dev server — profile, events, and available-groups all return correct live data; unauthenticated returns 401
+- [x] `php artisan test` fully green — **407 passed**, 0 failed
+
+**Notes for the app**
+- Responses are `{success, data, …}`; list endpoints add `meta` for pagination
+- `meeting_time` is returned as `HH:MM` (the column is a TIME, so no date is leaked)
 
 ---
 
