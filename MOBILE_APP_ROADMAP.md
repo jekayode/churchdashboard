@@ -129,31 +129,40 @@ Suite: **442 passed**.
 
 ---
 
-## Stage 3 — Reading plans + streak
+## Stage 3 — Reading plans + streak — ✅ BACKEND DONE (2026-07-18)
 
-Supports **both** plan types behind one model (decision 2026-07-18):
-a 365-day Bible-in-a-year of passage references, and short written devotional
-series ("Rooted — Day 12 of 21").
+One model serves both plan types, per the earlier decision. The church's real
+**Bible in a Year** is imported: 365 days, published, set as default.
 
-**Build**
-- [ ] Models: `ReadingPlan` (name, description, length, type: `passages` | `devotional`, cover, tone),
-      `ReadingDay` (plan_id, day_number, optional date, passages JSON, title, focus_verse,
-      body richtext, reflection_prompt, study_questions richtext),
-      `MemberReadingProgress` (member, reading_day, completed_at),
-      `MemberPlanEnrolment` (member, plan, started_at)
-- [ ] Excel bulk import (Maatwebsite — already installed): 365 days in one upload
-- [ ] Streak logic service: current streak, longest streak, timezone-safe day boundaries; streak spans plans
-- [ ] Member API: `GET /api/me/reading/today`, `GET /api/me/reading/plan` (the day list with
-      done/today flags for the "The Plan" tab), `GET /api/me/reading/{date|day}`,
-      `POST /api/me/reading/{day}/complete`, `GET /api/me/reading/streak`, plan enrol/switch
-- [ ] **Open decision:** Bible text source — API.Bible integration vs references-only v1
+**Data**
+- `reading_plans` — annual (keyed by month-day, so one year's content serves
+  every year) or finite; `passages` or `devotional` type
+- `reading_days` — OT / NT / Psalm / Proverbs kept apart for the app's sections,
+  plus both "What Now?" questions and devotional fields
+- `member_plan_enrolments`, `member_reading_progress` (stores the member's own
+  local completion date, so streaks are timezone-fair)
 
-**Test gate**
-- [ ] Import the real 2026 plan spreadsheet end-to-end; spot-check July 17 renders correctly (passages + "What Now?" questions)
-- [ ] Unit tests for streak edge cases: missed a day, completed late at night, timezone boundary, completing past days
-- [ ] Feature tests for all endpoints
+**Importer** — `reading-plan:import` (CSV or XLSX), matching headers by name and
+locating the header row. `--dry-run`, `--annual`, `--publish`, `--default`,
+`--attribution`.
 
----
+**Member API** — `me/reading/today`, `/plan` (windowed day list with done/today
+flags), `/days/{day}` (optional `?with_text=1`), complete/uncomplete, `/streak`,
+`/plans` and enrol.
+
+**Streak engine** — current and longest, spanning plans. Yesterday still counts,
+so a member who hasn't read *yet today* keeps their streak. Client-supplied
+dates are clamped to ±1 day so the streak can't be gamed.
+
+**Verified against the real plan, not fixtures:** today resolves to day 199
+"July 18" with its four readings, two questions and attribution; completing it
+returns a streak of 1; Proverbs 19:17 fetches live NLT text with its copyright.
+19 tests here; suite **495 passed**.
+
+### Still to do for Stage 3
+- [ ] **Pastor UI to write/edit reading days** — the church is replacing the
+      imported "What Now?" questions with its own, so days must be editable
+- [ ] Leap-year note: a 365-day annual plan resolves 29 Feb to 28 Feb
 
 ## Stage 4 — Unified Notes
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Me\EventController as MeEventController;
 use App\Http\Controllers\Api\Me\ProfileController as MeProfileController;
+use App\Http\Controllers\Api\Me\ReadingController as MeReadingController;
 use App\Http\Controllers\Api\Me\SermonController as MeSermonController;
 use App\Http\Controllers\Api\Me\SmallGroupController as MeSmallGroupController;
 use App\Http\Controllers\Api\SmallGroupJoinRequestController;
@@ -96,6 +97,16 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/sermons/{sermon}/passages', [MeSermonController::class, 'passages'])->name('sermons.passages');
         Route::post('/sermons/{sermon}/save', [MeSermonController::class, 'save'])->name('sermons.save');
         Route::delete('/sermons/{sermon}/save', [MeSermonController::class, 'unsave'])->name('sermons.unsave');
+
+        // Reading plans (the app's "Read" tab)
+        Route::get('/reading/plans', [MeReadingController::class, 'plans'])->name('reading.plans');
+        Route::post('/reading/plans/{plan}/enrol', [MeReadingController::class, 'enrol'])->name('reading.enrol');
+        Route::get('/reading/today', [MeReadingController::class, 'today'])->name('reading.today');
+        Route::get('/reading/plan', [MeReadingController::class, 'plan'])->name('reading.plan');
+        Route::get('/reading/streak', [MeReadingController::class, 'streak'])->name('reading.streak');
+        Route::get('/reading/days/{day}', [MeReadingController::class, 'show'])->name('reading.show');
+        Route::post('/reading/days/{day}/complete', [MeReadingController::class, 'complete'])->name('reading.complete');
+        Route::delete('/reading/days/{day}/complete', [MeReadingController::class, 'uncomplete'])->name('reading.uncomplete');
 
         // Small groups
         Route::get('/small-groups', [MeSmallGroupController::class, 'index'])->name('small-groups.index');
