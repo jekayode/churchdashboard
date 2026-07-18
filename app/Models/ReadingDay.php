@@ -21,7 +21,7 @@ final class ReadingDay extends Model
         'reading_plan_id', 'day_number', 'month_day', 'label',
         'old_testament', 'new_testament', 'psalm', 'proverbs', 'passages',
         'title', 'focus_verse', 'body', 'reflection_prompt',
-        'study_question_1', 'study_question_2', 'source_url',
+        'study_question_1', 'study_question_2', 'questions_updated_at', 'source_url',
     ];
 
     /**
@@ -30,7 +30,16 @@ final class ReadingDay extends Model
     protected $casts = [
         'day_number' => 'integer',
         'passages' => 'array',
+        'questions_updated_at' => 'datetime',
     ];
+
+    /**
+     * Whether the church has replaced the imported study questions.
+     */
+    public function hasOwnQuestions(): bool
+    {
+        return $this->questions_updated_at !== null;
+    }
 
     public function plan(): BelongsTo
     {
