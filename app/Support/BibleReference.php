@@ -87,8 +87,14 @@ final class BibleReference
     /**
      * Convert a reference to an API.Bible passage id.
      *
-     * Handles "1 Chronicles 24", "Psalm 1:1-3", "Romans 4:1-12" and
-     * "1 Chronicles 26:1-11". Returns null when the book is unrecognised.
+     * Covers every shape in the church's One Year Bible plan:
+     *   "1 CHRONICLES 24"                  whole chapter
+     *   "PROVERBS 10:5"                    single verse
+     *   "PSALM 3:1-8"                      verse range
+     *   "GENESIS 1:1-2:25"                 chapter span
+     *   "LEVITICUS 27:14-NUMBERS 1:1-54"   book span
+     *
+     * Returns null when the book is unrecognised.
      */
     public static function toPassageId(string $reference): ?string
     {
@@ -98,33 +104,123 @@ final class BibleReference
             return null;
         }
 
-        // Split into "book part" and "chapter:verses part".
-        if (! preg_match('/^(.*?)\s*(\d+)\s*(?::\s*(\d+)\s*(?:-\s*(\d+))?)?$/u', $normalised, $matches)) {
-            return null;
+        // A span across two books is any hyphen whose left and right sides both
+        // parse as "book + range". Trying each hyphen keeps this working whether
+        // the file writes "LEVITICUS 27:14-NUMBERS 1:1-54" or
+        // "DEUTERONOMY 34:1-12 - JOSHUA 1:1-2:24".
+        foreach (self::hyphenPositions($normalised) as $position) {
+            $left = self::parseSegment(trim(substr($normalised, 0, $position)));
+            $right = self::parseSegment(trim(substr($normalised, $position + 1)));
+
+            if ($left !== null && $right !== null) {
+                return sprintf(
+                    '%s.%s%s-%s.%s%s',
+                    $left['book'], $left['start_chapter'],
+                    $left['start_verse'] !== null ? '.'.$left['start_verse'] : '',
+                    $right['book'], $right['end_chapter'],
+                    $right['end_verse'] !== null ? '.'.$right['end_verse'] : '',
+                );
+            }
         }
 
-        $bookId = self::bookId($matches[1] ?? '');
+        $segment = self::parseSegment($normalised);
 
-        if ($bookId === null) {
+        if ($segment === null) {
             return null;
         }
-
-        $chapter = $matches[2];
-        $startVerse = $matches[3] ?? null;
-        $endVerse = $matches[4] ?? null;
 
         // Whole chapter.
-        if ($startVerse === null) {
-            return $bookId.'.'.$chapter;
+        if ($segment['start_verse'] === null) {
+            return $segment['book'].'.'.$segment['start_chapter'];
         }
 
-        $start = $bookId.'.'.$chapter.'.'.$startVerse;
+        $start = sprintf('%s.%s.%s', $segment['book'], $segment['start_chapter'], $segment['start_verse']);
 
-        if ($endVerse === null) {
+        // Single verse.
+        if ($segment['start_chapter'] === $segment['end_chapter']
+            && $segment['start_verse'] === $segment['end_verse']) {
             return $start;
         }
 
-        return $start.'-'.$bookId.'.'.$chapter.'.'.$endVerse;
+        return $start.sprintf('-%s.%s.%s', $segment['book'], $segment['end_chapter'], $segment['end_verse']);
+    }
+
+    /**
+     * Byte offsets of hyphens that could separate two books.
+     *
+     * @return list<int>
+     */
+    private static function hyphenPositions(string $reference): array
+    {
+        $positions = [];
+        $offset = 0;
+
+        while (($position = strpos($reference, '-', $offset)) !== false) {
+            $positions[] = $position;
+            $offset = $position + 1;
+        }
+
+        return $positions;
+    }
+
+    /**
+     * Parse "BOOK 1:1-2:25" style segments into their parts.
+     *
+     * @return array{book: string, start_chapter: string, start_verse: ?string, end_chapter: string, end_verse: ?string}|null
+     */
+    private static function parseSegment(string $segment): ?array
+    {
+        $segment = trim($segment);
+
+        if ($segment === '') {
+            return null;
+        }
+
+        // BOOK c:v-c:v
+        if (preg_match('/^(.+?)\s+(\d+):(\d+)\s*-\s*(\d+):(\d+)$/u', $segment, $m)) {
+            $book = self::bookId($m[1]);
+
+            return $book === null ? null : [
+                'book' => $book,
+                'start_chapter' => $m[2], 'start_verse' => $m[3],
+                'end_chapter' => $m[4], 'end_verse' => $m[5],
+            ];
+        }
+
+        // BOOK c:v-v
+        if (preg_match('/^(.+?)\s+(\d+):(\d+)\s*-\s*(\d+)$/u', $segment, $m)) {
+            $book = self::bookId($m[1]);
+
+            return $book === null ? null : [
+                'book' => $book,
+                'start_chapter' => $m[2], 'start_verse' => $m[3],
+                'end_chapter' => $m[2], 'end_verse' => $m[4],
+            ];
+        }
+
+        // BOOK c:v
+        if (preg_match('/^(.+?)\s+(\d+):(\d+)$/u', $segment, $m)) {
+            $book = self::bookId($m[1]);
+
+            return $book === null ? null : [
+                'book' => $book,
+                'start_chapter' => $m[2], 'start_verse' => $m[3],
+                'end_chapter' => $m[2], 'end_verse' => $m[3],
+            ];
+        }
+
+        // BOOK c
+        if (preg_match('/^(.+?)\s+(\d+)$/u', $segment, $m)) {
+            $book = self::bookId($m[1]);
+
+            return $book === null ? null : [
+                'book' => $book,
+                'start_chapter' => $m[2], 'start_verse' => null,
+                'end_chapter' => $m[2], 'end_verse' => null,
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -143,7 +239,16 @@ final class BibleReference
         $key = preg_replace('/^(2nd|second)\s+/', '2 ', $key) ?? $key;
         $key = preg_replace('/^(3rd|third)\s+/', '3 ', $key) ?? $key;
 
-        return self::BOOKS[$key] ?? null;
+        if (isset(self::BOOKS[$key])) {
+            return self::BOOKS[$key];
+        }
+
+        // "1THESSALONIANS" — numbered book written without a separating space.
+        if (preg_match('/^([1-3])\s*([a-z]+)$/', $key, $m)) {
+            return self::BOOKS[$m[1].' '.$m[2]] ?? null;
+        }
+
+        return null;
     }
 
     /**

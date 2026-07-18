@@ -62,6 +62,29 @@ final class BibleServiceTest extends TestCase
         }
     }
 
+    /**
+     * The One Year Bible plan compresses multi-chapter readings, so these
+     * shapes make up roughly a third of the church's 1,460 references.
+     */
+    public function test_parses_chapter_and_book_spans(): void
+    {
+        $cases = [
+            // Chapter span within one book
+            'GENESIS 1:1-2:25' => 'GEN.1.1-GEN.2.25',
+            '1 SAMUEL 1:1-2:21' => '1SA.1.1-1SA.2.21',
+            '1 CHRONICLES 24:1-26:11' => '1CH.24.1-1CH.26.11',
+            // Span across two books; the trailing verse is the true end verse
+            'LEVITICUS 27:14-NUMBERS 1:1-54' => 'LEV.27.14-NUM.1.54',
+            // Plain ranges must keep working
+            '1 SAMUEL 14:1-52' => '1SA.14.1-1SA.14.52',
+            'PROVERBS 10:5' => 'PRO.10.5',
+        ];
+
+        foreach ($cases as $reference => $expected) {
+            $this->assertSame($expected, BibleReference::toPassageId($reference), "Failed parsing: {$reference}");
+        }
+    }
+
     public function test_unknown_book_returns_null(): void
     {
         $this->assertNull(BibleReference::toPassageId('Book of Nonsense 3'));
