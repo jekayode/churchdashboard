@@ -228,6 +228,27 @@ Separate Lovable/Supabase app by another pastor. **Not just check-in** — it ha
 
 ---
 
+## ⚠️ Security advisories — needs a decision (found 2026-07-18)
+
+`composer audit` reports **12 advisories across 8 packages**. Surfaced while
+installing the R2 adapter; all pre-existing. Two matter for this project:
+
+- **`phpoffice/phpspreadsheet` 1.30.4 — CRITICAL** (CVE-2026-45034, a patch bypass
+  for CVE-2026-34084). This sits directly under `maatwebsite/excel`, which parses
+  **user-uploaded spreadsheets** in the member import. Latest is 5.9.0, so fixing it
+  means upgrading `maatwebsite/excel` to a line that supports PhpSpreadsheet 2.x+ —
+  a real change with regression risk across the import/export suite.
+- **`spatie/laravel-medialibrary` — HIGH + medium.** Relevant now that Stage 2 widened
+  media use to sermons, series, events and small groups.
+
+Also: `laravel/framework` (medium, signed-URL path confusion), `phpunit/phpunit`
+(high, dev-only), `guzzlehttp/*`, `psy/psysh`, `symfony/yaml`.
+
+**Not attempted as part of Stage 2** — a dependency upgrade of this size deserves its
+own branch and a full regression pass, not a bolt-on. Recommended before launch.
+
+---
+
 ## Test suite health — ✅ GREEN (2026-07-18)
 
 Suite was **42 failed / 332 passed** at session start. Now **0 failed / 374 passed** (5 skipped).
