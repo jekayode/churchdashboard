@@ -40,6 +40,21 @@ final class Event extends Model implements HasMedia
     }
 
     /**
+     * Human time for the app's event rows: "8:15am & 10:00am" when a Sunday has
+     * two services, otherwise just the start time.
+     */
+    public function getTimeLabelAttribute(): ?string
+    {
+        $format = fn ($time): string => \Carbon\Carbon::parse($time)->format('g:ia');
+
+        if ($this->has_multiple_services && filled($this->service_time) && filled($this->second_service_time)) {
+            return $format($this->service_time).' & '.$format($this->second_service_time);
+        }
+
+        return $this->start_date === null ? null : $format($this->start_date);
+    }
+
+    /**
      * Remaining capacity, or null when the event is uncapped.
      */
     public function getSpotsRemainingAttribute(): ?int

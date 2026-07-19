@@ -27,6 +27,8 @@ final class MemberEventResource extends JsonResource
             'type' => $this->resource->type,
             'location' => $this->resource->location,
             'start_date' => $this->resource->start_date?->toIso8601String(),
+            // Pre-formatted so the app doesn't have to know about second services.
+            'time_label' => $this->resource->time_label,
             'end_date' => $this->resource->end_date?->toIso8601String(),
             'max_capacity' => $this->resource->max_capacity,
             // null when the event is uncapped; the app shows "N spots left".
