@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Me\EventController as MeEventController;
+use App\Http\Controllers\Api\Me\GivingController as MeGivingController;
 use App\Http\Controllers\Api\Me\NoteController as MeNoteController;
 use App\Http\Controllers\Api\Me\ProfileController as MeProfileController;
 use App\Http\Controllers\Api\Me\ReadingController as MeReadingController;
@@ -108,6 +109,9 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/reading/days/{day}', [MeReadingController::class, 'show'])->name('reading.show');
         Route::post('/reading/days/{day}/complete', [MeReadingController::class, 'complete'])->name('reading.complete');
         Route::delete('/reading/days/{day}/complete', [MeReadingController::class, 'uncomplete'])->name('reading.uncomplete');
+
+        // Giving — accounts, current projects and the declaration
+        Route::get('/giving', [MeGivingController::class, 'index'])->name('giving');
 
         // Notes — sermon notes, reading notes and personal notes in one place
         Route::get('/notes', [MeNoteController::class, 'index'])->name('notes.index');
