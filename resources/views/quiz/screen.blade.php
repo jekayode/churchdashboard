@@ -49,16 +49,31 @@
         .opt.dim { opacity: .28; transform: scale(.97); }
         .opt.right { box-shadow: 0 0 0 .6vw #FFF inset; }
 
-        .timer { width: 92vw; height: 1.2vw; background: rgba(255,255,255,.14); border-radius: 1vw; overflow: hidden; margin-top: 3vw; }
+        .timerwrap { display: flex; align-items: center; gap: 1.6vw; width: 92vw; margin-top: 3vw; }
+        .timer { flex: 1; height: 1.2vw; background: rgba(255,255,255,.14); border-radius: 1vw; overflow: hidden; }
         .timer > div { height: 100%; background: var(--brand); border-radius: 1vw; transition: width .25s linear; }
+        /* A number as well as a bar: from the back of a room a proportion is
+           much harder to read than a digit. */
+        .secs { font-size: 3.4vw; font-weight: 800; min-width: 4vw; text-align: right; font-variant-numeric: tabular-nums; }
 
+        /* Standings between questions — this is what makes the room competitive. */
+        .strip { display: flex; gap: 1.2vw; margin-top: 2.6vw; width: 92vw; justify-content: center; }
+        .chip { display: flex; align-items: center; gap: 1vw; background: rgba(255,255,255,.09); border-radius: 1vw; padding: 1vw 2vw; font-size: 2vw; }
+        .chip b { color: var(--brand); }
+        .chip .s { opacity: .75; font-variant-numeric: tabular-nums; }
+
+        /* Five, not ten. The page cannot scroll — nobody is at the keyboard —
+           so the list has to fit the screen outright, and a congregation cares
+           about the winner rather than eighth place. */
         .board { width: 70vw; }
-        .board h2 { font-size: 3.4vw; margin-bottom: 2vw; }
-        .row { display: flex; align-items: center; gap: 1.6vw; padding: 1.1vw 2vw; border-radius: 1vw; background: rgba(255,255,255,.07); margin-bottom: .9vw; font-size: 2.4vw; }
+        .board h2 { font-size: 3.2vw; margin-bottom: 1.8vw; }
+        .row { display: flex; align-items: center; gap: 1.6vw; padding: 1vw 2vw; border-radius: 1vw; background: rgba(255,255,255,.07); margin-bottom: .8vw; font-size: 2.3vw; }
         .row .rank { width: 3.5vw; font-weight: 800; color: var(--brand); }
         .row .name { flex: 1; text-align: left; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .row .score { font-weight: 800; font-variant-numeric: tabular-nums; }
-        .row:nth-child(1) { background: rgba(232,84,30,.25); }
+        /* Set in the markup rather than with nth-child, which counted the
+           heading and so never actually landed on the winner. */
+        .row.winner { background: rgba(232,84,30,.28); font-size: 2.9vw; padding: 1.4vw 2vw; }
 
         .paused { position: fixed; inset: 0; background: rgba(11,11,15,.92); display: flex; align-items: center; justify-content: center; font-size: 6vw; font-weight: 800; }
         .hidden { display: none !important; }
@@ -109,16 +124,31 @@
             return `<div class="${classes.join(' ')}"><span>${escape(o.text)}</span>${tally}</div>`;
         }).join('');
 
+        // The bar belongs to the answering window only. Leaving it up through
+        // the reveal reads as "there is still time to answer", which there is not.
+        const timer = revealed
+            ? ''
+            : `<div class="timerwrap">
+                   <div class="timer"><div id="timer-fill" style="width:100%"></div></div>
+                   <div class="secs" id="secs"></div>
+               </div>`;
+
+        const strip = revealed
+            ? `<div class="strip">${data.leaderboard.slice(0, 3).map((p) => `
+                   <div class="chip"><b>${p.rank}</b><span>${escape(p.name)}</span>
+                   <span class="s">${p.score.toLocaleString()}</span></div>`).join('')}</div>`
+            : '';
+
         stage.innerHTML = `
             <div class="qnum">Question ${q.number} of ${data.state.question_count}</div>
             <div class="question">${escape(q.text)}</div>
             <div class="options">${options}</div>
-            <div class="timer"><div id="timer-fill" style="width:100%"></div></div>`;
+            ${timer}${strip}`;
     }
 
     function renderFinished(data) {
-        const rows = data.leaderboard.slice(0, 8).map((p) => `
-            <div class="row">
+        const rows = data.leaderboard.slice(0, 5).map((p) => `
+            <div class="row${p.rank === 1 ? ' winner' : ''}">
                 <span class="rank">${p.rank}</span>
                 <span class="name">${escape(p.name)}</span>
                 <span class="score">${p.score.toLocaleString()}</span>
@@ -167,8 +197,12 @@
     setInterval(() => {
         if (lastPhase !== 'question' || !pausedEl.classList.contains('hidden')) return;
         remaining = Math.max(0, remaining - 100);
+
         const fill = document.getElementById('timer-fill');
         if (fill) fill.style.width = `${Math.max(0, (remaining / phaseDuration) * 100)}%`;
+
+        const secs = document.getElementById('secs');
+        if (secs) secs.textContent = String(Math.ceil(remaining / 1000));
     }, 100);
 
     poll();
