@@ -30,13 +30,15 @@ final class Event extends Model implements HasMedia
     }
 
     /**
-     * Public URL of the event cover, if one has been uploaded.
+     * Public URL of the event cover.
+     *
+     * Covers are uploaded through the dashboard into cover_image_path, so that
+     * is the source of truth; the Spatie collection is checked first only so
+     * media attached that way still works.
      */
     public function getCoverUrlAttribute(): ?string
     {
-        $media = $this->getFirstMedia('cover');
-
-        return $media?->getUrl();
+        return $this->getFirstMedia('cover')?->getUrl() ?? $this->cover_image_url;
     }
 
     /**
