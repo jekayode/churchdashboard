@@ -112,6 +112,44 @@
                         </div>
                     </div>
 
+                    {{-- Online meeting details --}}
+                    <div class="rounded-lg border border-gray-200 p-4" x-data="{ isOnline: false }" x-init="
+                        isOnline = document.getElementById('eventIsOnline')?.checked ?? false;
+                        document.addEventListener('event-form:loaded', () => { isOnline = document.getElementById('eventIsOnline')?.checked ?? false; });
+                    ">
+                        <label class="flex items-start gap-3">
+                            <input type="hidden" name="is_online" value="0">
+                            <input type="checkbox" id="eventIsOnline" name="is_online" value="1" x-model="isOnline"
+                                   class="mt-1 rounded border-gray-300 text-church-600 focus:ring-church-500">
+                            <span>
+                                <span class="block text-sm font-medium text-gray-900">This event happens online</span>
+                                <span class="block text-xs text-gray-500">Members get a “Join” button with the link below.</span>
+                            </span>
+                        </label>
+
+                        <div x-show="isOnline" x-cloak class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Meeting link</label>
+                                <input type="url" id="eventOnlineUrl" name="online_url"
+                                       placeholder="https://meet.google.com/… or a YouTube live URL"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Platform</label>
+                                <input type="text" id="eventOnlinePlatform" name="online_platform"
+                                       placeholder="Zoom, Google Meet, YouTube…"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Passcode</label>
+                                <input type="text" id="eventOnlinePasscode" name="online_passcode"
+                                       placeholder="Only if the meeting needs one"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                                <p class="mt-1 text-xs text-gray-500">Shown only to signed-in members in the app.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Recurring Event Settings -->
                     <div class="border-t pt-6">
                         <h4 class="text-md font-medium text-gray-900 mb-4">Event Settings</h4>

@@ -34,6 +34,12 @@ final class MemberEventResource extends JsonResource
             // null when the event is uncapped; the app shows "N spots left".
             'spots_remaining' => $this->resource->spots_remaining,
             'cover_url' => $this->resource->cover_url,
+            'is_online' => $this->resource->is_online,
+            'online_url' => $this->resource->online_url,
+            'online_platform' => $this->resource->online_platform,
+            // Passcodes are only ever sent to a signed-in member. The public
+            // event pages deliberately do not carry them.
+            'online_passcode' => $this->resource->online_passcode,
             'registration_type' => $this->resource->registration_type,
             // The pastor's form-builder definition, so the app can render the
             // same custom fields natively.
