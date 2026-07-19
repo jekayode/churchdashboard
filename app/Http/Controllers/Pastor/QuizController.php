@@ -87,9 +87,21 @@ final class QuizController extends Controller
     {
         $this->authorize('update', $quiz);
 
+        $questions = $quiz->questions()->with('options')->get();
+
         return view('pastor.quizzes.questions', [
             'quiz' => $quiz,
-            'questions' => $quiz->questions()->with('options')->get(),
+            'questions' => $questions,
+            // Shaped here rather than in the template: Blade cannot parse a
+            // multi-line array literal inside @json, and the editor needs the
+            // correct answer as an index rather than a flag on the option.
+            'existing' => $questions->map(fn (QuizQuestion $question): array => [
+                'text' => $question->text,
+                'time_limit_seconds' => $question->time_limit_seconds,
+                'points' => $question->points,
+                'correct' => (int) $question->options->search(fn ($option): bool => (bool) $option->is_correct) ?: 0,
+                'options' => $question->options->map(fn ($option): array => ['text' => $option->text])->values(),
+            ])->values(),
         ]);
     }
 

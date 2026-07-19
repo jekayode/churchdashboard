@@ -97,13 +97,7 @@
     @push('scripts')
     <script>
         function quizQuestions() {
-            const saved = @json($questions->map(fn ($q) => [
-                'text' => $q->text,
-                'time_limit_seconds' => $q->time_limit_seconds,
-                'points' => $q->points,
-                'correct' => $q->options->search(fn ($o) => $o->is_correct) ?: 0,
-                'options' => $q->options->map(fn ($o) => ['text' => $o->text])->values(),
-            ])->values());
+            const saved = @json($existing);
 
             let nextKey = 0;
             const blank = () => ({
