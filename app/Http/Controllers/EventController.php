@@ -1222,6 +1222,10 @@ final class EventController extends Controller
             'max_capacity' => 'nullable|integer|min:1',
             'registration_type' => 'in:none,simple,form,link',
             'registration_link' => 'nullable|url',
+            'is_online' => 'sometimes|boolean',
+            'online_url' => 'nullable|url|max:2048',
+            'online_platform' => 'nullable|string|max:100',
+            'online_passcode' => 'nullable|string|max:100',
             'custom_form_fields' => 'nullable|array',
         ]);
 
@@ -1287,6 +1291,10 @@ final class EventController extends Controller
             'max_capacity' => 'nullable|integer|min:1',
             'registration_type' => 'in:none,simple,form,link',
             'registration_link' => 'nullable|url',
+            'is_online' => 'sometimes|boolean',
+            'online_url' => 'nullable|url|max:2048',
+            'online_platform' => 'nullable|string|max:100',
+            'online_passcode' => 'nullable|string|max:100',
             'custom_form_fields' => 'nullable|array',
         ]);
 

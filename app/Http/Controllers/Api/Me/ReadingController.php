@@ -114,7 +114,13 @@ final class ReadingController extends Controller
             'success' => true,
             'data' => $day === null ? null : $this->dayPayload($day, $member, $plan),
             'meta' => [
-                'plan' => ['id' => $plan->id, 'name' => $plan->name, 'attribution' => $plan->attribution],
+                'plan' => [
+                    'id' => $plan->id,
+                    'name' => $plan->name,
+                    'attribution' => $plan->attribution,
+                    // So the app can show "Day 12 of 21".
+                    'length_days' => $plan->length_days,
+                ],
                 'date' => $date->toDateString(),
                 'streak' => $this->streaks->summary($member, $date),
             ],

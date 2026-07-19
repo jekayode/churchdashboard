@@ -124,6 +124,10 @@ final class EventRequest extends FormRequest
                 'max:500',
                 'required_if:registration_type,link',
             ],
+            'is_online' => ['sometimes', 'boolean'],
+            'online_url' => ['nullable', 'url', 'max:2048', 'required_if_accepted:is_online'],
+            'online_platform' => ['nullable', 'string', 'max:100'],
+            'online_passcode' => ['nullable', 'string', 'max:100'],
             'custom_form_fields' => [
                 'nullable',
                 'json',

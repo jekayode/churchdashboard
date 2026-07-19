@@ -36,6 +36,8 @@ final class MemberProfileResource extends JsonResource
             'growth_level' => $this->resource->growth_level,
             'teci_status' => $this->resource->teci_status,
             'profile_completion_percentage' => $this->resource->profile_completion_percentage,
+            // Drives the app's "Member since" line.
+            'date_joined' => $this->resource->date_joined?->toDateString(),
             'branch' => $this->whenLoaded('branch', fn (): ?array => $this->resource->branch === null ? null : [
                 'id' => $this->resource->branch->id,
                 'name' => $this->resource->branch->name,

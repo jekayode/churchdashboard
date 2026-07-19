@@ -23,6 +23,7 @@ final class Branch extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'giving_declaration',
         'name',
         'public_code',
         'logo',

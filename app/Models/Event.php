@@ -30,13 +30,30 @@ final class Event extends Model implements HasMedia
     }
 
     /**
-     * Public URL of the event cover, if one has been uploaded.
+     * Public URL of the event cover.
+     *
+     * Covers are uploaded through the dashboard into cover_image_path, so that
+     * is the source of truth; the Spatie collection is checked first only so
+     * media attached that way still works.
      */
     public function getCoverUrlAttribute(): ?string
     {
-        $media = $this->getFirstMedia('cover');
+        return $this->getFirstMedia('cover')?->getUrl() ?? $this->cover_image_url;
+    }
 
-        return $media?->getUrl();
+    /**
+     * Human time for the app's event rows: "8:15am & 10:00am" when a Sunday has
+     * two services, otherwise just the start time.
+     */
+    public function getTimeLabelAttribute(): ?string
+    {
+        $format = fn ($time): string => \Carbon\Carbon::parse($time)->format('g:ia');
+
+        if ($this->has_multiple_services && filled($this->service_time) && filled($this->second_service_time)) {
+            return $format($this->service_time).' & '.$format($this->second_service_time);
+        }
+
+        return $this->start_date === null ? null : $format($this->start_date);
     }
 
     /**
@@ -76,6 +93,10 @@ final class Event extends Model implements HasMedia
         'venue',
         'address',
         'location',
+        'is_online',
+        'online_url',
+        'online_platform',
+        'online_passcode',
         'cover_image_path',
         'start_date',
         'end_date',
@@ -109,6 +130,7 @@ final class Event extends Model implements HasMedia
         'day_of_week' => 'integer',
         'max_capacity' => 'integer',
         'has_multiple_services' => 'boolean',
+        'is_online' => 'boolean',
         'recurrence_rules' => 'array',
         'recurrence_end_date' => 'date',
         'max_occurrences' => 'integer',
