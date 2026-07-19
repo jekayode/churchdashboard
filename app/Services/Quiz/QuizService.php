@@ -123,6 +123,7 @@ final class QuizService
 
             return $quiz->participants()->create([
                 'member_id' => $member->id,
+                'guest_token' => Str::random(48),
                 'display_name' => $this->nameForMember($member, $displayName),
                 'joined_at' => now(),
             ]);

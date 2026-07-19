@@ -62,6 +62,20 @@ final class QuizServiceTest extends TestCase
         $this->assertNotEmpty($participant->guest_token, 'A guest needs a token, or their score can never be claimed');
     }
 
+    public function test_a_new_participant_starts_on_real_zeroes(): void
+    {
+        $quiz = Quiz::factory()->lobby()->create();
+
+        $participant = $this->service->join($quiz, null, null, 'Tobi');
+
+        // These are database defaults, which a freshly created model does not
+        // read back — leaving nulls that broke the first leaderboard comparison.
+        $this->assertSame(0, $participant->score);
+        $this->assertSame(0, $participant->total_response_ms);
+        $this->assertSame(0, $participant->correct_count);
+        $this->assertSame(1, $this->service->placementFor($participant));
+    }
+
     public function test_a_guest_rejoining_lands_back_on_their_own_score(): void
     {
         $quiz = Quiz::factory()->lobby()->create();

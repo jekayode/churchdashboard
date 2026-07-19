@@ -18,8 +18,11 @@ final readonly class QuizState
         /** Zero-based; null in lobby and when finished. */
         public ?int $questionIndex = null,
         public ?QuizQuestion $question = null,
-        /** Time left in the current phase. Drives the countdown ring. */
+        /** Time left in the current phase. Drives the countdown bar. */
         public int $remainingMs = 0,
+        /** How long this phase lasts in full. The bar needs both numbers to
+         *  show a proportion; without it the client has to guess. */
+        public int $phaseDurationMs = 0,
         /** Milliseconds from the quiz start to when this question opened. The
          *  anchor a response time is measured against. */
         public int $questionStartOffsetMs = 0,
@@ -49,6 +52,7 @@ final readonly class QuizState
             'question_number' => $this->questionNumber(),
             'question_count' => $this->questionCount,
             'remaining_ms' => $this->remainingMs,
+            'phase_duration_ms' => $this->phaseDurationMs,
         ];
     }
 }

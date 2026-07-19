@@ -30,6 +30,20 @@ final class QuizParticipant extends Model
     ];
 
     /**
+     * The database defaults these to zero, but a freshly created model does not
+     * read them back, so the instance returned from join() had nulls in it and
+     * the first leaderboard comparison blew up on `score > null`. Defaulting
+     * here means every path that makes a participant gets real numbers.
+     *
+     * @var array<string, int>
+     */
+    protected $attributes = [
+        'score' => 0,
+        'total_response_ms' => 0,
+        'correct_count' => 0,
+    ];
+
+    /**
      * @var array<string, string>
      */
     protected $casts = [

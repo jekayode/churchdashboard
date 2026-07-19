@@ -17,6 +17,19 @@ final class QuizException extends RuntimeException
         parent::__construct($message);
     }
 
+    /**
+     * Rendered here rather than in the handler so the phone always receives the
+     * wording and the machine-readable reason together — these all surface
+     * mid-service, where a generic 500 tells the player nothing.
+     */
+    public function render(\Illuminate\Http\Request $request): \Illuminate\Http\JsonResponse
+    {
+        return response()->json([
+            'message' => $this->getMessage(),
+            'reason' => $this->reason,
+        ], $this->status);
+    }
+
     public static function notJoinable(): self
     {
         return new self('This quiz is not open to join.', 'not_joinable', 409);
