@@ -32,6 +32,9 @@ final class SermonResource extends JsonResource
             'is_live' => $this->resource->is_live,
             'live_url' => $this->when($this->resource->is_live, fn () => $this->resource->live_url),
             'cover_url' => $this->resource->cover_url,
+            'video_url' => $this->resource->video_url,
+            // Non-null when the video is on YouTube, so the app can embed it.
+            'youtube_id' => $this->resource->youtube_id,
             'recording_url' => $this->resource->recording_url,
             'is_saved' => $this->when(
                 isset($this->resource->is_saved),
