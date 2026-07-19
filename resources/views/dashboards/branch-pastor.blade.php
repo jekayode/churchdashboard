@@ -4,7 +4,7 @@
             @endphp
 
             <!-- Welcome Section -->
-            <div class="bg-gradient-to-r from-green-600 to-blue-600 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-church-500 to-secondary-500 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
                     <h3 class="text-2xl font-bold mb-2">Welcome, Pastor {{ Auth::user()->name }}!</h3>
                     <p class="text-green-100">{{ $branch?->name ?? 'Branch' }} - Leading God's People</p>
@@ -116,7 +116,7 @@
                                         </p>
                                     </div>
                                     <div class="flex space-x-2">
-                                        <a href="#" class="text-blue-600 hover:text-blue-800 text-sm">Manage</a>
+                                        <a href="#" class="text-church-600 hover:text-church-700 text-sm">Manage</a>
                                     </div>
                                 </div>
                             @endforeach
@@ -145,7 +145,7 @@
                                             </p>
                                         </div>
                                         <div class="flex space-x-2">
-                                            <a href="#" class="text-blue-600 hover:text-blue-800 text-sm">Manage</a>
+                                            <a href="#" class="text-church-600 hover:text-church-700 text-sm">Manage</a>
                                             <a href="#" class="text-green-600 hover:text-green-800 text-sm">View</a>
                                         </div>
                                     </div>
@@ -153,7 +153,7 @@
                             @endif
                         </div>
                         <div class="mt-4">
-                            <a href="#" class="inline-flex items-center px-4 py-2 bg-green-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-green-700">
+                            <a href="#" class="inline-flex items-center px-4 py-2 bg-church-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-church-700">
                                 Manage Ministries
                             </a>
                         </div>
@@ -286,7 +286,7 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View Financial Reports</a>
+                            <a href="#" class="text-church-600 hover:text-church-700 text-sm font-medium">View Financial Reports</a>
                         </div>
                     </div>
                 </div>

@@ -83,8 +83,6 @@ final class ImportExportTest extends TestCase
         // Link pastor to branch
         $this->branch->pastor()->associate($this->branchPastor);
         $this->branch->save();
-
-        Storage::fake('public');
     }
 
     /**
@@ -94,19 +92,9 @@ final class ImportExportTest extends TestCase
     {
         Sanctum::actingAs($this->superAdmin);
 
-        // Debug user authorization
-        $user = auth()->user();
-        dump([
-            'user_id' => $user->id,
-            'user_email' => $user->email,
-            'roles' => $user->roles->pluck('name')->toArray(),
-            'is_super_admin' => $user->isSuperAdmin(),
-            'is_branch_pastor' => $user->isBranchPastor(),
-        ]);
-
         $csvContent = "first_name,last_name,email,phone,gender,date_of_birth,member_status,growth_level\n";
-        $csvContent .= "John,Doe,john@example.com,1234567890,male,1990-01-01,member,100_level\n";
-        $csvContent .= "Jane,Smith,jane@example.com,0987654321,female,1985-05-15,member,200_level\n";
+        $csvContent .= "John,Doe,john@example.com,1234567890,male,1990-01-01,member,new_believer\n";
+        $csvContent .= "Jane,Smith,jane@example.com,0987654321,female,1985-05-15,member,growing\n";
 
         $file = UploadedFile::fake()->createWithContent('members.csv', $csvContent);
 
@@ -114,9 +102,6 @@ final class ImportExportTest extends TestCase
             'file' => $file,
             'branch_id' => $this->branch->id,
         ]);
-
-        // Debug response
-        dump($response->json());
 
         $response->assertStatus(200)
             ->assertJson([
@@ -154,8 +139,8 @@ final class ImportExportTest extends TestCase
     {
         Sanctum::actingAs($this->branchPastor);
 
-        $csvContent = "First Name,Last Name,Email,Phone,Address,Gender,Birth Date,Baptism Date,Growth Level,TECI\n";
-        $csvContent .= "John,Doe,john@example.com,1234567890,123 Main St,Male,1990-01-01,2010-01-01,1,2\n";
+        $csvContent = "first_name,last_name,email,phone,gender,date_of_birth,member_status,growth_level\n";
+        $csvContent .= "John,Doe,john@example.com,1234567890,male,1990-01-01,member,new_believer\n";
 
         $file = UploadedFile::fake()->createWithContent('members.csv', $csvContent);
 
@@ -291,18 +276,9 @@ final class ImportExportTest extends TestCase
             'filters' => [],
         ]);
 
+        // Export streams the generated file back as a download
         $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Export completed successfully',
-            ])
-            ->assertJsonStructure([
-                'success',
-                'message',
-                'filename',
-                'download_url',
-                'summary',
-            ]);
+            ->assertDownload();
     }
 
     /**
@@ -331,10 +307,7 @@ final class ImportExportTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Export completed successfully',
-            ]);
+            ->assertDownload();
     }
 
     /**
@@ -361,9 +334,9 @@ final class ImportExportTest extends TestCase
 
         $response = $this->getJson('/api/import-export/members/import-template');
 
+        // Template is generated as an Excel workbook and streamed as a download
         $response->assertStatus(200)
-            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8')
-            ->assertHeader('Content-Disposition', 'attachment; filename="member_import_template.csv"');
+            ->assertDownload();
     }
 
     /**
@@ -373,9 +346,9 @@ final class ImportExportTest extends TestCase
     {
         Sanctum::actingAs($this->superAdmin);
 
-        $csvContent = "First Name,Last Name,Email,Phone,Address,Gender,Birth Date,Baptism Date,Growth Level,TECI\n";
-        $csvContent .= "John,Doe,john@example.com,1234567890,123 Main St,Male,1990-01-01,2010-01-01,1,2\n";
-        $csvContent .= "Jane,Smith,jane@example.com,0987654321,456 Oak Ave,Female,1985-05-15,2015-05-15,2,3\n";
+        $csvContent = "name,email,phone,gender\n";
+        $csvContent .= "John Doe,john@example.com,1234567890,male\n";
+        $csvContent .= "Jane Smith,jane@example.com,0987654321,female\n";
 
         $file = UploadedFile::fake()->createWithContent('members.csv', $csvContent);
 
@@ -386,17 +359,16 @@ final class ImportExportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
-                'success' => true,
-                'message' => 'File validation successful',
+                'valid' => true,
+                'message' => 'File is valid for import',
             ])
             ->assertJsonStructure([
-                'success',
+                'valid',
                 'message',
-                'data' => [
-                    'valid_rows',
-                    'invalid_rows',
+                'preview' => [
                     'total_rows',
-                    'errors',
+                    'headers',
+                    'sample_data',
                 ],
             ]);
     }
@@ -412,25 +384,23 @@ final class ImportExportTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
+                'success',
                 'data' => [
-                    'imports' => [
+                    'members' => [
                         'total',
-                        'successful',
-                        'failed',
-                        'today',
-                        'this_week',
-                        'this_month',
+                        'recent',
+                        'by_status',
+                        'by_growth_level',
                     ],
                     'exports' => [
-                        'total',
-                        'today',
-                        'this_week',
-                        'this_month',
+                        'recent_files',
+                        'total_recent',
                     ],
-                    'storage' => [
-                        'used',
-                        'available',
-                        'percentage',
+                    'user_context' => [
+                        'is_super_admin',
+                        'branch_id',
+                        'can_import',
+                        'can_export',
                     ],
                 ],
             ]);
@@ -463,9 +433,9 @@ final class ImportExportTest extends TestCase
     {
         Sanctum::actingAs($this->superAdmin);
 
-        $csvContent = "First Name,Last Name,Email,Phone,Address,Gender,Birth Date,Baptism Date,Growth Level,TECI\n";
-        $csvContent .= "John,Doe,invalid-email,1234567890,123 Main St,Male,1990-01-01,2010-01-01,1,2\n";
-        $csvContent .= "Jane,Smith,jane@example.com,0987654321,456 Oak Ave,Female,invalid-date,2015-05-15,2,3\n";
+        $csvContent = "first_name,last_name,email,phone,gender,date_of_birth,member_status,growth_level\n";
+        $csvContent .= "John,Doe,invalid-email,1234567890,male,1990-01-01,member,new_believer\n";
+        $csvContent .= "Jane,Smith,jane@example.com,0987654321,female,invalid-date,member,growing\n";
 
         $file = UploadedFile::fake()->createWithContent('members.csv', $csvContent);
 
@@ -474,19 +444,23 @@ final class ImportExportTest extends TestCase
             'branch_id' => $this->branch->id,
         ]);
 
-        $response->assertStatus(200)
+        // Any failed row makes the import unsuccessful (422) and reports per-row errors
+        $response->assertStatus(422)
             ->assertJson([
-                'success' => true,
-                'message' => 'Import completed with some errors',
+                'success' => false,
             ])
             ->assertJsonStructure([
-                'data' => [
-                    'processed',
-                    'successful',
-                    'failed',
+                'success',
+                'message',
+                'summary' => [
+                    'total_processed',
+                    'successful_imports',
+                    'failed_imports',
                     'errors',
                 ],
             ]);
+
+        $this->assertGreaterThan(0, $response->json('summary.failed_imports'));
     }
 
     /**
@@ -529,9 +503,6 @@ final class ImportExportTest extends TestCase
         ]);
 
         $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Export completed successfully',
-            ]);
+            ->assertDownload();
     }
 } 

@@ -440,7 +440,7 @@ final class DepartmentControllerTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJson(['message' => 'Members assigned successfully.']);
+            ->assertJson(['message' => 'Members assigned successfully. Member status updated to volunteer.']);
 
         $this->assertDatabaseHas('member_departments', [
             'department_id' => $this->department->id,

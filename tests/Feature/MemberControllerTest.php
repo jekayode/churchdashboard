@@ -254,7 +254,8 @@ final class MemberControllerTest extends TestCase
     {
         $memberData = [
             'branch_id' => $this->branch1->id,
-            'name' => 'New Member',
+            'first_name' => 'New',
+            'surname' => 'Member',
             'email' => 'new@example.com',
             'phone' => '+1111111111',
             'gender' => 'male',
@@ -281,7 +282,7 @@ final class MemberControllerTest extends TestCase
     public function test_cannot_create_member_with_invalid_data(): void
     {
         $memberData = [
-            'name' => '', // Required field empty
+            'first_name' => '', // Required field empty
             'email' => 'invalid-email', // Invalid email format
             'branch_id' => 999, // Non-existent branch
         ];
@@ -290,7 +291,7 @@ final class MemberControllerTest extends TestCase
             ->postJson('/api/members', $memberData);
 
         $response->assertUnprocessable()
-            ->assertJsonValidationErrors(['name', 'email', 'branch_id']);
+            ->assertJsonValidationErrors(['first_name', 'surname', 'email', 'branch_id']);
     }
 
     public function test_can_show_member_details(): void
@@ -334,8 +335,10 @@ final class MemberControllerTest extends TestCase
     public function test_can_update_member(): void
     {
         $updateData = [
-            'name' => 'Updated Name',
+            'first_name' => 'Updated',
+            'surname' => 'Name',
             'email' => 'updated@example.com',
+            'phone' => '+1234567890',
             'branch_id' => $this->member1->branch_id,
             'member_status' => 'volunteer',
         ];

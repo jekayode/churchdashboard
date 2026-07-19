@@ -1,6 +1,6 @@
 <x-sidebar-layout title="Super Admin Dashboard">
             <!-- Welcome Section -->
-            <div class="bg-gradient-to-r from-blue-600 to-purple-600 overflow-hidden shadow-sm sm:rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-church-500 to-secondary-500 overflow-hidden shadow-sm sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
                     <h3 class="text-2xl font-bold mb-2">Welcome back, {{ Auth::user()->name }}!</h3>
                     <p class="text-blue-100">System Administrator - Full Access</p>
@@ -100,7 +100,7 @@
                                         <p class="text-sm text-gray-500">Pastor: {{ $branch->pastor?->name ?? 'Not Assigned' }}</p>
                                     </div>
                                     <div class="flex space-x-2">
-                                        <a href="#" class="text-blue-600 hover:text-blue-800 text-sm">Edit</a>
+                                        <a href="#" class="text-church-600 hover:text-church-700 text-sm">Edit</a>
                                         <a href="#" class="text-green-600 hover:text-green-800 text-sm">View</a>
                                     </div>
                                 </div>
@@ -148,7 +148,7 @@
                             </div>
                         </div>
                         <div class="mt-4">
-                            <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">View All Activity</a>
+                            <a href="#" class="text-church-600 hover:text-church-700 text-sm font-medium">View All Activity</a>
                         </div>
                     </div>
                 </div>

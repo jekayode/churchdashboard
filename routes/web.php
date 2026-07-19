@@ -5,6 +5,9 @@ declare(strict_types=1);
 use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MinisterDashboardController;
 use App\Http\Controllers\Pastor\EventFormController;
+use App\Http\Controllers\Pastor\ReadingPlanController as ReadingPlanWebController;
+use App\Http\Controllers\Pastor\SeriesController as SeriesWebController;
+use App\Http\Controllers\Pastor\SermonController as SermonWebController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
@@ -216,6 +219,31 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
     Route::get('/events/{event}/registrations', function ($eventId) {
         return view('pastor.events.registrations', compact('eventId'));
     })->name('events.registrations');
+
+    // Sermon library — feeds the member app's "Watch" tab
+    Route::get('/sermons', [SermonWebController::class, 'index'])->name('sermons');
+    Route::get('/sermons/create', [SermonWebController::class, 'create'])->name('sermons.create');
+    Route::post('/sermons', [SermonWebController::class, 'store'])->name('sermons.store');
+    Route::get('/sermons/{sermon}/edit', [SermonWebController::class, 'edit'])->name('sermons.edit');
+    Route::put('/sermons/{sermon}', [SermonWebController::class, 'update'])->name('sermons.update');
+    Route::delete('/sermons/{sermon}', [SermonWebController::class, 'destroy'])->name('sermons.destroy');
+    Route::delete('/sermons/{sermon}/media/{media}', [SermonWebController::class, 'destroyMedia'])->name('sermons.media.destroy');
+
+    // Sermon series
+    Route::get('/series', [SeriesWebController::class, 'index'])->name('series');
+    Route::get('/series/create', [SeriesWebController::class, 'create'])->name('series.create');
+    Route::post('/series', [SeriesWebController::class, 'store'])->name('series.store');
+    Route::get('/series/{series}/edit', [SeriesWebController::class, 'edit'])->name('series.edit');
+    Route::put('/series/{series}', [SeriesWebController::class, 'update'])->name('series.update');
+    Route::delete('/series/{series}', [SeriesWebController::class, 'destroy'])->name('series.destroy');
+
+    // Reading plans — daily readings and study questions
+    Route::get('/reading-plans', [ReadingPlanWebController::class, 'index'])->name('reading-plans');
+    Route::get('/reading-plans/{plan}/edit', [ReadingPlanWebController::class, 'edit'])->name('reading-plans.edit');
+    Route::put('/reading-plans/{plan}', [ReadingPlanWebController::class, 'update'])->name('reading-plans.update');
+    Route::get('/reading-plans/{plan}/days', [ReadingPlanWebController::class, 'days'])->name('reading-plans.days');
+    Route::get('/reading-plans/{plan}/days/{day}/edit', [ReadingPlanWebController::class, 'editDay'])->name('reading-plans.days.edit');
+    Route::put('/reading-plans/{plan}/days/{day}', [ReadingPlanWebController::class, 'updateDay'])->name('reading-plans.days.update');
 
     Route::get('/finances', function () {
         return view('pastor.finances.index');

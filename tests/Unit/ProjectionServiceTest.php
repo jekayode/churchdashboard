@@ -107,6 +107,7 @@ final class ProjectionServiceTest extends TestCase
             'attendance' => 0,
             'guests' => 0,
             'converts' => 0,
+            'weekly_avg_attendance' => 0,
         ], $result);
     }
 
@@ -150,6 +151,7 @@ final class ProjectionServiceTest extends TestCase
             'attendance' => 160 + 140, // Total attendance from both reports
             'guests' => 15 + 11, // Total guests from both reports
             'converts' => 5 + 3, // Total converts from both reports
+            'weekly_avg_attendance' => 150, // round(300 / 2 reports)
         ], $result);
     }
 
@@ -190,6 +192,7 @@ final class ProjectionServiceTest extends TestCase
             'attendance' => 160, // Only first report
             'guests' => 10, // Only first report
             'converts' => 3, // Only first report
+            'weekly_avg_attendance' => 160, // round(160 / 1 report)
         ], $result);
     }
 
@@ -203,6 +206,7 @@ final class ProjectionServiceTest extends TestCase
             'attendance' => 0,
             'guests' => 0,
             'converts' => 0,
+            'weekly_avg_attendance' => 0,
         ], $result);
     }
 
@@ -245,6 +249,7 @@ final class ProjectionServiceTest extends TestCase
             'attendance' => 160 + 125, // Total from both branches
             'guests' => 10 + 8, // Total from both branches
             'converts' => 3 + 2, // Total from both branches
+            'weekly_avg_attendance' => 143, // round(285 / 2 reports)
         ], $result);
     }
 

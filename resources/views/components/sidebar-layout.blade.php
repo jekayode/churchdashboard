@@ -1,3 +1,4 @@
+@props(['title' => null])
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
@@ -5,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ $title ? $title . ' — ' . config('app.name', 'Laravel') : config('app.name', 'Laravel') }}</title>
 
     <!-- Fonts (load async so timeout does not block page) -->
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-    <link rel="preload" href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" rel="stylesheet"></noscript>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -51,7 +52,7 @@
                     <div class="flex items-center space-x-4">
                         <!-- Sidebar toggle -->
                         <button @click="sidebarOpen = !sidebarOpen" 
-                                class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-600">
+                                class="p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-church-500">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                             </svg>
@@ -66,14 +67,14 @@
                             </div>
                             <input type="text" 
                                    placeholder="Search..." 
-                                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-green-600 focus:border-green-600 sm:text-sm">
+                                   class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-church-500 focus:border-church-500 sm:text-sm">
                         </div>
                     </div>
 
                     <!-- Right side -->
                     <div class="flex items-center space-x-4">
                         <!-- Notifications -->
-                        <button class="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-600">
+                        <button class="p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-inset focus:ring-church-500">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5zM4 19h6v-6H4v6z"></path>
                             </svg>
@@ -82,8 +83,8 @@
                         <!-- User menu -->
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" 
-                                    class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-green-600">
-                                <div class="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                                    class="flex items-center space-x-3 p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-church-500">
+                                <div class="w-8 h-8 bg-church-600 rounded-full flex items-center justify-center">
                                     <span class="text-white font-medium text-sm">{{ substr(Auth::user()->name, 0, 1) }}</span>
                                 </div>
                                 <span class="text-sm font-medium">{{ Auth::user()->name }}</span>
@@ -121,6 +122,15 @@
                     </div>
                 </div>
             </header>
+
+            <!-- Page Heading (from optional header slot) -->
+            @isset($header)
+                <div class="bg-white border-b border-gray-200">
+                    <div class="px-6 py-4">
+                        {{ $header }}
+                    </div>
+                </div>
+            @endisset
 
             <!-- Page Content -->
             <main class="flex-1 p-6">

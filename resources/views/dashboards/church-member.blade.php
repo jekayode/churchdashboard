@@ -14,7 +14,7 @@
             @endphp
 
             <!-- Welcome Section -->
-            <div class="bg-gradient-to-r from-church-600 to-secondary-600 overflow-hidden shadow-church sm:rounded-lg mb-6">
+            <div class="bg-gradient-to-r from-church-500 to-secondary-500 overflow-hidden shadow-church sm:rounded-lg mb-6">
                 <div class="p-6 text-white">
                     <h3 class="text-2xl font-bold mb-2">Welcome, {{ $user->name }}!</h3>
                     <p class="text-white/90">{{ $branch?->name ?? 'Church' }} Member - Growing in Faith</p>
@@ -246,7 +246,7 @@
                         <!-- TECI Progress -->
                         <div class="text-center">
                             <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg class="w-8 h-8 text-church-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
                                 </svg>
                             </div>
@@ -254,7 +254,7 @@
                             <p class="text-sm text-gray-600 mb-3">
                                 Current: {{ $member ? ucwords(str_replace('_', ' ', $member->teci_status)) : 'Not Started' }}
                             </p>
-                            <a href="#" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Continue Learning</a>
+                            <a href="#" class="text-church-600 hover:text-church-700 text-sm font-medium">Continue Learning</a>
                         </div>
 
                         <!-- Ministry Involvement -->

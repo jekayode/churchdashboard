@@ -75,20 +75,15 @@ final class RegisteredUserController extends Controller
     }
 
     /**
-     * Redirect user to appropriate dashboard based on their role.
+     * Redirect a newly registered user to their dashboard.
+     *
+     * The single `dashboard` route already resolves the correct role-specific
+     * view internally, so all roles redirect there. (Previously this pointed at
+     * per-role route names like `member.dashboard` that were never registered,
+     * which threw RouteNotFoundException on every registration.)
      */
     private function redirectBasedOnRole(User $user): RedirectResponse
     {
-        $primaryRole = $user->getPrimaryRole();
-
-        return match($primaryRole?->name) {
-            'super_admin' => redirect()->route('admin.dashboard'),
-            'branch_pastor' => redirect()->route('pastor.dashboard'),
-            'ministry_leader' => redirect()->route('ministry.dashboard'),
-            'department_leader' => redirect()->route('department.dashboard'),
-            'church_member' => redirect()->route('member.dashboard'),
-            'public_user' => redirect()->route('public.dashboard'),
-            default => redirect()->route('dashboard'),
-        };
+        return redirect()->route('dashboard');
     }
 }

@@ -292,8 +292,12 @@ final class User extends Authenticatable
         $primaryRole = $this->getPrimaryRole();
 
         if ($primaryRole) {
+            // Prefer a pivot row that has a branch_id: a user may hold the same
+            // role both globally (branch_id null) and scoped to a branch, and the
+            // branch-scoped assignment is the meaningful one.
             $userRole = $this->roles()
                 ->where('role_id', $primaryRole->id)
+                ->orderByRaw('user_roles.branch_id IS NULL')
                 ->first();
 
             if ($userRole && $userRole->pivot->branch_id) {

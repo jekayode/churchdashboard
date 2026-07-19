@@ -2447,7 +2447,7 @@
                 // Build the export content
                 exportContainer.innerHTML = `
                     <div style="margin-bottom: 30px; text-align: center; border-bottom: 2px solid #e5e7eb; padding-bottom: 20px;">
-                        <h1 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0;">${branchName === 'All Branches' ? 'Church Dashboard Report' : `${branchName} Event Report`}</h1>
+                        <h1 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0;">${branchName === 'All Branches' ? 'LifePointe Report' : `${branchName} Event Report`}</h1>
                         <p style="font-size: 16px; color: #6b7280; margin: 15px 0 5px 0;">Period: ${actualDateRange}</p>
                         <p style="font-size: 14px; color: #9ca3af; margin: 5px 0 0 0;">Generated on ${new Date().toLocaleDateString()}</p>
                     </div>

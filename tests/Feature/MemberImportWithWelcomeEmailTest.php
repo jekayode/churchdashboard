@@ -4,17 +4,26 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use App\Jobs\SendBulkWelcomeEmailsJob;
+use App\Jobs\SendBulkAccountSetupEmailsJob;
 use App\Models\Branch;
 use App\Models\BranchReportToken;
 use App\Models\Event;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 final class MemberImportWithWelcomeEmailTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
+    }
 
     public function test_member_import_creates_user_and_schedules_welcome_email(): void
     {
@@ -22,6 +31,11 @@ final class MemberImportWithWelcomeEmailTest extends TestCase
 
         // Create a branch
         $branch = Branch::factory()->create();
+
+        // Import requires an authenticated super admin
+        $superAdmin = User::factory()->create();
+        $superAdmin->assignRole('super_admin');
+        Sanctum::actingAs($superAdmin);
 
         // Create a simple CSV content for import
         $csvContent = "name,email,phone,gender,member_status\n";
@@ -79,8 +93,8 @@ final class MemberImportWithWelcomeEmailTest extends TestCase
             'member_status' => 'member',
         ]);
 
-        // Assert welcome email job was dispatched
-        Queue::assertPushed(SendBulkWelcomeEmailsJob::class, function ($job) use ($branch) {
+        // Assert account setup email job was dispatched
+        Queue::assertPushed(SendBulkAccountSetupEmailsJob::class, function ($job) use ($branch) {
             return $job->branch->id === $branch->id && count($job->userData) === 2;
         });
 
@@ -96,7 +110,7 @@ final class MemberImportWithWelcomeEmailTest extends TestCase
         // Create an event
         $event = Event::factory()->create([
             'branch_id' => $branch->id,
-            'is_published' => true,
+            'is_public' => true,
             'status' => 'active',
         ]);
 
@@ -135,13 +149,14 @@ final class MemberImportWithWelcomeEmailTest extends TestCase
 
     public function test_public_report_submission(): void
     {
-        // Create a branch
-        $branch = Branch::factory()->create();
+        // Create a branch with a pastor (report's reported_by resolves to the pastor)
+        $pastor = User::factory()->create();
+        $branch = Branch::factory()->create(['pastor_id' => $pastor->id]);
 
         // Create an event
         $event = Event::factory()->create([
             'branch_id' => $branch->id,
-            'is_published' => true,
+            'is_public' => true,
             'status' => 'active',
         ]);
 

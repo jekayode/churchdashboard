@@ -1,4 +1,4 @@
-@php($accent = '#F1592A')
+@php($accent = '#DD5D20')
 <!doctype html>
 <html>
 <head>

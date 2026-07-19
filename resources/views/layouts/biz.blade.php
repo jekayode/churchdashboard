@@ -20,7 +20,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         :root {
-            --biz-primary: {{ $settings->primary_color ?? '#F1592A' }};
+            --biz-primary: {{ $settings->primary_color ?? '#DD5D20' }};
             --biz-secondary: {{ $settings->secondary_color ?? '#1e293b' }};
         }
         .biz-primary { color: var(--biz-primary); }

@@ -5,12 +5,12 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Church Dashboard') }} - @yield('title', 'Welcome')</title>
+        <title>{{ config('app.name', 'LifePointe') }} - @yield('title', 'Welcome')</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-        <link rel="preload" href="https://fonts.bunny.net/css?family=inter:400,500,600,700&family=playfair-display:400,500,600,700&family=montserrat:400,500,600,700&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-        <noscript><link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&family=playfair-display:400,500,600,700&family=montserrat:400,500,600,700&display=swap" rel="stylesheet"></noscript>
+        <link rel="preload" href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+        <noscript><link href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" rel="stylesheet"></noscript>
 
         <!-- Favicon -->
         <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -42,7 +42,7 @@
                         <x-application-logo class="w-12 h-12 text-white" />
                     </div>
                     <h1 class="text-3xl font-display font-bold text-white text-shadow-lg mb-2">
-                        {{ config('app.name', 'Church Dashboard') }}
+                        {{ config('app.name', 'LifePointe') }}
                     </h1>
                     <p class="text-church-100 text-sm font-medium">
                         Connecting Faith • Building Community • Serving Together

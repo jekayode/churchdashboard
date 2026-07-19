@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ config('app.name', 'Church Dashboard') }} - LifeGroups</title>
+    <title>{{ config('app.name', 'LifePointe') }} - LifeGroups</title>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
-    <link rel="preload" href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-    <noscript><link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet"></noscript>
+    <link rel="preload" href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link href="https://fonts.bunny.net/css?family=quicksand:400,500,600,700&family=amaranth:400,700&family=pacifico:400&display=swap" rel="stylesheet"></noscript>
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -32,7 +32,7 @@
                         <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                             Events
                         </a>
-                        <a href="{{ route('public.lifegroups') }}" class="text-[#F1592A] hover:text-white px-3 py-2 rounded-md text-sm font-medium">
+                        <a href="{{ route('public.lifegroups') }}" class="text-[#DD5D20] hover:text-white px-3 py-2 rounded-md text-sm font-medium">
                             LifeGroups
                         </a>
                     </div>
@@ -40,7 +40,7 @@
                     <!-- Login Button & Mobile Menu Button -->
                     <div class="flex items-center space-x-4">
                         <!-- Login Button -->
-                        <a href="{{ route('login') }}" class="bg-[#F1592A] hover:bg-[#E54A1A] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Login</a>
+                        <a href="{{ route('login') }}" class="bg-[#DD5D20] hover:bg-[#C24E16] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">Login</a>
                         
                         <!-- Mobile menu button -->
                         <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
@@ -59,7 +59,7 @@
                         <a href="{{ route('public.events') }}" class="text-gray-200 hover:text-white block px-3 py-2 rounded-md text-base font-medium">
                             Events
                         </a>
-                        <a href="{{ route('public.lifegroups') }}" class="text-[#F1592A] hover:text-white block px-3 py-2 rounded-md text-base font-medium">
+                        <a href="{{ route('public.lifegroups') }}" class="text-[#DD5D20] hover:text-white block px-3 py-2 rounded-md text-base font-medium">
                             LifeGroups
                         </a>
                     </div>

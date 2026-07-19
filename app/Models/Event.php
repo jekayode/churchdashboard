@@ -12,10 +12,46 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Storage;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-final class Event extends Model
+final class Event extends Model implements HasMedia
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, InteractsWithMedia, SoftDeletes;
+
+    /**
+     * Cover image shown on the app's event cards and detail screen.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('cover')
+            ->singleFile()
+            ->useDisk(config('filesystems.media_disk', 'public'));
+    }
+
+    /**
+     * Public URL of the event cover, if one has been uploaded.
+     */
+    public function getCoverUrlAttribute(): ?string
+    {
+        $media = $this->getFirstMedia('cover');
+
+        return $media?->getUrl();
+    }
+
+    /**
+     * Remaining capacity, or null when the event is uncapped.
+     */
+    public function getSpotsRemainingAttribute(): ?int
+    {
+        if ($this->max_capacity === null || $this->max_capacity <= 0) {
+            return null;
+        }
+
+        $taken = $this->registrations_count ?? $this->registrations()->count();
+
+        return max(0, $this->max_capacity - (int) $taken);
+    }
 
     /**
      * The attributes that are mass assignable.

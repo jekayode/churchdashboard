@@ -21,7 +21,7 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         .header {
-            background-color: #9DC83B;
+            background-color: #DD5D20;
             padding: 24px;
             text-align: center;
         }
@@ -53,7 +53,7 @@
         }
         .button {
             display: inline-block;
-            background-color: #F1592A;
+            background-color: #DD5D20;
             color: #ffffff;
             padding: 12px 24px;
             text-decoration: none;
@@ -70,7 +70,7 @@
         }
 
         .button:hover {
-            background-color: #e2421a;
+            background-color: #C24E16;
         }
         .expiry {
             font-size: 14px;
@@ -123,7 +123,7 @@
         .social-icon {
             width: 32px;
             height: 32px;
-            background-color: #9DC83B;
+            background-color: #DD5D20;
             border-radius: 50%;
             display: flex;
             align-items: center;
@@ -134,7 +134,7 @@
             font-weight: bold;
         }
         .social-icon:hover {
-            background-color: #8bb332;
+            background-color: #C24E16;
         }
         .copyright {
             text-align: center;
@@ -154,7 +154,7 @@
             color: #6b7280;
         }
         .fallback-url a {
-            color: #F1592A;
+            color: #DD5D20;
             text-decoration: none;
         }
         .fallback-url a:hover {
