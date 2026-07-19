@@ -160,7 +160,33 @@ congregation, the host console and the projector screen should both be pages in
 the dashboard — mobile-friendly for the pastor's phone, full-screen for the
 projector. Only the player experience needs to be in the app.
 
-## Open questions
+## Answers (2026-07-19)
+
+- **~100 people in the room.** At that size, 100 phones answering inside two
+  seconds is roughly 50 writes a second. That is nothing for Laravel, and
+  combined with the deterministic timeline it means **polling every two seconds
+  is enough**. No Reverb, no persistent WebSocket process, far less to go wrong
+  during a service. Realtime can be added later if the room ever grows.
+- **Text-only questions** to begin with.
+- **Ties are broken by total response time** — the faster correct answers win, so
+  there is always a single winner.
+- **Name moderation confirmed**: length limit, profanity filter, and the host can
+  remove a participant mid-game.
+- **Runs monthly on LifeGroup Sunday**, so it is built to last rather than as a
+  one-off. First outing: **Sunday 26 July 2026**.
+
+## Build order
+
+1. Schema and models
+2. Pastor admin — write quizzes, questions, answers, timing *(first, so content
+   can be written while the rest is built)*
+3. Host console — a mobile web page: start, pause, end, live leaderboard
+4. Projector screen — full-screen web: join code, question, timer, leaderboard
+5. Player — join by code in the app, as a member or a guest, answer, see results
+6. Guest claiming on sign-in, and past-quiz history for members
+7. Rehearsal at 100 players before it runs in a service
+
+## Old open questions
 
 1. **How many people, realistically, in the room?** This sets what we rehearse
    against, and it is the only number that decides whether polling is enough.
