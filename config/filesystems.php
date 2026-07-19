@@ -54,7 +54,14 @@ return [
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
-            'url' => env('APP_URL').'/storage',
+            /*
+             * Media URLs are kept separate from APP_URL. A phone cannot resolve
+             * Herd's .test domain, so device testing needs these built from the
+             * machine's LAN IP — but APP_URL must keep pointing at the real host,
+             * because Sanctum derives its stateful domains from it and the
+             * dashboard's own session-authenticated API calls break otherwise.
+             */
+            'url' => env('MEDIA_URL', rtrim((string) env('APP_URL'), '/').'/storage'),
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
