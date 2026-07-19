@@ -164,18 +164,31 @@ returns a streak of 1; Proverbs 19:17 fetches live NLT text with its copyright.
       imported "What Now?" questions with its own, so days must be editable
 - [ ] Leap-year note: a 365-day annual plan resolves 29 Feb to 28 Feb
 
-## Stage 4 — Unified Notes
+## Stage 4 — Unified Notes — ✅ DONE (2026-07-19)
 
-**Build**
-- [ ] Polymorphic `Note` model (`notable`: Sermon, ReadingDay, or null = standalone)
-- [ ] API: CRUD `/api/me/notes`, filter by type, include context (sermon title / reading date)
-- [ ] Notes are strictly private to the member
+One polymorphic `Note` model serves sermon notes, reading notes and standalone
+personal notes, so the app can offer a single "My Notes" hub rather than three
+disconnected lists.
 
-**Test gate**
-- [ ] Feature tests: create note on sermon, on reading day, standalone; member A can never read member B's notes
-- [ ] "All my notes" endpoint returns mixed types with correct context labels
+**API**
+- `GET /api/me/notes` — the hub. Filter by `type` (sermon / reading / personal),
+  free-text search, paginated, with per-kind counts for the app's filter tabs.
+- `POST /api/me/notes` — standalone, or attached via `type` + `notable_id`
+- `GET /api/me/notes/for/{type}/{id}` — the note panel on a sermon or reading screen
+- `GET|PUT|DELETE /api/me/notes/{note}`
 
----
+Each note carries a **context label** (the sermon's title, the reading day's
+date), which is what makes the hub readable instead of a wall of text.
+
+**Privacy** — notes are strictly personal. Another member's note returns **404,
+not 403**, so the API never confirms it exists, and a branch pastor gets nothing
+from `me/*` either: those routes are always the caller's own data regardless of
+role. Both are covered by tests.
+
+**Test gate — passed:** 16 tests (all three kinds, context labels, filters,
+search, per-item lookup, edit/delete, and four separate privacy assertions).
+Smoke-tested live against real data — a note on the "WISDOM FOR INCREASE" sermon
+and on reading day "July 18" both returned correct context. Suite: **529 passed**.
 
 ## Stage 5 — Expo app skeleton (implement the design here)
 

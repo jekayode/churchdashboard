@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Me\EventController as MeEventController;
+use App\Http\Controllers\Api\Me\NoteController as MeNoteController;
 use App\Http\Controllers\Api\Me\ProfileController as MeProfileController;
 use App\Http\Controllers\Api\Me\ReadingController as MeReadingController;
 use App\Http\Controllers\Api\Me\SermonController as MeSermonController;
@@ -107,6 +108,14 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
         Route::get('/reading/days/{day}', [MeReadingController::class, 'show'])->name('reading.show');
         Route::post('/reading/days/{day}/complete', [MeReadingController::class, 'complete'])->name('reading.complete');
         Route::delete('/reading/days/{day}/complete', [MeReadingController::class, 'uncomplete'])->name('reading.uncomplete');
+
+        // Notes — sermon notes, reading notes and personal notes in one place
+        Route::get('/notes', [MeNoteController::class, 'index'])->name('notes.index');
+        Route::post('/notes', [MeNoteController::class, 'store'])->name('notes.store');
+        Route::get('/notes/for/{type}/{id}', [MeNoteController::class, 'forItem'])->name('notes.for-item');
+        Route::get('/notes/{note}', [MeNoteController::class, 'show'])->name('notes.show');
+        Route::put('/notes/{note}', [MeNoteController::class, 'update'])->name('notes.update');
+        Route::delete('/notes/{note}', [MeNoteController::class, 'destroy'])->name('notes.destroy');
 
         // Small groups
         Route::get('/small-groups', [MeSmallGroupController::class, 'index'])->name('small-groups.index');
