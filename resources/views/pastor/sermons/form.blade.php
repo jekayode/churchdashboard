@@ -137,7 +137,22 @@
                 </div>
 
                 <div>
-                    <label for="recording" class="block text-sm font-medium text-gray-700 mb-1">Recording</label>
+                    <label for="video_url" class="block text-sm font-medium text-gray-700 mb-1">YouTube link</label>
+                    <input id="video_url" name="video_url" type="url"
+                           value="{{ old('video_url', $sermon?->video_url) }}"
+                           placeholder="https://www.youtube.com/watch?v=… or https://youtu.be/…"
+                           class="w-full rounded-lg border-gray-300 focus:border-church-500 focus:ring-church-500">
+                    <p class="mt-1 text-xs text-gray-500">
+                        If the message is on YouTube, paste the link and it plays inside the app.
+                        No audio upload needed.
+                    </p>
+                    @if ($sermon?->youtube_id)
+                        <p class="mt-1 text-xs text-church-700">Video recognised · id {{ $sermon->youtube_id }}</p>
+                    @endif
+                </div>
+
+                <div>
+                    <label for="recording" class="block text-sm font-medium text-gray-700 mb-1">Audio recording</label>
                     @if ($sermon?->recording_url)
                         <div class="mb-2">
                             <audio controls preload="none" src="{{ $sermon->recording_url }}" class="w-full"></audio>

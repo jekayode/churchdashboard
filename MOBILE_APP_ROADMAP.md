@@ -337,3 +337,24 @@ Suite was **42 failed / 332 passed** at session start. Now **0 failed / 374 pass
 - **iOS Simulator:** via Xcode (Mac-only advantage) — good for many screen sizes; **no push notifications**
 - **Android Emulator:** via Android Studio — can receive push (with Play services image)
 - **Beta:** TestFlight + Play Internal Testing via EAS cloud builds — no local Xcode/Android Studio required to build
+
+## In-service quiz — built (19–20 July 2026)
+
+Ready for LifeGroup Sunday, 26 July. See [QUIZ_SPEC.md](QUIZ_SPEC.md) for the
+design and [QUIZ_RUNNING_IT.md](QUIZ_RUNNING_IT.md) for how to run one.
+
+Branches: `feat/in-service-quiz` in both repos. Not pushed — awaiting review.
+
+The shape of it: the pastor writes questions on the dashboard and, on the day,
+only presses start. Questions advance on a timer, which makes the whole run
+derivable from when the quiz started — so a phone that locked, dropped signal or
+joined late is corrected by the next poll rather than being stranded. That also
+removed the need for Reverb: at ~100 people, polling is comfortably enough and
+there is no persistent socket process to operate.
+
+Guests play with just a name and carry a device token, which is what lets them
+claim those scores when they sign up. Host console and projector are web pages,
+not app screens, because a page can be corrected between services.
+
+Still open: push notifications (Stage 7), onboarding and dark mode, the giving
+admin UI, and the duplicate "Unfiltered Thursday" event.

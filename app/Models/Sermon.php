@@ -36,6 +36,7 @@ final class Sermon extends Model implements HasMedia
         'tone',
         'is_live',
         'live_url',
+        'video_url',
         'is_published',
     ];
 
@@ -84,6 +85,35 @@ final class Sermon extends Model implements HasMedia
         $this->addMediaCollection('recording')->singleFile()->useDisk($disk);
         $this->addMediaCollection('slides')->useDisk($disk);
         $this->addMediaCollection('cover')->singleFile()->useDisk($disk);
+    }
+
+    /**
+     * YouTube video id, from any of the URL shapes a pastor might paste:
+     * watch?v=, youtu.be/, /embed/ and /live/.
+     */
+    public function getYoutubeIdAttribute(): ?string
+    {
+        $url = $this->video_url;
+
+        if (blank($url)) {
+            return null;
+        }
+
+        $patterns = [
+            '~youtu\.be/([A-Za-z0-9_-]{11})~',
+            '~[?&]v=([A-Za-z0-9_-]{11})~',
+            '~/embed/([A-Za-z0-9_-]{11})~',
+            '~/live/([A-Za-z0-9_-]{11})~',
+            '~/shorts/([A-Za-z0-9_-]{11})~',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $url, $matches) === 1) {
+                return $matches[1];
+            }
+        }
+
+        return null;
     }
 
     public function getCoverUrlAttribute(): ?string

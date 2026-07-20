@@ -159,6 +159,7 @@ final class SermonController extends Controller
             'tone' => $validated['tone'] ?? 'orange',
             'is_live' => $validated['is_live'] ?? false,
             'live_url' => $validated['live_url'] ?? null,
+            'video_url' => $validated['video_url'] ?? null,
             'is_published' => $validated['is_published'] ?? false,
         ];
 

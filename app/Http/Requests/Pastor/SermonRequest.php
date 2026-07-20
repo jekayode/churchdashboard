@@ -36,6 +36,7 @@ final class SermonRequest extends FormRequest
             // required_if_accepted, not required_if:is_live,1 — prepareForValidation
             // casts is_live to a real boolean, which never matches the string "1".
             'live_url' => ['nullable', 'url', 'max:2048', 'required_if_accepted:is_live'],
+            'video_url' => ['nullable', 'url', 'max:2048'],
             'is_published' => ['sometimes', 'boolean'],
 
             // Media. Recording and slides can be large, hence the raised limits.

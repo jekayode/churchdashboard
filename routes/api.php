@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\Me\EventController as MeEventController;
 use App\Http\Controllers\Api\Me\GivingController as MeGivingController;
 use App\Http\Controllers\Api\Me\NoteController as MeNoteController;
 use App\Http\Controllers\Api\Me\ProfileController as MeProfileController;
+use App\Http\Controllers\Api\Me\QuizController as MeQuizController;
+use App\Http\Controllers\Api\Quiz\PlayController as QuizPlayController;
 use App\Http\Controllers\Api\Me\ReadingController as MeReadingController;
 use App\Http\Controllers\Api\Me\SermonController as MeSermonController;
 use App\Http\Controllers\Api\Me\SmallGroupController as MeSmallGroupController;
@@ -81,6 +83,12 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     |
     */
     Route::prefix('me')->name('api.me.')->group(function () {
+        // The other half of guest play: pulling scores earned without an
+        // account onto the profile that has just been created.
+        Route::get('quiz/active', [MeQuizController::class, 'active'])->name('quiz.active');
+        Route::post('quiz/claim', [MeQuizController::class, 'claim'])->name('quiz.claim');
+        Route::get('quiz/history', [MeQuizController::class, 'history'])->name('quiz.history');
+
         // Profile
         Route::get('/', [MeProfileController::class, 'show'])->name('show');
         Route::put('/profile', [MeProfileController::class, 'update'])->name('profile.update');
@@ -577,4 +585,23 @@ Route::get('/health', function () {
         'timestamp' => now()->toISOString(),
         'version' => config('app.version', '1.0.0'),
     ]);
+});
+
+/*
+ * Playing a quiz.
+ *
+ * Open rather than authenticated, because a guest joining with nothing but a
+ * name is the whole point — it removes the barrier to taking part, and the
+ * score history afterwards is the reason to make an account. A participant is
+ * identified by the device token handed back when they joined; a signed-in
+ * member is still recognised from their bearer token if one is sent.
+ *
+ * The throttles assume roughly 100 people answering inside the same couple of
+ * seconds, which is unremarkable for the database — they are here so a scripted
+ * client cannot turn that into a flood.
+ */
+Route::prefix('quiz')->name('api.quiz.')->group(function () {
+    Route::post('join', [QuizPlayController::class, 'join'])->middleware('throttle:20,1')->name('join');
+    Route::get('{code}/state', [QuizPlayController::class, 'state'])->middleware('throttle:180,1')->name('state');
+    Route::post('{code}/answer', [QuizPlayController::class, 'answer'])->middleware('throttle:120,1')->name('answer');
 });

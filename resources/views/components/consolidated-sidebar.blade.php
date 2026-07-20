@@ -93,6 +93,7 @@
                     <a href="{{ route('pastor.sermons') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.sermons*') ? 'bg-church-50 text-church-700' : '' }}">Sermons</a>
                     <a href="{{ route('pastor.series') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.series*') ? 'bg-church-50 text-church-700' : '' }}">Sermon Series</a>
                     <a href="{{ route('pastor.reading-plans') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.reading-plans*') ? 'bg-church-50 text-church-700' : '' }}">Reading Plans</a>
+                    <a href="{{ route('pastor.quizzes') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.quizzes*') ? 'bg-church-50 text-church-700' : '' }}">Quizzes</a>
                 </div>
             </div>
 
@@ -226,6 +227,7 @@
                     <a href="{{ route('pastor.sermons') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.sermons*') ? 'bg-church-50 text-church-700' : '' }}">Sermons</a>
                     <a href="{{ route('pastor.series') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.series*') ? 'bg-church-50 text-church-700' : '' }}">Sermon Series</a>
                     <a href="{{ route('pastor.reading-plans') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.reading-plans*') ? 'bg-church-50 text-church-700' : '' }}">Reading Plans</a>
+                    <a href="{{ route('pastor.quizzes') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.quizzes*') ? 'bg-church-50 text-church-700' : '' }}">Quizzes</a>
                 </div>
             </div>
 

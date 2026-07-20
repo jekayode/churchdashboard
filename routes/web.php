@@ -7,7 +7,10 @@ use App\Http\Controllers\MinisterDashboardController;
 use App\Http\Controllers\Pastor\EventFormController;
 use App\Http\Controllers\Pastor\ReadingPlanController as ReadingPlanWebController;
 use App\Http\Controllers\Pastor\SeriesController as SeriesWebController;
+use App\Http\Controllers\Pastor\QuizController as QuizWebController;
+use App\Http\Controllers\Pastor\QuizHostController;
 use App\Http\Controllers\Pastor\SermonController as SermonWebController;
+use App\Http\Controllers\Quiz\ScreenController as QuizScreenController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
@@ -236,6 +239,29 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
     Route::get('/series/{series}/edit', [SeriesWebController::class, 'edit'])->name('series.edit');
     Route::put('/series/{series}', [SeriesWebController::class, 'update'])->name('series.update');
     Route::delete('/series/{series}', [SeriesWebController::class, 'destroy'])->name('series.destroy');
+
+    // In-service quiz — written here, run from the phone, watched on the projector
+    Route::get('/quizzes', [QuizWebController::class, 'index'])->name('quizzes');
+    Route::get('/quizzes/create', [QuizWebController::class, 'create'])->name('quizzes.create');
+    Route::post('/quizzes', [QuizWebController::class, 'store'])->name('quizzes.store');
+    Route::get('/quizzes/{quiz}/edit', [QuizWebController::class, 'edit'])->name('quizzes.edit');
+    Route::put('/quizzes/{quiz}', [QuizWebController::class, 'update'])->name('quizzes.update');
+    Route::get('/quizzes/{quiz}/questions', [QuizWebController::class, 'questions'])->name('quizzes.questions');
+    Route::put('/quizzes/{quiz}/questions', [QuizWebController::class, 'updateQuestions'])->name('quizzes.questions.update');
+    Route::get('/quizzes/{quiz}/import', [QuizWebController::class, 'importForm'])->name('quizzes.import');
+    Route::post('/quizzes/{quiz}/import', [QuizWebController::class, 'import'])->name('quizzes.import.store');
+    Route::delete('/quizzes/{quiz}', [QuizWebController::class, 'destroy'])->name('quizzes.destroy');
+
+    // Host console
+    Route::get('/quizzes/{quiz}/host', [QuizHostController::class, 'show'])->name('quizzes.host');
+    Route::get('/quizzes/{quiz}/host/state', [QuizHostController::class, 'state'])->name('quizzes.host.state');
+    Route::post('/quizzes/{quiz}/open', [QuizHostController::class, 'open'])->name('quizzes.open');
+    Route::post('/quizzes/{quiz}/start', [QuizHostController::class, 'start'])->name('quizzes.start');
+    Route::post('/quizzes/{quiz}/pause', [QuizHostController::class, 'pause'])->name('quizzes.pause');
+    Route::post('/quizzes/{quiz}/resume', [QuizHostController::class, 'resume'])->name('quizzes.resume');
+    Route::post('/quizzes/{quiz}/finish', [QuizHostController::class, 'finish'])->name('quizzes.finish');
+    Route::delete('/quizzes/{quiz}/participants/{participant}', [QuizHostController::class, 'removeParticipant'])
+        ->name('quizzes.participants.remove');
 
     // Reading plans — daily readings and study questions
     Route::get('/reading-plans', [ReadingPlanWebController::class, 'index'])->name('reading-plans');
@@ -584,3 +610,14 @@ require __DIR__.'/biz.php';
 require __DIR__.'/builders.php';
 
 require __DIR__.'/auth.php';
+
+/*
+ * The projector screen. Deliberately outside the auth middleware: it is opened
+ * on whatever machine drives the screen, and nobody signs in on that during a
+ * service. The payload withholds the correct answer until answering has closed,
+ * so the URL is worth no more to a player than looking up at the wall.
+ */
+Route::get('/quiz/{code}/screen', [QuizScreenController::class, 'show'])->name('quiz.screen');
+Route::get('/quiz/{code}/screen/state', [QuizScreenController::class, 'state'])
+    ->middleware('throttle:120,1')
+    ->name('quiz.screen.state');

@@ -86,11 +86,18 @@ final class BranchControllerTest extends TestCase
 
         $activeBranch = Branch::factory()->create([
             'name' => 'Main Campus',
+            'venue' => 'First Street',
+            'email' => 'primary@example.org',
             'status' => 'active',
         ]);
 
+        // Venue and email are pinned because the search also covers them, and a
+        // faker address or email containing "main" (as in "domain") made this
+        // test fail intermittently.
         $inactiveBranch = Branch::factory()->create([
             'name' => 'Secondary Campus',
+            'venue' => 'Second Street',
+            'email' => 'secondary@example.org',
             'status' => 'inactive',
         ]);
 

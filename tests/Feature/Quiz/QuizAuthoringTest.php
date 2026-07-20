@@ -1,0 +1,309 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Quiz;
+
+use App\Models\Branch;
+use App\Models\Quiz;
+use App\Models\QuizQuestion;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+final class QuizAuthoringTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
+    }
+
+    private function pastor(): User
+    {
+        $user = User::factory()->create(['email_verified_at' => now()]);
+        $user->assignRole('branch_pastor');
+
+        $branch = Branch::factory()->create(['pastor_id' => $user->id, 'status' => 'active']);
+        $user->assignRole('branch_pastor', $branch->id);
+
+        return $user->fresh();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function questionPayload(): array
+    {
+        return [
+            'questions' => [
+                [
+                    'text' => 'Who led Israel across the Jordan?',
+                    'correct' => 1,
+                    'options' => [['text' => 'Moses'], ['text' => 'Joshua'], ['text' => 'Caleb']],
+                ],
+            ],
+        ];
+    }
+
+    public function test_a_pastor_can_create_a_quiz(): void
+    {
+        $pastor = $this->pastor();
+
+        $response = $this->actingAs($pastor)->post(route('pastor.quizzes.store'), [
+            'title' => 'LifeGroup Sunday Quiz',
+            'seconds_per_question' => 20,
+            'reveal_seconds' => 6,
+            'base_points' => 1000,
+            'allow_guests' => '1',
+        ]);
+
+        $quiz = Quiz::firstWhere('title', 'LifeGroup Sunday Quiz');
+        $this->assertNotNull($quiz);
+        $this->assertSame('draft', $quiz->status);
+        $response->assertRedirect(route('pastor.quizzes.questions', $quiz));
+
+        // Issued at creation, so the projector link can be handed to the
+        // multimedia team well before the day rather than minutes before.
+        $this->assertNotNull($quiz->code);
+    }
+
+    public function test_the_projector_link_works_before_the_quiz_is_opened(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId(), 'status' => 'draft']);
+
+        // Whoever runs the screen does not sign in, and should not have to wait
+        // for the pastor to open the quiz before their link exists.
+        $this->get("/quiz/{$quiz->code}/screen")->assertOk();
+    }
+
+    public function test_every_quiz_gets_its_own_code(): void
+    {
+        $codes = collect(range(1, 20))->map(fn (): string => Quiz::factory()->create()->code);
+
+        $this->assertCount(20, $codes->unique(), 'Two quizzes sharing a code would send players to the wrong one');
+    }
+
+    public function test_opening_a_quiz_keeps_the_code_it_was_given(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId(), 'status' => 'draft']);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1]);
+        $original = $quiz->code;
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.open', $quiz));
+
+        // A link already sent out must not stop working when the quiz opens.
+        $this->assertSame($original, $quiz->fresh()->code);
+    }
+
+    public function test_the_quizzes_page_is_reachable_from_the_sidebar(): void
+    {
+        $response = $this->actingAs($this->pastor())->get(route('pastor.quizzes'));
+
+        $response->assertOk();
+        $response->assertSee(route('pastor.quizzes'), escape: false);
+    }
+
+    public function test_questions_and_the_marked_answer_are_saved(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)
+            ->put(route('pastor.quizzes.questions.update', $quiz), $this->questionPayload())
+            ->assertRedirect(route('pastor.quizzes'));
+
+        $question = $quiz->fresh()->questions()->with('options')->first();
+        $this->assertSame('Who led Israel across the Jordan?', $question->text);
+        $this->assertCount(3, $question->options);
+        $this->assertSame('Joshua', $question->correctOption()->text);
+    }
+
+    public function test_saving_questions_replaces_the_previous_set(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->count(3)->sequence(
+            ['position' => 1], ['position' => 2], ['position' => 3],
+        )->create(['quiz_id' => $quiz->id]);
+
+        $this->actingAs($pastor)->put(route('pastor.quizzes.questions.update', $quiz), $this->questionPayload());
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_a_question_with_no_marked_answer_is_rejected(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $response = $this->actingAs($pastor)->put(route('pastor.quizzes.questions.update', $quiz), [
+            'questions' => [[
+                'text' => 'A question',
+                'correct' => 5, // points at an option that does not exist
+                'options' => [['text' => 'One'], ['text' => 'Two']],
+            ]],
+        ]);
+
+        $response->assertSessionHasErrors('questions.0.correct');
+        $this->assertSame(0, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_a_question_needs_at_least_two_answers(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)->put(route('pastor.quizzes.questions.update', $quiz), [
+            'questions' => [['text' => 'A question', 'correct' => 0, 'options' => [['text' => 'Only one']]]],
+        ])->assertSessionHasErrors('questions.0.options');
+    }
+
+    public function test_questions_are_locked_once_the_quiz_has_been_opened(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->lobby()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1]);
+
+        $this->actingAs($pastor)
+            ->put(route('pastor.quizzes.questions.update', $quiz), $this->questionPayload())
+            ->assertSessionHas('error');
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count(), 'Scores would stop meaning anything');
+    }
+
+    // Importing ----------------------------------------------------------
+
+    public function test_the_import_page_renders(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)->get(route('pastor.quizzes.import', $quiz))->assertOk();
+    }
+
+    public function test_pasted_questions_are_imported(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), [
+                'pasted' => "1. Who led Israel across the Jordan?\na) Moses\nb) Joshua *\nc) Caleb\n\n"
+                    ."2. Where was Jesus born?\na) Nazareth\nb) Bethlehem\nAnswer: B",
+            ])
+            ->assertRedirect(route('pastor.quizzes.questions', $quiz));
+
+        $questions = $quiz->fresh()->questions()->with('options')->get();
+        $this->assertCount(2, $questions);
+        $this->assertSame('Joshua', $questions[0]->correctOption()->text);
+        $this->assertSame('Bethlehem', $questions[1]->correctOption()->text);
+    }
+
+    public function test_an_import_replaces_the_existing_questions(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->count(3)->sequence(
+            ['position' => 1], ['position' => 2], ['position' => 3],
+        )->create(['quiz_id' => $quiz->id]);
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.import.store', $quiz), [
+            'pasted' => "Who led Israel?\nMoses\n*Joshua",
+        ]);
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_a_part_successful_import_reports_what_it_dropped(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $response = $this->actingAs($pastor)->post(route('pastor.quizzes.import.store', $quiz), [
+            'pasted' => "Who led Israel?\nMoses\n*Joshua\n\nA broken one\nNothing marked\nNor here",
+        ]);
+
+        // Dropping it silently would leave the quiz short on the day with nobody
+        // knowing why.
+        $response->assertSessionHas('import_errors');
+        $this->assertSame(1, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_an_import_that_yields_nothing_changes_nothing(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1]);
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), ['pasted' => "Just a heading\nand a line"])
+            ->assertSessionHas('import_errors');
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count(), 'A failed import must not wipe the existing set');
+    }
+
+    public function test_a_csv_can_be_uploaded(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+            'questions.csv',
+            "question,a,b,c,answer\nWho led Israel?,Moses,Joshua,Caleb,B\n",
+        );
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), ['file' => $file])
+            ->assertRedirect(route('pastor.quizzes.questions', $quiz));
+
+        $this->assertSame('Joshua', $quiz->fresh()->questions()->with('options')->first()->correctOption()->text);
+    }
+
+    public function test_questions_cannot_be_imported_once_the_quiz_is_open(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->lobby()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1]);
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), ['pasted' => "Who led Israel?\nMoses\n*Joshua"])
+            ->assertSessionHas('error');
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_a_pastor_cannot_import_into_another_branchs_quiz(): void
+    {
+        $quiz = Quiz::factory()->create(['branch_id' => Branch::factory()->create()->id]);
+
+        $this->actingAs($this->pastor())
+            ->post(route('pastor.quizzes.import.store', $quiz), ['pasted' => "Who?\nA\n*B"])
+            ->assertForbidden();
+    }
+
+    public function test_a_pastor_cannot_touch_another_branchs_quiz(): void
+    {
+        $quiz = Quiz::factory()->create(['branch_id' => Branch::factory()->create()->id]);
+
+        $this->actingAs($this->pastor())
+            ->put(route('pastor.quizzes.questions.update', $quiz), $this->questionPayload())
+            ->assertForbidden();
+    }
+
+    public function test_an_ordinary_member_cannot_write_quizzes(): void
+    {
+        $user = User::factory()->create();
+        $user->assignRole('church_member');
+
+        $response = $this->actingAs($user)->get(route('pastor.quizzes'));
+
+        $this->assertContains($response->status(), [302, 403], 'A member must not reach the quiz admin');
+        $this->assertNotSame(200, $response->status());
+    }
+}
