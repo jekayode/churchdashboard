@@ -8,6 +8,7 @@ use App\Models\ReadingPlan;
 use App\Support\BibleReference;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Maatwebsite\Excel\Facades\Excel;
 
 /**
@@ -32,6 +33,7 @@ final class ImportReadingPlan extends Command
         {--attribution= : Credit line shown with the plan}
         {--publish : Publish the plan immediately}
         {--default : Mark as the default plan offered to members}
+        {--replace : Update the plan of this name in place instead of refusing}
         {--dry-run : Parse and report without writing anything}';
 
     protected $description = 'Import a reading plan (Bible in a Year or a devotional series) from CSV/XLSX';
@@ -227,11 +229,62 @@ final class ImportReadingPlan extends Command
     }
 
     /**
+     * Updates a plan in place, matching days on their day number.
+     *
+     * Emphatically not delete-then-recreate: member_reading_progress is tied to
+     * reading_day_id with a cascade, so dropping the days would take every
+     * member's reading history and streak with them. Matching on the unique
+     * (plan, day_number) key keeps the ids, and the progress attached to them.
+     *
+     * @param  list<array<string, mixed>>  $parsed
+     */
+    private function replacePlan(ReadingPlan $plan, array $parsed): ReadingPlan
+    {
+        return DB::transaction(function () use ($plan, $parsed): ReadingPlan {
+            $plan->update(array_filter([
+                'is_annual' => (bool) $this->option('annual'),
+                'length_days' => count($parsed),
+                'is_published' => $this->option('publish') ? true : $plan->is_published,
+                'is_default' => $this->option('default') ? true : $plan->is_default,
+                'attribution' => $this->option('attribution') ?: $plan->attribution,
+            ], fn ($value): bool => $value !== null));
+
+            foreach ($parsed as $day) {
+                $plan->days()->updateOrCreate(['day_number' => $day['day_number']], $day);
+            }
+
+            return $plan;
+        });
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $parsed
      */
     private function createPlan(array $parsed): ReadingPlan
     {
         $name = (string) ($this->option('name') ?: pathinfo((string) $this->argument('file'), PATHINFO_FILENAME));
+
+        $existing = ReadingPlan::where('name', $name)
+            ->orWhere('slug', $this->option('slug') ?: Str::slug($name))
+            ->first();
+
+        /*
+         * Slugs are made unique automatically, so without this a second run
+         * quietly produces a second plan — "bible-in-a-year-2" — and --default
+         * hands it the flag, leaving members reading from a plan nobody meant
+         * to publish. Far likelier on a live server than locally, since the
+         * obvious response to a half-finished import is to run it again.
+         */
+        if ($existing !== null && ! $this->option('replace')) {
+            $this->error("A plan named \"{$name}\" already exists (id {$existing->id}).");
+            $this->line('Use --replace to update it in place, or --name to import alongside it.');
+
+            return $existing;
+        }
+
+        if ($existing !== null) {
+            return $this->replacePlan($existing, $parsed);
+        }
 
         return DB::transaction(function () use ($parsed, $name): ReadingPlan {
             $plan = ReadingPlan::create([
