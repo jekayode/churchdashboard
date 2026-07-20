@@ -65,6 +65,40 @@ final class QuizAuthoringTest extends TestCase
         $this->assertNotNull($quiz);
         $this->assertSame('draft', $quiz->status);
         $response->assertRedirect(route('pastor.quizzes.questions', $quiz));
+
+        // Issued at creation, so the projector link can be handed to the
+        // multimedia team well before the day rather than minutes before.
+        $this->assertNotNull($quiz->code);
+    }
+
+    public function test_the_projector_link_works_before_the_quiz_is_opened(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId(), 'status' => 'draft']);
+
+        // Whoever runs the screen does not sign in, and should not have to wait
+        // for the pastor to open the quiz before their link exists.
+        $this->get("/quiz/{$quiz->code}/screen")->assertOk();
+    }
+
+    public function test_every_quiz_gets_its_own_code(): void
+    {
+        $codes = collect(range(1, 20))->map(fn (): string => Quiz::factory()->create()->code);
+
+        $this->assertCount(20, $codes->unique(), 'Two quizzes sharing a code would send players to the wrong one');
+    }
+
+    public function test_opening_a_quiz_keeps_the_code_it_was_given(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId(), 'status' => 'draft']);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1]);
+        $original = $quiz->code;
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.open', $quiz));
+
+        // A link already sent out must not stop working when the quiz opens.
+        $this->assertSame($original, $quiz->fresh()->code);
     }
 
     public function test_the_quizzes_page_is_reachable_from_the_sidebar(): void

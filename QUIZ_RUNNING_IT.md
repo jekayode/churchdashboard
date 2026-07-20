@@ -15,14 +15,17 @@ Everything below is built and tested. Nothing here needs a developer.
 
 ## On the day
 
-**On the projector machine**, open the quiz from Dashboard → Quizzes → *Run it*,
-then follow **Open the projector screen**. Put that window full screen. It needs
-no login, so it does not matter whose machine it is.
+**The projector link exists as soon as the quiz does**, so you can send it to
+whoever runs the screen days in advance. Find it on Dashboard → Quizzes →
+*Run it*, under **Open the projector screen**. They open it, put it full screen,
+and never sign in — it does not matter whose machine it is, and the link keeps
+working when you open and start the quiz.
 
 **On your phone**, open the same *Run it* page. You have three controls and you
 will normally use one:
 
-- **Open for joining** — puts the code on the screen and lets people in.
+- **Open for joining** — lets people in. The code was set when you created the
+  quiz and does not change.
 - **Start the quiz** — the only thing you have to press. Questions then advance
   by themselves, all the way to the final scores.
 - **Pause** / **End now** — for when the room needs holding, or you have run out

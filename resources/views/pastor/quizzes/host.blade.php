@@ -33,11 +33,14 @@
                        class="inline-flex items-center gap-2 text-sm font-semibold text-church-600 hover:text-church-800">
                         Open the projector screen &rarr;
                     </a>
-                    <p class="text-xs text-gray-400 mt-1">Open this on the machine driving the screen</p>
+                    <p class="text-xs text-gray-400 mt-1">
+                        Send this link to whoever runs the screen — it needs no login,
+                        and it works before the quiz has started.
+                    </p>
                 </div>
             </template>
             <template x-if="!state.quiz || !state.quiz.code">
-                <p class="text-gray-500">Open the quiz to put a code on the screen.</p>
+                <p class="text-gray-500">Loading…</p>
             </template>
         </div>
 

@@ -102,10 +102,27 @@ final class Quiz extends Model
     }
 
     /**
-     * A code unused by any quiz that could still be joined. Finished quizzes
-     * release their code back, so codes stay short instead of growing to stay
-     * unique over years of monthly use.
+     * A code is issued the moment a quiz is created, rather than when it is
+     * opened on the day.
+     *
+     * The projector screen is addressed by code, and the multimedia team open it
+     * on a machine nobody signs in on. If the code only appeared when the pastor
+     * pressed "open for joining", their link would not exist until minutes
+     * before the service — putting a handover between the platform and the sound
+     * desk at the worst possible moment. Issuing it up front means the link can
+     * be sent as soon as the questions are written.
      */
+    protected static function booted(): void
+    {
+        self::creating(function (self $quiz): void {
+            if (blank($quiz->code)) {
+                $quiz->code = self::generateCode();
+            }
+        });
+    }
+
+    /** A code no other quiz is using. Codes are never reused, which at a handful
+     *  of quizzes a year leaves the space effectively untouched. */
     public static function generateCode(): string
     {
         do {

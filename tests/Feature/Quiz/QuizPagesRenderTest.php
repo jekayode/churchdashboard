@@ -41,7 +41,7 @@ final class QuizPagesRenderTest extends TestCase
         $quiz = Quiz::factory()->create([
             'branch_id' => $pastor->getActiveBranchId(),
             'status' => $status,
-            'code' => $status === 'draft' ? null : 'QZ4KM',
+            'code' => 'QZ4KM',
         ]);
 
         $question = QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1, 'text' => 'Who led Israel?']);
