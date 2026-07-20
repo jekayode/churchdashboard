@@ -153,6 +153,12 @@
 
     let state = null, remaining = 0, phaseDuration = 1, pending = null, joining = false, error = null;
     let lastKey = null;
+    /*
+     * Held across re-renders, and across the wait if someone scanned the slide
+     * before the quiz opened. Keeping it in a variable rather than reading the
+     * input at submit time means no redraw can ever lose what they typed.
+     */
+    let heldName = '';
 
     // ---- rendering -------------------------------------------------------
 
@@ -161,24 +167,51 @@
         return n + (s[(n % 100 - 20) % 10] || s[n % 100] || s[0]);
     }
 
-    function renderJoin() {
+    function renderJoin(waiting) {
         main.innerHTML = `
             <div class="card">
+                ${waiting ? `<p class="big" style="font-size:20px">You’re early</p>
+                             <p class="sub" style="margin-bottom:18px">Put your name in now and
+                                we’ll bring you in the moment it starts.</p>` : ''}
                 <label for="name">Your name</label>
                 <input type="text" id="name" maxlength="24" autocomplete="given-name"
-                       placeholder="What should we call you?" enterkeyhint="go">
-                <button class="btn" id="join">Join the quiz</button>
+                       placeholder="What should we call you?" enterkeyhint="go" value="${esc(heldName)}">
+                <button class="btn" id="join">${waiting ? 'Save my name' : 'Join the quiz'}</button>
                 <p class="sub" style="margin-top:14px">This is what everyone sees on the screen.</p>
                 ${error ? `<p class="err">${esc(error)}</p>` : ''}
             </div>`;
 
         const input = document.getElementById('name');
         const button = document.getElementById('join');
-        const go = () => join(input.value);
+
+        // Kept up to date on every keystroke, so a redraw restores it.
+        input.addEventListener('input', () => { heldName = input.value; });
+
+        const go = () => {
+            heldName = input.value;
+            if (waiting) { renderWaitingToOpen(); return; }
+            join(input.value);
+        };
 
         button.addEventListener('click', go);
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') go(); });
         if (joining) { button.disabled = true; button.textContent = 'Joining…'; }
+    }
+
+    /*
+     * The slide goes up on the screen before the quiz is opened, so people scan
+     * it early. Without this they would meet an error and most would not come
+     * back. Instead their name is held and submitted by itself the moment the
+     * quiz opens, which also spreads the joining out rather than having a
+     * hundred people type at the same moment.
+     */
+    function renderWaitingToOpen() {
+        main.innerHTML = `
+            <div class="card centre">
+                <p class="big">You’re all set${heldName ? `, ${esc(heldName.trim().split(' ')[0])}` : ''}</p>
+                <p class="sub">Keep this page open — you’ll be brought in automatically
+                   as soon as the quiz starts.</p>
+            </div>`;
     }
 
     function meBlock() {
@@ -298,9 +331,23 @@
          * when something about it has actually changed.
          */
         if (!state.me && state.quiz.status !== 'finished') {
-            const joinKey = ['join', joining, error].join('|');
+            const open = state.quiz.status === 'lobby' || state.quiz.status === 'running';
 
-            if (joinKey !== lastKey) { renderJoin(); lastKey = joinKey; }
+            // Scanned early, name already given: bring them in without a tap.
+            if (open && heldName.trim().length >= 2 && !joining) {
+                join(heldName);
+
+                return;
+            }
+
+            const waiting = !open;
+            const settled = waiting && heldName.trim().length >= 2;
+            const joinKey = ['join', waiting, settled, joining, error].join('|');
+
+            if (joinKey !== lastKey) {
+                settled ? renderWaitingToOpen() : renderJoin(waiting);
+                lastKey = joinKey;
+            }
 
             return;
         }

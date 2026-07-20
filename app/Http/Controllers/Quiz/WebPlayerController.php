@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Quiz;
 
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
+use App\Services\Quiz\JoinQrCode;
 use Illuminate\Contracts\View\View;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
@@ -32,12 +33,36 @@ final class WebPlayerController extends Controller
 {
     public function show(string $code): View
     {
+        return view('quiz.play', ['quiz' => $this->quizByCode($code)]);
+    }
+
+    /**
+     * The slide put on the screen before the quiz starts: the QR, the link and
+     * the code, and nothing that assumes anyone has joined yet.
+     *
+     * Separate from the lobby on purpose. The lobby counts players and belongs
+     * to a quiz that has been opened; this can go up ten minutes beforehand,
+     * while the quiz is still a draft, and says the same thing throughout.
+     */
+    public function slide(string $code): View
+    {
+        $quiz = $this->quizByCode($code);
+
+        return view('quiz.join-slide', [
+            'quiz' => $quiz,
+            'qr' => JoinQrCode::svg($quiz, 900),
+            'url' => JoinQrCode::readableUrl($quiz),
+        ]);
+    }
+
+    private function quizByCode(string $code): Quiz
+    {
         $quiz = Quiz::where('code', strtoupper($code))->first();
 
         if ($quiz === null) {
             throw new HttpException(404, 'No quiz found with that code.');
         }
 
-        return view('quiz.play', ['quiz' => $quiz]);
+        return $quiz;
     }
 }

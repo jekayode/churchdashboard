@@ -28,6 +28,15 @@
         .stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 4vw; text-align: center; }
 
         /* Everything is sized in vw so it scales to whatever the projector is. */
+        /* width:100% for the same reason as the join slide: a row left to size
+           itself measures its content but not its gaps, and wraps a fraction of
+           a pixel early. */
+        .lobby { display: flex; width: 100%; align-items: center; justify-content: center; gap: 5vw; flex-wrap: wrap; }
+        /* Its own white surround: an inverted QR on this near-black page is
+           refused outright by a good number of phone cameras. */
+        .qr { background: #fff; padding: 1.4vw; border-radius: 1.2vw; line-height: 0; }
+        .qr svg { width: 26vw; height: 26vw; display: block; }
+        .join-url { font-size: 1.9vw; color: var(--muted); margin-top: 1.6vw; }
         .join-label { font-size: 2.2vw; color: var(--muted); letter-spacing: .3vw; text-transform: uppercase; }
         .code { font-size: 15vw; font-weight: 800; letter-spacing: 1.5vw; line-height: 1; margin: 1vw 0 2vw; font-variant-numeric: tabular-nums; }
         .join-hint { font-size: 2vw; color: var(--muted); }
@@ -91,6 +100,8 @@
 <script>
 (function () {
     const stateUrl = @json(route('quiz.screen.state', ['code' => $quiz->code]));
+    const QR_SVG = @json($qr);
+    const JOIN_URL = @json($joinUrl);
     const stage = document.getElementById('stage');
     const barRight = document.getElementById('bar-right');
     const pausedEl = document.getElementById('paused');
@@ -108,9 +119,14 @@
 
     function renderLobby(data) {
         stage.innerHTML = `
-            <div class="join-label">Join at</div>
-            <div class="code">${escape(data.quiz.code ?? '—')}</div>
-            <div class="join-hint">Open the LifePointe app and tap Quiz</div>
+            <div class="lobby">
+                <div class="qr">${QR_SVG}</div>
+                <div>
+                    <div class="join-label">Quiz code</div>
+                    <div class="code">${escape(data.quiz.code ?? '—')}</div>
+                    <div class="join-url">or go to ${escape(JOIN_URL)}</div>
+                </div>
+            </div>
             <div class="count">${data.participant_count} ${data.participant_count === 1 ? 'player' : 'players'} in</div>`;
     }
 

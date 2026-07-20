@@ -624,6 +624,17 @@ require __DIR__.'/auth.php';
  */
 Route::get('/quiz/{code}', [QuizWebPlayerController::class, 'show'])->name('quiz.play');
 
+/*
+ * The form encoded into the QR. Every character is more modules in the grid,
+ * and on a fixed screen width more modules means smaller squares to resolve
+ * from the back of a cinema — /q/ instead of /quiz/ drops a whole QR version.
+ * Served directly rather than redirected, so scanning costs one request.
+ */
+Route::get('/q/{code}', [QuizWebPlayerController::class, 'show'])->name('quiz.play.short');
+
+/* Displayed on the screen before the quiz starts. */
+Route::get('/quiz/{code}/join', [QuizWebPlayerController::class, 'slide'])->name('quiz.join-slide');
+
 Route::get('/quiz/{code}/screen', [QuizScreenController::class, 'show'])->name('quiz.screen');
 Route::get('/quiz/{code}/screen/state', [QuizScreenController::class, 'state'])
     ->middleware('throttle:quiz-state')

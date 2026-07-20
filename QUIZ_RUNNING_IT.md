@@ -59,7 +59,18 @@ the × beside their name if a display name is a problem.
 
 ## What the congregation does
 
-**Anyone at all** can open `dash.lifepointeng.org/quiz/CODE` in their phone's
+**Put the join slide up before the quiz.** Dashboard → Quizzes → *Run it* →
+**Join slide**. It shows a large QR, the short link and the code, and it can go
+on the screen ten minutes early — it does not need the quiz to be open. On a
+cinema screen a QR that size carries to most of the room, which makes scanning
+the main way in rather than a novelty.
+
+Anyone scanning before you open the quiz is told they are early and asked for
+their name; they are then brought in automatically the moment you press *Open
+for joining*. So the slide and your timing are independent, and the room is
+already in when you start.
+
+**Anyone at all** can also open `dash.lifepointeng.org/q/CODE` in their phone's
 browser, type a name, and play. Nothing to install, works the same on an iPhone
 as on an Android. This is the way in for a Sunday — the app is not on the App
 Store, and asking a congregation to install anything to join in would lose most
@@ -67,6 +78,11 @@ of the room. Put that address on the screen next to the code.
 
 **Signed-in app members** see a Join banner on the home screen the moment you
 open the quiz for joining. One tap, no code, straight in under their own name.
+
+The QR, the link and the code all live on the lobby screen too, for anyone
+arriving after the slide has come down. And the host console has the QR with a
+**Copy link for WhatsApp** button — worth posting to the groups, though not
+everyone is in them, which is why the screen has to work on its own.
 
 The web player asks for nothing but a name, on purpose. Asking for a password
 on a phone during a service is exactly the friction it exists to remove — and

@@ -79,8 +79,46 @@ final class QuizWebPlayerTest extends TestCase
         $screen = $this->get('/quiz/QZ4KM/screen');
 
         $player->assertOk()->assertSee('Your name');
-        $screen->assertOk()->assertSee('Join at');
-        $player->assertDontSee('Join at');
+        $screen->assertOk()->assertSee('Quiz code');
+        $player->assertDontSee('Quiz code');
+    }
+
+    public function test_the_join_slide_stands_on_its_own_before_the_quiz_opens(): void
+    {
+        $quiz = $this->quiz('draft');
+
+        /*
+         * This goes on the screen ten minutes early, while the quiz is still a
+         * draft, so it must not depend on the quiz having been opened and must
+         * show nothing that changes while it is up.
+         */
+        $this->get('/quiz/QZ4KM/join')
+            ->assertOk()
+            ->assertSee('QZ4KM')
+            ->assertSee('<svg', escape: false)
+            ->assertSee('dash')
+            ->assertDontSee('players');
+    }
+
+    public function test_the_short_url_serves_the_player_directly(): void
+    {
+        $this->quiz();
+
+        // What the QR encodes. Served rather than redirected, so a scan costs
+        // one request instead of two.
+        $this->get('/q/QZ4KM')->assertOk()->assertSee('Your name');
+    }
+
+    public function test_the_short_url_is_shorter_than_the_long_one(): void
+    {
+        $quiz = $this->quiz();
+
+        // Every character is more modules in the grid, and more modules on a
+        // fixed screen width means smaller squares to read from the back.
+        $this->assertLessThan(
+            strlen(route('quiz.play', ['code' => $quiz->code])),
+            strlen(\App\Services\Quiz\JoinQrCode::url($quiz)),
+        );
     }
 
     public function test_the_player_page_never_carries_the_answer_in_its_markup(): void
