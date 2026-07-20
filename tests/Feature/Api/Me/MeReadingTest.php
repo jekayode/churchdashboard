@@ -32,6 +32,15 @@ final class MeReadingTest extends TestCase
     {
         parent::setUp();
 
+        /*
+         * The dates below are fixed, and the endpoint only accepts a date within
+         * a day of the server's own — a deliberate limit, so nobody can backfill
+         * a streak. That made this file pass or fail depending on what day it
+         * was actually run, and it started failing the moment the clock passed
+         * midnight. Freezing the clock is what makes the fixed dates legitimate.
+         */
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-07-18 09:00:00'));
+
         $this->artisan('db:seed', ['--class' => 'RoleSeeder']);
 
         $this->branch = Branch::factory()->create();
@@ -64,6 +73,13 @@ final class MeReadingTest extends TestCase
                 'study_question_2' => 'Question two',
             ]);
         }
+    }
+
+    protected function tearDown(): void
+    {
+        CarbonImmutable::setTestNow();
+
+        parent::tearDown();
     }
 
     private function dayFor(string $monthDay): ReadingDay
