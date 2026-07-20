@@ -45,6 +45,14 @@ use Illuminate\Support\Facades\Route;
 */
 
 // Public authentication routes
+/*
+ * The branch list for the sign-up screen. Needed before anyone has an account,
+ * and no more than the public web form already renders.
+ */
+Route::get('public/branches', [\App\Http\Controllers\Api\Public\BranchController::class, 'index'])
+    ->middleware('throttle:60,1')
+    ->name('api.public.branches');
+
 Route::prefix('auth')->group(function () {
     /*
      * Throttled by address: this sends email to whoever is named, so without a
@@ -53,6 +61,14 @@ Route::prefix('auth')->group(function () {
     Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
         ->middleware('throttle:6,1')
         ->name('api.auth.forgot-password');
+
+    /*
+     * Sign-up from the app. Open by necessity — there is no account yet — and
+     * throttled by address, since it creates real member records and sends mail.
+     */
+    Route::post('register/guest', [AuthController::class, 'registerGuest'])
+        ->middleware('throttle:6,1')
+        ->name('api.auth.register-guest');
 
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
