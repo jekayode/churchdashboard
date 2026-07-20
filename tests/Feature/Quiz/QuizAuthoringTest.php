@@ -177,6 +177,116 @@ final class QuizAuthoringTest extends TestCase
         $this->assertSame(1, $quiz->fresh()->questions()->count(), 'Scores would stop meaning anything');
     }
 
+    // Importing ----------------------------------------------------------
+
+    public function test_the_import_page_renders(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)->get(route('pastor.quizzes.import', $quiz))->assertOk();
+    }
+
+    public function test_pasted_questions_are_imported(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), [
+                'pasted' => "1. Who led Israel across the Jordan?\na) Moses\nb) Joshua *\nc) Caleb\n\n"
+                    ."2. Where was Jesus born?\na) Nazareth\nb) Bethlehem\nAnswer: B",
+            ])
+            ->assertRedirect(route('pastor.quizzes.questions', $quiz));
+
+        $questions = $quiz->fresh()->questions()->with('options')->get();
+        $this->assertCount(2, $questions);
+        $this->assertSame('Joshua', $questions[0]->correctOption()->text);
+        $this->assertSame('Bethlehem', $questions[1]->correctOption()->text);
+    }
+
+    public function test_an_import_replaces_the_existing_questions(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->count(3)->sequence(
+            ['position' => 1], ['position' => 2], ['position' => 3],
+        )->create(['quiz_id' => $quiz->id]);
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.import.store', $quiz), [
+            'pasted' => "Who led Israel?\nMoses\n*Joshua",
+        ]);
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_a_part_successful_import_reports_what_it_dropped(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $response = $this->actingAs($pastor)->post(route('pastor.quizzes.import.store', $quiz), [
+            'pasted' => "Who led Israel?\nMoses\n*Joshua\n\nA broken one\nNothing marked\nNor here",
+        ]);
+
+        // Dropping it silently would leave the quiz short on the day with nobody
+        // knowing why.
+        $response->assertSessionHas('import_errors');
+        $this->assertSame(1, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_an_import_that_yields_nothing_changes_nothing(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1]);
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), ['pasted' => "Just a heading\nand a line"])
+            ->assertSessionHas('import_errors');
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count(), 'A failed import must not wipe the existing set');
+    }
+
+    public function test_a_csv_can_be_uploaded(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+            'questions.csv',
+            "question,a,b,c,answer\nWho led Israel?,Moses,Joshua,Caleb,B\n",
+        );
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), ['file' => $file])
+            ->assertRedirect(route('pastor.quizzes.questions', $quiz));
+
+        $this->assertSame('Joshua', $quiz->fresh()->questions()->with('options')->first()->correctOption()->text);
+    }
+
+    public function test_questions_cannot_be_imported_once_the_quiz_is_open(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->lobby()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1]);
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), ['pasted' => "Who led Israel?\nMoses\n*Joshua"])
+            ->assertSessionHas('error');
+
+        $this->assertSame(1, $quiz->fresh()->questions()->count());
+    }
+
+    public function test_a_pastor_cannot_import_into_another_branchs_quiz(): void
+    {
+        $quiz = Quiz::factory()->create(['branch_id' => Branch::factory()->create()->id]);
+
+        $this->actingAs($this->pastor())
+            ->post(route('pastor.quizzes.import.store', $quiz), ['pasted' => "Who?\nA\n*B"])
+            ->assertForbidden();
+    }
+
     public function test_a_pastor_cannot_touch_another_branchs_quiz(): void
     {
         $quiz = Quiz::factory()->create(['branch_id' => Branch::factory()->create()->id]);

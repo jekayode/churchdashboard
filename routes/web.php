@@ -248,6 +248,8 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
     Route::put('/quizzes/{quiz}', [QuizWebController::class, 'update'])->name('quizzes.update');
     Route::get('/quizzes/{quiz}/questions', [QuizWebController::class, 'questions'])->name('quizzes.questions');
     Route::put('/quizzes/{quiz}/questions', [QuizWebController::class, 'updateQuestions'])->name('quizzes.questions.update');
+    Route::get('/quizzes/{quiz}/import', [QuizWebController::class, 'importForm'])->name('quizzes.import');
+    Route::post('/quizzes/{quiz}/import', [QuizWebController::class, 'import'])->name('quizzes.import.store');
     Route::delete('/quizzes/{quiz}', [QuizWebController::class, 'destroy'])->name('quizzes.destroy');
 
     // Host console

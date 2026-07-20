@@ -9,6 +9,7 @@ use App\Http\Requests\Pastor\QuizQuestionsRequest;
 use App\Http\Requests\Pastor\QuizRequest;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
+use App\Services\Quiz\QuestionImporter;
 use App\Services\Quiz\QuizService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
@@ -143,6 +144,77 @@ final class QuizController extends Controller
         return redirect()
             ->route('pastor.quizzes')
             ->with('success', 'Questions saved.');
+    }
+
+    public function importForm(Quiz $quiz): View
+    {
+        $this->authorize('update', $quiz);
+
+        return view('pastor.quizzes.import', ['quiz' => $quiz]);
+    }
+
+    /**
+     * Typing forty questions into a form one at a time is miserable, and they
+     * usually already exist somewhere — a message, a document, last year's
+     * sheet. This takes either a paste or a CSV and lands the result in the
+     * normal editor, so the parse can be checked and corrected before the quiz
+     * is ever opened.
+     */
+    public function import(Request $request, Quiz $quiz): RedirectResponse
+    {
+        $this->authorize('update', $quiz);
+
+        if ($quiz->status !== 'draft') {
+            return back()->with('error', 'This quiz has already been opened, so its questions are locked.');
+        }
+
+        $request->validate([
+            'pasted' => ['nullable', 'string', 'max:60000'],
+            'file' => ['nullable', 'file', 'mimes:csv,txt', 'max:2048'],
+        ]);
+
+        $result = $request->hasFile('file')
+            ? QuestionImporter::parseCsv($request->file('file')->getRealPath())
+            : QuestionImporter::parseText((string) $request->input('pasted'));
+
+        // Nothing usable came back, so there is nothing to weigh up.
+        if ($result['questions'] === []) {
+            return back()->withInput()->with('import_errors', $result['errors']);
+        }
+
+        DB::transaction(function () use ($result, $quiz): void {
+            $quiz->questions()->delete();
+
+            foreach ($result['questions'] as $position => $input) {
+                $question = QuizQuestion::create([
+                    'quiz_id' => $quiz->id,
+                    'position' => $position + 1,
+                    'text' => $input['text'],
+                ]);
+
+                foreach ($input['options'] as $index => $option) {
+                    $question->options()->create([
+                        'position' => $index + 1,
+                        'text' => $option['text'],
+                        'is_correct' => $index === $input['correct'],
+                    ]);
+                }
+            }
+        });
+
+        $count = count($result['questions']);
+        $message = "Imported {$count} ".str('question')->plural($count).'.';
+
+        /*
+         * Partial success is reported rather than swallowed. Rejecting the whole
+         * paste over one bad question would mean hunting for it by hand, but
+         * silently dropping it would leave a quiz short on the day without
+         * anyone knowing why.
+         */
+        return redirect()
+            ->route('pastor.quizzes.questions', $quiz)
+            ->with('success', $message.' Check them over below.')
+            ->with('import_errors', $result['errors']);
     }
 
     public function destroy(Quiz $quiz): RedirectResponse

@@ -9,6 +9,29 @@ Everything below is built and tested. Nothing here needs a developer.
    want a faster or slower game.
 2. **Write the questions.** Two to four answers each, tick the correct one. A
    question can override the timing or points if one needs longer.
+
+   Or **Import questions**, if they already exist somewhere. Paste them in:
+
+   ```
+   1. Who led Israel across the Jordan?
+   a) Moses
+   b) Joshua *
+   c) Caleb
+
+   2. Where was Jesus born?
+   a) Nazareth
+   b) Bethlehem
+   Answer: B
+   ```
+
+   Mark the answer with a `*` or an `Answer:` line — a letter, a number, or the
+   words all work. Numbering, lettering and blank lines are optional. A CSV
+   works too, with columns `question, a, b, c, d, answer`.
+
+   It never guesses. A question with no answer marked, or two marked, is skipped
+   and named, and the rest are imported — so you fix a couple by hand rather
+   than hunting through the whole paste. Importing replaces whatever is there,
+   and drops you in the editor to check it.
 3. That is the whole preparation. Questions are locked once the quiz is opened,
    because scores stop meaning anything if the questions change underneath
    people who have already answered them.
