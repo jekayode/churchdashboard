@@ -8,12 +8,47 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
 final class AuthController extends Controller
 {
+    /**
+     * Email a password reset link.
+     *
+     * Most members have never set a password — their account was created for
+     * them — so "sign in" is a dead end without this. The link goes to the
+     * existing web reset page, which already works and is already tested;
+     * putting the reset inside the app would mean reimplementing token
+     * handling for no gain to someone who just wants to get in.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|email']);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        /*
+         * Always the same answer, whether or not the address is one of ours.
+         * Saying "no such account" would turn this endpoint into a way of
+         * finding out who attends the church, which is not information worth
+         * giving away to anyone who asks.
+         */
+        if ($status !== Password::RESET_LINK_SENT) {
+            Log::info('Password reset link not sent', [
+                'status' => $status,
+                'email' => $request->string('email')->toString(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'If that email is registered, a reset link is on its way.',
+        ]);
+    }
+
     /**
      * Login user and create token.
      */
@@ -27,7 +62,7 @@ final class AuthController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
+        if (! $user || ! Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
@@ -172,7 +207,7 @@ final class AuthController extends Controller
 
         $user = $request->user();
         $currentToken = $request->user()->currentAccessToken();
-        
+
         // Delete current token
         $currentToken->delete();
 
@@ -224,7 +259,7 @@ final class AuthController extends Controller
 
         $token = $request->user()->tokens()->find($request->token_id);
 
-        if (!$token) {
+        if (! $token) {
             return response()->json([
                 'success' => false,
                 'message' => 'Token not found',
