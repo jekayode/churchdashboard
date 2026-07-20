@@ -29,7 +29,10 @@ use App\Policies\ProjectionPolicy;
 use App\Policies\SmallGroupPolicy;
 use App\Policies\UserPolicy;
 use App\Support\PermissionCatalog;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 final class AppServiceProvider extends ServiceProvider
@@ -68,6 +71,8 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->defineQuizRateLimits();
+
         $this->registerPolicies();
 
         Gate::before(function (User $user, string $ability): ?bool {
@@ -97,5 +102,42 @@ final class AppServiceProvider extends ServiceProvider
         foreach ($this->policies as $model => $policy) {
             Gate::policy($model, $policy);
         }
+    }
+
+    /*
+     * Quiz limits are keyed on the phone, not the network.
+     *
+     * A congregation is behind one NATed wifi address, so per-IP limits count
+     * the whole room as a single visitor: at the defaults, the twenty-first
+     * person to join was refused, and with a hundred people answering every
+     * twenty-five seconds most answers would have been rejected too. It fails
+     * for everyone at once, in the middle of a service, and looks like the
+     * quiz is broken rather than like a limit being hit.
+     *
+     * So the device token is the key wherever there is one, giving each phone
+     * its own allowance. Joining has no token yet, so it stays on the address
+     * with a ceiling set for a full room rather than for one person.
+     */
+    private function defineQuizRateLimits(): void
+    {
+        $perDevice = static function (Request $request, int $perMinute, int $perAddress): Limit {
+            $token = (string) ($request->input('device_token') ?? $request->query('device_token') ?? '');
+
+            return $token !== ''
+                ? Limit::perMinute($perMinute)->by('quiz-device:'.sha1($token))
+                : Limit::perMinute($perAddress)->by('quiz-ip:'.$request->ip());
+        };
+
+        // One person can only join once per quiz, so this is purely a flood
+        // guard — sized for a whole church arriving in the same minute.
+        RateLimiter::for('quiz-join', static fn (Request $request): Limit => Limit::perMinute(400)
+            ->by('quiz-join:'.$request->ip()));
+
+        // A phone polls roughly 40 times a minute; the rest is headroom.
+        RateLimiter::for('quiz-state', static fn (Request $request): Limit => $perDevice($request, 90, 6000));
+
+        // Answering twice is already impossible — the unique index sees to that
+        // — so this only stops a client hammering the endpoint.
+        RateLimiter::for('quiz-answer', static fn (Request $request): Limit => $perDevice($request, 60, 2000));
     }
 }

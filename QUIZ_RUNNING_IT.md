@@ -59,16 +59,21 @@ the × beside their name if a display name is a problem.
 
 ## What the congregation does
 
-**Signed-in members** see a Join banner on the app's home screen the moment you
+**Anyone at all** can open `dash.lifepointeng.org/quiz/CODE` in their phone's
+browser, type a name, and play. Nothing to install, works the same on an iPhone
+as on an Android. This is the way in for a Sunday — the app is not on the App
+Store, and asking a congregation to install anything to join in would lose most
+of the room. Put that address on the screen next to the code.
+
+**Signed-in app members** see a Join banner on the home screen the moment you
 open the quiz for joining. One tap, no code, straight in under their own name.
 
-**Everyone else** goes to **More → Join a Quiz** and types the code from the
-screen, plus a name to play under.
-
-That difference is worth pointing at from the front. Members tap once; everyone
-else types. And if a guest signs in afterwards on the same phone, their score
-follows them onto the new account — so *"if you want to keep your score, sign
-in"* is a real promise, not a slogan.
+The web player asks for nothing but a name, on purpose. Asking for a password
+on a phone during a service is exactly the friction it exists to remove — and
+someone who installs the app and signs in afterwards keeps the score anyway, so
+*"get the app and your score follows you"* is a real promise rather than a
+slogan. It is also a much easier thing to say to someone who has just enjoyed
+playing than to demand of them beforehand.
 
 ## Practising
 

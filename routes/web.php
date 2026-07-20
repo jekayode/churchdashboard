@@ -11,6 +11,7 @@ use App\Http\Controllers\Pastor\QuizController as QuizWebController;
 use App\Http\Controllers\Pastor\QuizHostController;
 use App\Http\Controllers\Pastor\SermonController as SermonWebController;
 use App\Http\Controllers\Quiz\ScreenController as QuizScreenController;
+use App\Http\Controllers\Quiz\WebPlayerController as QuizWebPlayerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
@@ -617,7 +618,13 @@ require __DIR__.'/auth.php';
  * service. The payload withholds the correct answer until answering has closed,
  * so the URL is worth no more to a player than looking up at the wall.
  */
+/*
+ * Playing along in a browser. Kept short because it is read off a projector,
+ * typed on a phone, and encoded into a QR code.
+ */
+Route::get('/quiz/{code}', [QuizWebPlayerController::class, 'show'])->name('quiz.play');
+
 Route::get('/quiz/{code}/screen', [QuizScreenController::class, 'show'])->name('quiz.screen');
 Route::get('/quiz/{code}/screen/state', [QuizScreenController::class, 'state'])
-    ->middleware('throttle:120,1')
+    ->middleware('throttle:quiz-state')
     ->name('quiz.screen.state');
