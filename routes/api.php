@@ -46,6 +46,14 @@ use Illuminate\Support\Facades\Route;
 
 // Public authentication routes
 Route::prefix('auth')->group(function () {
+    /*
+     * Throttled by address: this sends email to whoever is named, so without a
+     * limit it is a way of posting mail to strangers from the church's domain.
+     */
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:6,1')
+        ->name('api.auth.forgot-password');
+
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 });
