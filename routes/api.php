@@ -85,6 +85,7 @@ Route::middleware(['auth:sanctum,web'])->group(function () {
     Route::prefix('me')->name('api.me.')->group(function () {
         // The other half of guest play: pulling scores earned without an
         // account onto the profile that has just been created.
+        Route::get('quiz/active', [MeQuizController::class, 'active'])->name('quiz.active');
         Route::post('quiz/claim', [MeQuizController::class, 'claim'])->name('quiz.claim');
         Route::get('quiz/history', [MeQuizController::class, 'history'])->name('quiz.history');
 

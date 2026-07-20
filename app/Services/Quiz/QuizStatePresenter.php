@@ -43,6 +43,7 @@ final class QuizStatePresenter
             'state' => $state->toArray(),
             'question' => $this->question($state),
             'answer_counts' => $this->answerCounts($state),
+            'answered_count' => $this->answeredCount($state),
             'leaderboard' => $this->quizzes->leaderboard($quiz, 10),
             'participant_count' => $quiz->participants()->whereNull('removed_at')->count(),
         ];
@@ -106,6 +107,22 @@ final class QuizStatePresenter
                 ->values()
                 ->all(),
         ];
+    }
+
+    /**
+     * How many people have answered the current question — not which way.
+     *
+     * Safe to show live, unlike the per-option split: knowing that sixty of
+     * eighty have answered tells you nothing about what to pick, but it does
+     * turn the wait after locking in an answer into something to watch.
+     */
+    private function answeredCount(QuizState $state): ?int
+    {
+        if ($state->question === null) {
+            return null;
+        }
+
+        return $state->question->answers()->count();
     }
 
     /**

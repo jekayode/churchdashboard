@@ -36,12 +36,16 @@ the × beside their name if a display name is a problem.
 
 ## What the congregation does
 
-Open the LifePointe app → **More** → **Join a Quiz** → type the code.
+**Signed-in members** see a Join banner on the app's home screen the moment you
+open the quiz for joining. One tap, no code, straight in under their own name.
 
-Members are in immediately under their own name. Anyone without an account can
-play by typing a name — and if they sign in afterwards, on that same phone, the
-score follows them onto the new account. That is the moment worth pointing at
-from the front: *"if you want to keep your score, sign in."*
+**Everyone else** goes to **More → Join a Quiz** and types the code from the
+screen, plus a name to play under.
+
+That difference is worth pointing at from the front. Members tap once; everyone
+else types. And if a guest signs in afterwards on the same phone, their score
+follows them onto the new account — so *"if you want to keep your score, sign
+in"* is a real promise, not a slogan.
 
 ## Practising
 
@@ -64,6 +68,11 @@ else.
   quiz is unaffected — the screen only ever displays it.
 - **You need to stop.** *Pause* holds the clock exactly where it is; the time
   lost does not eat into anyone's question.
+- **"Why can't I answer yet?"** Once someone has answered, they wait for the
+  timer. That is deliberate — everyone has to start each question at the same
+  moment, or answering quickly stops being worth anything. Their phone shows
+  their position and how much of the room has answered while they wait. If it
+  feels slow, drop the seconds per question rather than the wait.
 
 ## One thing to fix first
 

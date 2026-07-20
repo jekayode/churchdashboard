@@ -239,6 +239,109 @@ final class QuizPlayApiTest extends TestCase
         $this->assertGreaterThan(0, $history->json('data.0.score'));
     }
 
+    // Finding a live quiz without typing the code ------------------------
+
+    private function signedInMemberAtBranch(int $branchId): User
+    {
+        $user = User::factory()->create();
+        $user->member()->save(Member::factory()->make(['branch_id' => $branchId]));
+        Sanctum::actingAs($user->fresh());
+
+        return $user->fresh();
+    }
+
+    public function test_a_member_sees_a_quiz_that_is_open_at_their_branch(): void
+    {
+        $quiz = $this->quiz('lobby');
+        $this->signedInMemberAtBranch($quiz->branch_id);
+
+        $this->getJson('/api/me/quiz/active')
+            ->assertOk()
+            ->assertJsonPath('data.code', 'QZ4KM')
+            ->assertJsonPath('data.status', 'lobby')
+            ->assertJsonPath('data.joined', false);
+    }
+
+    public function test_a_draft_quiz_is_not_advertised(): void
+    {
+        $quiz = $this->quiz('draft');
+        $this->signedInMemberAtBranch($quiz->branch_id);
+
+        // It may still have half-written questions in it, and the pastor has not
+        // said the room is ready.
+        $this->getJson('/api/me/quiz/active')->assertOk()->assertJsonPath('data', null);
+    }
+
+    public function test_a_finished_quiz_is_not_advertised(): void
+    {
+        $quiz = $this->quiz('lobby');
+        (new QuizService)->finish($quiz);
+        $this->signedInMemberAtBranch($quiz->branch_id);
+
+        $this->getJson('/api/me/quiz/active')->assertOk()->assertJsonPath('data', null);
+    }
+
+    public function test_a_run_that_has_passed_its_end_is_not_advertised(): void
+    {
+        $quiz = $this->quiz('running');
+        $this->signedInMemberAtBranch($quiz->branch_id);
+
+        // Two questions of 15s: over by 40s, but nothing has looked at it yet.
+        Carbon::setTestNow($quiz->started_at->copy()->addSeconds(40));
+
+        $this->getJson('/api/me/quiz/active')->assertOk()->assertJsonPath('data', null);
+
+        Carbon::setTestNow();
+    }
+
+    public function test_a_member_does_not_see_another_branchs_quiz(): void
+    {
+        $this->quiz('lobby');
+        $elsewhere = \App\Models\Branch::factory()->create();
+        $this->signedInMemberAtBranch($elsewhere->id);
+
+        $this->getJson('/api/me/quiz/active')->assertOk()->assertJsonPath('data', null);
+    }
+
+    public function test_the_banner_knows_when_they_are_already_in(): void
+    {
+        $quiz = $this->quiz('lobby');
+        $user = $this->signedInMemberAtBranch($quiz->branch_id);
+        (new QuizService)->join($quiz, $user->member, null, null);
+
+        // So a phone that locked halfway through is offered "Rejoin".
+        $this->getJson('/api/me/quiz/active')->assertOk()->assertJsonPath('data.joined', true);
+    }
+
+    public function test_finding_a_live_quiz_needs_an_account(): void
+    {
+        $this->quiz('lobby');
+
+        // A guest still reads the code off the wall — that asymmetry is the
+        // reason to sign in.
+        $this->getJson('/api/me/quiz/active')->assertUnauthorized();
+    }
+
+    // The wait after answering ------------------------------------------
+
+    public function test_how_many_have_answered_is_visible_but_not_how_they_answered(): void
+    {
+        $quiz = $this->quiz('running');
+        $first = $this->postJson('/api/quiz/join', ['code' => 'QZ4KM', 'name' => 'Tobi']);
+        $this->postJson('/api/quiz/join', ['code' => 'QZ4KM', 'name' => 'Grace']);
+
+        $this->postJson('/api/quiz/QZ4KM/answer', [
+            'device_token' => $first->json('device_token'),
+            'option_id' => $quiz->questions[0]->options->firstWhere('is_correct', true)->id,
+        ])->assertOk();
+
+        $state = $this->getJson('/api/quiz/QZ4KM/state?device_token='.$first->json('device_token'));
+
+        // The count gives the wait something to watch; the split would be a hint.
+        $state->assertOk()->assertJsonPath('answered_count', 1);
+        $this->assertNull($state->json('answer_counts'));
+    }
+
     public function test_history_needs_an_account(): void
     {
         $this->getJson('/api/me/quiz/history')->assertUnauthorized();
