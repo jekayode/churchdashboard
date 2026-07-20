@@ -100,6 +100,55 @@ final class QuestionImporterTest extends TestCase
         $this->assertSame(1, $result['questions'][0]['correct']);
     }
 
+    /**
+     * These four came from running realistic pastes through the parser rather
+     * than from imagining inputs, and each one was broken when first tried.
+     */
+    public function test_a_bare_tick_marks_the_answer(): void
+    {
+        // How people mark an answer in a message, and far commoner in a paste
+        // than any typed convention.
+        foreach (['B. Luke ✓', 'B. Luke ✔', 'B. Luke ☑', '✅ B. Luke'] as $line) {
+            $result = QuestionImporter::parseText("Who wrote Acts?\nA. Paul\n{$line}\nC. Peter");
+
+            $this->assertSame([], $result['errors'], "Failed on: {$line}");
+            $this->assertSame(1, $result['questions'][0]['correct'], "Failed on: {$line}");
+            $this->assertSame('Luke', $result['questions'][0]['options'][1]['text']);
+        }
+    }
+
+    public function test_em_dash_and_bullet_markers_do_not_mangle_the_text(): void
+    {
+        // Stripping these without the /u flag removed a single byte of the
+        // multibyte character and left broken UTF-8 in the answer.
+        $result = QuestionImporter::parseText("Who was thrown into the lions den?\n— Daniel*\n— David\n• Elijah");
+
+        $this->assertSame([], $result['errors']);
+        $this->assertSame('Daniel', $result['questions'][0]['options'][0]['text']);
+        $this->assertSame('Elijah', $result['questions'][0]['options'][2]['text']);
+        $this->assertTrue(mb_check_encoding($result['questions'][0]['options'][0]['text'], 'UTF-8'));
+    }
+
+    public function test_numbered_answers_are_not_mistaken_for_new_questions(): void
+    {
+        // Answers get numbered too, and splitting on those shredded a single
+        // question into one block per answer.
+        $result = QuestionImporter::parseText("Name the first king of Israel\n1. Saul *\n2. David\n3. Solomon");
+
+        $this->assertSame([], $result['errors']);
+        $this->assertCount(1, $result['questions']);
+        $this->assertCount(3, $result['questions'][0]['options']);
+        $this->assertSame('Saul', $result['questions'][0]['options'][0]['text']);
+    }
+
+    public function test_an_answer_written_in_a_different_case_still_matches(): void
+    {
+        $result = QuestionImporter::parseText("Which sea did Moses part?   \n   Red Sea   \n   Dead Sea   \nanswer:   red sea   ");
+
+        $this->assertSame([], $result['errors']);
+        $this->assertSame(0, $result['questions'][0]['correct']);
+    }
+
     // Refusing to guess ---------------------------------------------------
 
     public function test_a_question_with_no_marked_answer_is_an_error(): void

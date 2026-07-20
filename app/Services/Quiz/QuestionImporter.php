@@ -185,12 +185,21 @@ final class QuestionImporter
             return $blocks;
         }
 
+        $lines = self::nonEmptyLines($normalised);
+
         /*
          * Nobody separated anything with blank lines, which is just as common —
          * a numbered list run together. Start a new question at each numbered
          * line instead.
+         *
+         * Only when the very first line is numbered, though. Answers get
+         * numbered too ("1. Saul / 2. David"), and splitting on those would
+         * shred a single question into one block per answer.
          */
-        $lines = self::nonEmptyLines($normalised);
+        if ($lines === [] || preg_match('/^\s*\d+\s*[.):]\s+\S/', $lines[0]) !== 1) {
+            return [$lines];
+        }
+
         $byNumber = [];
         $current = [];
 
@@ -244,9 +253,15 @@ final class QuestionImporter
                 continue;
             }
 
-            // List marker first, so "- *Joshua" and "a) *Joshua" are seen for
-            // what they are. stripListMarker deliberately leaves * alone.
-            [$text, $isStarred] = self::stripCorrectMarker(self::stripListMarker($line));
+            /*
+             * A tick can sit on either side of the list marker — "✓ b) Luke"
+             * and "- *Joshua" are both common — and each one hides the other
+             * from a single pass. So: tick, marker, tick.
+             */
+            [$text, $tickedBefore] = self::stripCorrectMarker($line);
+            $text = self::stripListMarker($text);
+            [$text, $tickedAfter] = self::stripCorrectMarker($text);
+            $isStarred = $tickedBefore || $tickedAfter;
 
             if ($text === '') {
                 continue;
@@ -342,26 +357,40 @@ final class QuestionImporter
     {
         $trimmed = trim($line);
 
-        if (str_ends_with($trimmed, '*')) {
-            return [trim(rtrim($trimmed, '*')), true];
+        // A bare tick is how people mark an answer in a message, and it is far
+        // more common in a paste than any of the typed conventions.
+        $ticks = ['*', '✓', '✔', '☑', '✅', '👈'];
+
+        foreach ($ticks as $tick) {
+            if ($trimmed !== $tick && str_ends_with($trimmed, $tick)) {
+                return [trim(mb_substr($trimmed, 0, -mb_strlen($tick))), true];
+            }
+
+            if ($trimmed !== $tick && str_starts_with($trimmed, $tick)) {
+                return [trim(mb_substr($trimmed, mb_strlen($tick))), true];
+            }
         }
 
-        // Leading, before any list marker: "*b) Joshua".
-        if (str_starts_with($trimmed, '*')) {
-            return [trim(ltrim($trimmed, '*')), true];
-        }
-
-        if (preg_match('/^\s*\[[xX✓]\]\s*(.+)$/', $trimmed, $matches) === 1) {
+        if (preg_match('/^\s*\[[xX✓]\]\s*(.+)$/u', $trimmed, $matches) === 1) {
             return [trim($matches[1]), true];
         }
 
         return [$trimmed, false];
     }
 
-    /** Removes "1.", "a)", "-", "Q:" and friends, which carry no meaning here. */
+    /**
+     * Removes "1.", "a)", "-", "Q:" and friends, which carry no meaning here.
+     *
+     * Known limit: an unlettered answer that itself begins that way — "C. S.
+     * Lewis" listed without its own letter — loses the first part. It is rare,
+     * lettering the options avoids it entirely, and the import lands in the
+     * editor where it is visible before the quiz is ever opened.
+     */
     private static function stripListMarker(string $line): string
     {
-        $stripped = preg_replace('/^\s*(?:q(?:uestion)?\s*\d*\s*[:.\)]|\d+\s*[.):]|[a-zA-Z]\s*[.)]|[-–—•])\s*/i', '', trim($line));
+        // The /u matters: without it the class matches single bytes of an em
+        // dash or bullet, stripping one byte and leaving mangled UTF-8 behind.
+        $stripped = preg_replace('/^\s*(?:q(?:uestion)?\s*\d*\s*[:.\)]|\d+\s*[.):]|[a-zA-Z]\s*[.)]|[-–—•])\s*/iu', '', trim($line));
 
         return trim((string) $stripped);
     }
