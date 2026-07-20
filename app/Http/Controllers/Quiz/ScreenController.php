@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Quiz;
 
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
+use App\Services\Quiz\JoinQrCode;
 use App\Services\Quiz\QuizStatePresenter;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +27,16 @@ final class ScreenController extends Controller
 
     public function show(string $code): View
     {
-        return view('quiz.screen', ['quiz' => $this->quizByCode($code)]);
+        $quiz = $this->quizByCode($code);
+
+        // Rendered once into the page rather than fetched with the state: the
+        // code never changes, and the projector should not depend on a request
+        // succeeding to show people how to join.
+        return view('quiz.screen', [
+            'quiz' => $quiz,
+            'qr' => JoinQrCode::svg($quiz, 520),
+            'joinUrl' => JoinQrCode::readableUrl($quiz),
+        ]);
     }
 
     public function state(string $code): JsonResponse

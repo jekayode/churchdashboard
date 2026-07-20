@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Pastor;
 use App\Http\Controllers\Controller;
 use App\Models\Quiz;
 use App\Models\QuizParticipant;
+use App\Services\Quiz\JoinQrCode;
 use App\Services\Quiz\QuizService;
 use App\Services\Quiz\QuizStatePresenter;
 use Illuminate\Contracts\View\View;
@@ -39,7 +40,11 @@ final class QuizHostController extends Controller
     {
         $this->authorize('host', $quiz);
 
-        return view('pastor.quizzes.host', ['quiz' => $quiz]);
+        return view('pastor.quizzes.host', [
+            'quiz' => $quiz,
+            'joinUrl' => JoinQrCode::url($quiz),
+            'qr' => JoinQrCode::svg($quiz, 260),
+        ]);
     }
 
     public function state(Quiz $quiz): JsonResponse

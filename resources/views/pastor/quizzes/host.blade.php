@@ -29,14 +29,35 @@
                 <div>
                     <p class="text-xs uppercase tracking-widest text-gray-400">Join code</p>
                     <p class="text-5xl font-extrabold tracking-[0.2em] text-gray-900 my-2" x-text="state.quiz.code"></p>
-                    <a :href="`/quiz/${state.quiz.code}/screen`" target="_blank"
-                       class="inline-flex items-center gap-2 text-sm font-semibold text-church-600 hover:text-church-800">
-                        Open the projector screen &rarr;
-                    </a>
-                    <p class="text-xs text-gray-400 mt-1">
-                        Send this link to whoever runs the screen — it needs no login,
-                        and it works before the quiz has started.
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-2 mt-3">
+                        <a href="{{ route('quiz.join-slide', ['code' => $quiz->code]) }}" target="_blank"
+                           class="w-full sm:w-auto px-4 py-2 rounded-lg bg-church-500 text-white text-sm font-semibold hover:bg-church-600">
+                            Join slide (show before the quiz)
+                        </a>
+                        <a href="{{ route('quiz.screen', ['code' => $quiz->code]) }}" target="_blank"
+                           class="w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                            Projector screen
+                        </a>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">
+                        Both open without a login — send them to whoever runs the screen.
                     </p>
+
+                    {{-- The link people scan or type. Copyable because it is
+                         going into a WhatsApp group, not being retyped. --}}
+                    <div class="mt-5 pt-5 border-t border-gray-100">
+                        <div class="flex justify-center">{!! $qr !!}</div>
+                        <p class="mt-3 text-sm font-mono text-gray-600 break-all">{{ $joinUrl }}</p>
+                        <button type="button"
+                                x-data="{ copied: false }"
+                                @click="navigator.clipboard.writeText(@js($joinUrl)).then(() => {
+                                    copied = true; setTimeout(() => copied = false, 2000);
+                                })"
+                                class="mt-2 px-4 py-2 rounded-lg border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                            <span x-show="!copied">Copy link for WhatsApp</span>
+                            <span x-show="copied" x-cloak class="text-church-600">Copied</span>
+                        </button>
+                    </div>
                 </div>
             </template>
             <template x-if="!state.quiz || !state.quiz.code">

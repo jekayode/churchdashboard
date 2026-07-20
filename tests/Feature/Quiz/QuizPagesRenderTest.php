@@ -85,7 +85,15 @@ final class QuizPagesRenderTest extends TestCase
         // No auth: this is opened on the machine driving the screen.
         $this->get('/quiz/QZ4KM/screen')
             ->assertOk()
-            ->assertSee('Join at');
+            ->assertSee('QZ4KM')
+            /*
+             * The QR and join link are rendered into the page rather than
+             * fetched, so the projector never depends on a request succeeding
+             * to show people how to get in. Asserted via the link rather than
+             * the markup, because the QR is embedded inside a script constant
+             * where Blade escapes its angle brackets.
+             */
+            ->assertSee('\u003Csvg', escape: false);
     }
 
     public function test_an_unknown_code_on_the_projector_is_a_404_not_a_crash(): void

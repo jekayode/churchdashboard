@@ -28,10 +28,31 @@
         .stage { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 4vw; text-align: center; }
 
         /* Everything is sized in vw so it scales to whatever the projector is. */
-        .join-label { font-size: 2.2vw; color: var(--muted); letter-spacing: .3vw; text-transform: uppercase; }
-        .code { font-size: 15vw; font-weight: 800; letter-spacing: 1.5vw; line-height: 1; margin: 1vw 0 2vw; font-variant-numeric: tabular-nums; }
+        /*
+         * Sized in vh, not vw. Sized by width, a QR and a code that each look
+         * reasonable on their own are together far too wide to sit side by side
+         * and far too tall once they stack — and this page clips its overflow,
+         * so the code simply disappeared off the bottom. Height is the axis
+         * that is actually scarce here.
+         */
+        .lobby { display: flex; width: 100%; align-items: center; justify-content: center; gap: 4vw; }
+        /* Its own white surround: an inverted QR on this near-black page is
+           refused outright by a good number of phone cameras. */
+        .qr { background: #fff; padding: 1.6vh; border-radius: 1.4vh; line-height: 0; }
+        /* Pushed as large as the height allows: scanning range scales directly
+           with the printed size, and in a cinema that is metres of room. */
+        .qr svg { width: 48vh; height: 48vh; display: block; }
+        .join-url { font-size: 2.4vh; color: var(--muted); margin-top: 1.6vh; }
+        .join-label { font-size: 2.4vh; color: var(--muted); letter-spacing: .3vh; text-transform: uppercase; }
+
+        /* Only a portrait screen has to stack, and then the QR gives up size. */
+        @media (max-aspect-ratio: 1/1) {
+            .lobby { flex-direction: column; gap: 3vh; }
+            .qr svg { width: 30vh; height: 30vh; }
+        }
+        .code { font-size: 14vh; font-weight: 800; letter-spacing: 1vh; line-height: 1.02; margin: .5vh 0 1vh; font-variant-numeric: tabular-nums; }
         .join-hint { font-size: 2vw; color: var(--muted); }
-        .count { margin-top: 3vw; font-size: 3vw; font-weight: 700; }
+        .count { margin-top: 3vh; font-size: 3.2vh; font-weight: 700; }
 
         .qnum { font-size: 1.8vw; color: var(--muted); letter-spacing: .2vw; text-transform: uppercase; }
         .question { font-size: 4.6vw; font-weight: 700; line-height: 1.15; margin: 1.5vw 0 3vw; max-width: 88vw; }
@@ -91,6 +112,8 @@
 <script>
 (function () {
     const stateUrl = @json(route('quiz.screen.state', ['code' => $quiz->code]));
+    const QR_SVG = @json($qr);
+    const JOIN_URL = @json($joinUrl);
     const stage = document.getElementById('stage');
     const barRight = document.getElementById('bar-right');
     const pausedEl = document.getElementById('paused');
@@ -108,9 +131,14 @@
 
     function renderLobby(data) {
         stage.innerHTML = `
-            <div class="join-label">Join at</div>
-            <div class="code">${escape(data.quiz.code ?? '—')}</div>
-            <div class="join-hint">Open the LifePointe app and tap Quiz</div>
+            <div class="lobby">
+                <div class="qr">${QR_SVG}</div>
+                <div>
+                    <div class="join-label">Quiz code</div>
+                    <div class="code">${escape(data.quiz.code ?? '—')}</div>
+                    <div class="join-url">or go to ${escape(JOIN_URL)}</div>
+                </div>
+            </div>
             <div class="count">${data.participant_count} ${data.participant_count === 1 ? 'player' : 'players'} in</div>`;
     }
 

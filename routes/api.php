@@ -596,12 +596,13 @@ Route::get('/health', function () {
  * identified by the device token handed back when they joined; a signed-in
  * member is still recognised from their bearer token if one is sent.
  *
- * The throttles assume roughly 100 people answering inside the same couple of
- * seconds, which is unremarkable for the database — they are here so a scripted
- * client cannot turn that into a flood.
+ * The throttles are keyed on the device token rather than the address: a
+ * congregation shares one NATed wifi address, so per-IP limits would count the
+ * whole room as a single visitor and start refusing people mid-service. See
+ * AppServiceProvider::defineQuizRateLimits.
  */
 Route::prefix('quiz')->name('api.quiz.')->group(function () {
-    Route::post('join', [QuizPlayController::class, 'join'])->middleware('throttle:20,1')->name('join');
-    Route::get('{code}/state', [QuizPlayController::class, 'state'])->middleware('throttle:180,1')->name('state');
-    Route::post('{code}/answer', [QuizPlayController::class, 'answer'])->middleware('throttle:120,1')->name('answer');
+    Route::post('join', [QuizPlayController::class, 'join'])->middleware('throttle:quiz-join')->name('join');
+    Route::get('{code}/state', [QuizPlayController::class, 'state'])->middleware('throttle:quiz-state')->name('state');
+    Route::post('{code}/answer', [QuizPlayController::class, 'answer'])->middleware('throttle:quiz-answer')->name('answer');
 });
