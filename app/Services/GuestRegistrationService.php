@@ -23,11 +23,19 @@ final class GuestRegistrationService
     {
         try {
             return DB::transaction(function () use ($data) {
-                // Generate a random password
-                $password = Str::random(12);
+                /*
+                 * Someone registering in the app chooses their own password and
+                 * is signed straight in. The web form has nobody at a keyboard
+                 * to choose one, so it generates one and emails it with a link
+                 * for setting their own. Both paths land in the same place.
+                 */
+                $chosenPassword = $data['password'] ?? null;
+                $password = $chosenPassword ?? Str::random(12);
 
-                // Log password for testing purposes (only in local environment)
-                if (app()->environment('local')) {
+                // Only ever the generated one. A password somebody chose is
+                // very likely a password they use elsewhere, and writing that
+                // into the application log is not ours to do.
+                if ($chosenPassword === null && app()->environment('local')) {
                     \Log::info('Guest Registration - User Credentials', [
                         'email' => $data['email'],
                         'password' => $password,
@@ -95,7 +103,13 @@ final class GuestRegistrationService
                 $member->load('branch');
                 $branch = $member->branch;
 
-                if ($branch) {
+                /*
+                                 * The welcome email carries the generated password and tells the
+                                 * reader to change it. Sending that to someone who has just
+                                 * chosen their own would be confusing at best, and it would put
+                                 * their password in their inbox in plain text.
+                                 */
+                if ($branch && $chosenPassword === null) {
                     try {
                         // Generate password reset token and URL for easy password setup
                         $token = app('auth.password.broker')->createToken($user);
@@ -116,7 +130,7 @@ final class GuestRegistrationService
                             'error' => $emailException->getMessage(),
                         ]);
                     }
-                } else {
+                } elseif (! $branch) {
                     \Log::error('Branch not found for welcome email', [
                         'user_id' => $user->id,
                         'member_id' => $member->id,

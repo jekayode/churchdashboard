@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\GuestRegistrationApiRequest;
 use App\Models\User;
+use App\Services\GuestRegistrationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -15,6 +17,41 @@ use Illuminate\Validation\ValidationException;
 
 final class AuthController extends Controller
 {
+    /**
+     * Sign up from the app.
+     *
+     * Deliberately the same service the public web form uses, because that one
+     * creates a Member alongside the User — and without a Member every /me
+     * endpoint answers 404, so an account made any other way signs in to an
+     * empty app. It also records consent, assigns the branch role and files the
+     * attempt, none of which a second implementation would remember to do.
+     *
+     * New sign-ups land as visitors. Membership is a pastoral judgement, so a
+     * pastor promotes them rather than the app deciding on their behalf.
+     */
+    public function registerGuest(
+        GuestRegistrationApiRequest $request,
+        GuestRegistrationService $guests,
+    ): JsonResponse {
+        $user = $guests->registerGuest($request->validated() + [
+            'consent_given_at' => $request->input('consent_given_at'),
+            'consent_ip' => $request->input('consent_ip'),
+        ]);
+
+        // Signed straight in: they chose the password a moment ago, so making
+        // them type it again would be asking for no reason.
+        $token = $user->createToken($request->string('device_name')->toString(), ['*'], now()->addDays(30));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Welcome to LifePointe.',
+            'data' => [
+                'user' => ['id' => $user->id, 'name' => $user->name, 'email' => $user->email],
+                'token' => $token->plainTextToken,
+            ],
+        ], 201);
+    }
+
     /**
      * Email a password reset link.
      *
