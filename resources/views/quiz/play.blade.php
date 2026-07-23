@@ -154,6 +154,13 @@
     let state = null, remaining = 0, phaseDuration = 1, pending = null, joining = false, error = null;
     let lastKey = null;
     /*
+     * True only once the person has deliberately committed their name from the
+     * early "Save my name" screen. It is what arms the auto-join below — never
+     * the length of what is in the box, which a background poll cannot tell
+     * apart from a name still being typed.
+     */
+    let nameSettled = false;
+    /*
      * Held across re-renders, and across the wait if someone scanned the slide
      * before the quiz opened. Keeping it in a variable rather than reading the
      * input at submit time means no redraw can ever lose what they typed.
@@ -189,7 +196,9 @@
 
         const go = () => {
             heldName = input.value;
-            if (waiting) { renderWaitingToOpen(); return; }
+            // A commit is always a deliberate tap or Enter, never a background
+            // poll, so this is the only place auto-join is ever armed.
+            if (waiting) { nameSettled = true; renderWaitingToOpen(); return; }
             join(input.value);
         };
 
@@ -333,15 +342,18 @@
         if (!state.me && state.quiz.status !== 'finished') {
             const open = state.quiz.status === 'lobby' || state.quiz.status === 'running';
 
-            // Scanned early, name already given: bring them in without a tap.
-            if (open && heldName.trim().length >= 2 && !joining) {
+            // Scanned early, tapped "Save my name", and now the quiz has opened:
+            // bring them in without a tap. This keys off the deliberate commit,
+            // not the box length — otherwise a poll landing between keystrokes
+            // submits a half-typed name ("aa") and captures the wrong thing.
+            if (open && nameSettled && !joining) {
                 join(heldName);
 
                 return;
             }
 
             const waiting = !open;
-            const settled = waiting && heldName.trim().length >= 2;
+            const settled = waiting && nameSettled;
             const joinKey = ['join', waiting, settled, joining, error].join('|');
 
             if (joinKey !== lastKey) {
@@ -385,7 +397,10 @@
             state = result;
             lastKey = null;
         } catch (e) {
+            // A rejected name (taken, quiz full, too short) must not be fired
+            // again by the next poll, so disarm auto-join and let them edit it.
             error = e.message;
+            nameSettled = false;
         } finally {
             joining = false;
             lastKey = null;
