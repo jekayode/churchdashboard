@@ -256,16 +256,10 @@
                 @if(in_array('closest_location', $config['optional']))
                     <div>
                         <label for="closest_location" class="block text-sm font-medium text-gray-700">Which location is closest to you?</label>
-                        <select name="closest_location" 
-                                id="closest_location" 
-                                class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                            <option value="">Select closest location</option>
-                            <option value="Ajah - DKK" {{ old('closest_location', $member?->closest_location) == 'Ajah - DKK' ? 'selected' : '' }}>Ajah - DKK</option>
-                            <option value="DKK - Novare Mall" {{ old('closest_location', $member?->closest_location) == 'DKK - Novare Mall' ? 'selected' : '' }}>DKK - Novare Mall</option>
-                            <option value="Crown Estate - Abijo" {{ old('closest_location', $member?->closest_location) == 'Crown Estate - Abijo' ? 'selected' : '' }}>Crown Estate - Abijo</option>
-                            <option value="Abijo - Awoyaya" {{ old('closest_location', $member?->closest_location) == 'Abijo - Awoyaya' ? 'selected' : '' }}>Abijo - Awoyaya</option>
-                            <option value="Eputu" {{ old('closest_location', $member?->closest_location) == 'Eputu' ? 'selected' : '' }}>Eputu</option>
-                        </select>
+                        <x-coverage-location-select
+                            :branch-id="$member?->branch_id ?? $selectedBranchId"
+                            :selected="$member?->closest_location"
+                            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" />
                     </div>
                 @endif
 
