@@ -7,6 +7,7 @@ use App\Http\Controllers\MinisterDashboardController;
 use App\Http\Controllers\Pastor\EventFormController;
 use App\Http\Controllers\Pastor\ReadingPlanController as ReadingPlanWebController;
 use App\Http\Controllers\Pastor\SeriesController as SeriesWebController;
+use App\Http\Controllers\Pastor\CoverageLocationController;
 use App\Http\Controllers\Pastor\QuizController as QuizWebController;
 use App\Http\Controllers\Pastor\QuizHostController;
 use App\Http\Controllers\Pastor\SermonController as SermonWebController;
@@ -266,6 +267,12 @@ Route::middleware(['auth', 'verified', 'role:branch_pastor,super_admin'])->prefi
 
     // Reading plans — daily readings and study questions
     Route::get('/reading-plans', [ReadingPlanWebController::class, 'index'])->name('reading-plans');
+
+    // Coverage locations — the "closest location" options members choose between
+    Route::get('/coverage-locations', [CoverageLocationController::class, 'index'])->name('coverage-locations');
+    Route::post('/coverage-locations', [CoverageLocationController::class, 'store'])->name('coverage-locations.store');
+    Route::put('/coverage-locations/{coverageLocation}', [CoverageLocationController::class, 'update'])->name('coverage-locations.update');
+    Route::delete('/coverage-locations/{coverageLocation}', [CoverageLocationController::class, 'destroy'])->name('coverage-locations.destroy');
     Route::get('/reading-plans/{plan}/edit', [ReadingPlanWebController::class, 'edit'])->name('reading-plans.edit');
     Route::put('/reading-plans/{plan}', [ReadingPlanWebController::class, 'update'])->name('reading-plans.update');
     Route::get('/reading-plans/{plan}/days', [ReadingPlanWebController::class, 'days'])->name('reading-plans.days');

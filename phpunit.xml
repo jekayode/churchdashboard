@@ -18,6 +18,11 @@
         </include>
     </source>
     <php>
+        <!-- The suite peaks around 145MB, above PHP's 128M CLI default, so
+             `php artisan test` (which runs phpunit in a subprocess that does not
+             inherit a -d flag) was exhausting memory. Set it here so the runner
+             works out of the box. -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>

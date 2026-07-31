@@ -49,11 +49,11 @@ final class PublicReportController extends Controller
         $existingReports = \App\Models\EventReport::whereHas('event', function ($query) use ($reportToken) {
             $query->where('branch_id', $reportToken->branch_id);
         })
-        ->orderBy('report_date', 'desc')
-        ->orderBy('created_at', 'desc')
-        ->get()
-        ->groupBy('event_id')
-        ->toArray();
+            ->orderBy('report_date', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->groupBy('event_id')
+            ->toArray();
 
         return view('public.reports.submit', [
             'token' => $reportToken,
@@ -95,6 +95,7 @@ final class PublicReportController extends Controller
             'online_attendance' => 'nullable|integer|min:0',
             'first_time_guests' => 'required|integer|min:0',
             'converts' => 'required|integer|min:0',
+            'holy_ghost_baptism' => 'nullable|integer|min:0',
             'cars' => 'required|integer|min:0',
 
             // Second Service (optional)
@@ -107,6 +108,7 @@ final class PublicReportController extends Controller
             'second_online_attendance' => 'nullable|integer|min:0',
             'second_first_time_guests' => 'nullable|integer|min:0|required_if:has_second_service,true',
             'second_converts' => 'nullable|integer|min:0|required_if:has_second_service,true',
+            'second_holy_ghost_baptism' => 'nullable|integer|min:0',
             'second_cars' => 'nullable|integer|min:0|required_if:has_second_service,true',
             'second_service_notes' => 'nullable|string',
         ]);
@@ -261,6 +263,7 @@ final class PublicReportController extends Controller
             'attendance_online' => $data['online_attendance'] ?? 0,
             'first_time_guests' => $data['first_time_guests'],
             'converts' => $data['converts'],
+            'holy_ghost_baptism' => $data['holy_ghost_baptism'] ?? 0,
             'number_of_cars' => $data['cars'],
 
             // Second Service
@@ -276,6 +279,7 @@ final class PublicReportController extends Controller
             $transformed['second_service_attendance_online'] = $data['second_online_attendance'] ?? 0;
             $transformed['second_service_first_time_guests'] = $data['second_first_time_guests'];
             $transformed['second_service_converts'] = $data['second_converts'];
+            $transformed['second_service_holy_ghost_baptism'] = $data['second_holy_ghost_baptism'] ?? 0;
             $transformed['second_service_number_of_cars'] = $data['second_cars'];
             $transformed['second_service_notes'] = $data['second_service_notes'];
         }

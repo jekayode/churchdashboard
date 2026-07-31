@@ -246,18 +246,17 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             }
         }
 
-        // Handle combining first_name and last_name into name if name is not already set
+        // Make sure a combined name exists: the per-row rules require it, and a
+        // file may have given only the two parts. first_name and last_name are
+        // left in place — prepareMemberData reads them to fill the member's own
+        // first_name/surname columns, which earlier code discarded here.
         if (! isset($cleanData['name']) && (isset($cleanData['first_name']) || isset($cleanData['last_name']))) {
-            $firstName = trim($cleanData['first_name'] ?? '');
-            $lastName = trim($cleanData['last_name'] ?? '');
+            $combined = trim(trim($cleanData['first_name'] ?? '').' '.trim($cleanData['last_name'] ?? ''));
 
-            if ($firstName || $lastName) {
-                $cleanData['name'] = trim($firstName.' '.$lastName);
+            if ($combined !== '') {
+                $cleanData['name'] = $combined;
             }
         }
-
-        // Remove first_name and last_name since we only need the combined name
-        unset($cleanData['first_name'], $cleanData['last_name']);
 
         // Parse leadership trainings if present (check normalized row for "Leadership Trainings" from exports)
         if (! isset($cleanData['leadership_trainings'])) {
@@ -943,9 +942,15 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
     public function rules(): array
     {
         return [
-            '*.name' => 'required_without_all:*.first_name,*.last_name|string|max:255',
-            '*.first_name' => 'required_without:*.name|string|max:255',
-            '*.last_name' => 'required_without:*.name|string|max:255',
+            // A row is acceptable with a combined name, or with either name part.
+            // "surname" is the header the template and the members table both use;
+            // it is accepted here alongside "last_name" so the exported template
+            // re-imports without being renamed. cleanRowData then fills in
+            // whichever of first_name / surname / name the file left out.
+            '*.name' => 'required_without_all:*.first_name,*.last_name,*.surname|string|max:255',
+            '*.first_name' => 'nullable|string|max:255',
+            '*.last_name' => 'nullable|string|max:255',
+            '*.surname' => 'nullable|string|max:255',
             '*.email' => 'nullable|email|max:255',
             '*.phone' => 'nullable|max:20',
             '*.gender' => 'nullable|in:male,female,prefer-not-to-say',
@@ -973,9 +978,7 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
     public function customValidationMessages(): array
     {
         return [
-            '*.name.required_without_all' => 'Either a full name or both first name and last name are required.',
-            '*.first_name.required_without' => 'First name is required when full name is not provided.',
-            '*.last_name.required_without' => 'Last name is required when full name is not provided.',
+            '*.name.required_without_all' => 'Each row needs a name — either a full name, or a first name and surname.',
             '*.email.email' => 'Please provide a valid email address.',
             '*.gender.in' => 'Gender must be male, female, or prefer-not-to-say.',
             '*.marital_status.in' => 'Marital status must be a valid option.',

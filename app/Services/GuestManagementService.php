@@ -434,7 +434,8 @@ final class GuestManagementService
         try {
             $data = [
                 [
-                    'name' => 'John Doe',
+                    'first_name' => 'John',
+                    'surname' => 'Doe',
                     'email' => 'john.doe@example.com',
                     'phone' => '+2348012345678',
                     'gender' => 'male',
@@ -445,13 +446,14 @@ final class GuestManagementService
                     'preferred_call_time' => 'evening',
                     'discovery_source' => 'social-media',
                     'staying_intention' => 'yes-for-sure',
-                    'closest_location' => 'Lekki',
+                    'closest_location' => 'Eputu - Bogije',
                     'prayer_request' => 'Pray for my family',
                     'additional_info' => 'First time visitor',
                     'date_joined' => '2025-12-09',
                 ],
                 [
-                    'name' => 'Jane Smith',
+                    'first_name' => 'Jane',
+                    'surname' => 'Smith',
                     'email' => 'jane.smith@example.com',
                     'phone' => '+2348023456789',
                     'gender' => 'female',
@@ -462,13 +464,14 @@ final class GuestManagementService
                     'preferred_call_time' => 'morning',
                     'discovery_source' => 'word-of-mouth',
                     'staying_intention' => 'visit-when-in-town',
-                    'closest_location' => 'Victoria Island',
+                    'closest_location' => 'UBA - Ogunfayo',
                     'prayer_request' => '',
                     'additional_info' => '',
                     'date_joined' => '2025-12-09',
                 ],
                 [
-                    'name' => 'Michael Johnson',
+                    'first_name' => 'Michael',
+                    'surname' => 'Johnson',
                     'email' => '',
                     'phone' => '+2348034567890',
                     'gender' => 'male',
@@ -479,7 +482,7 @@ final class GuestManagementService
                     'preferred_call_time' => 'anytime',
                     'discovery_source' => 'website',
                     'staying_intention' => 'weighing-options',
-                    'closest_location' => 'Ikoyi',
+                    'closest_location' => 'Kingdom Hall - GRA/Edidot Schools',
                     'prayer_request' => 'Need guidance',
                     'additional_info' => 'Interested in joining',
                     'date_joined' => '2025-12-09',
@@ -515,7 +518,8 @@ final class GuestManagementService
                 public function headings(): array
                 {
                     return [
-                        'Name',
+                        'First Name',
+                        'Surname',
                         'Email',
                         'Phone',
                         'Gender',
