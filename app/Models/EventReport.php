@@ -26,6 +26,7 @@ final class EventReport extends Model
         'attendance_online',
         'first_time_guests',
         'converts',
+        'holy_ghost_baptism',
         'start_time',
         'end_time',
         'number_of_cars',
@@ -38,6 +39,7 @@ final class EventReport extends Model
         'second_service_attendance_online',
         'second_service_first_time_guests',
         'second_service_converts',
+        'second_service_holy_ghost_baptism',
         'second_service_number_of_cars',
         'second_service_start_time',
         'second_service_end_time',
@@ -61,11 +63,12 @@ final class EventReport extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'attendance_male' => 'integer',
-        'attendance_female' => 'integer', 
+        'attendance_female' => 'integer',
         'attendance_children' => 'integer',
         'attendance_online' => 'integer',
         'first_time_guests' => 'integer',
         'converts' => 'integer',
+        'holy_ghost_baptism' => 'integer',
         'number_of_cars' => 'integer',
         'second_service_attendance_male' => 'integer',
         'second_service_attendance_female' => 'integer',
@@ -73,6 +76,7 @@ final class EventReport extends Model
         'second_service_attendance_online' => 'integer',
         'second_service_first_time_guests' => 'integer',
         'second_service_converts' => 'integer',
+        'second_service_holy_ghost_baptism' => 'integer',
         'second_service_number_of_cars' => 'integer',
     ];
 
@@ -88,6 +92,7 @@ final class EventReport extends Model
         'combined_total_attendance',
         'combined_first_time_guests',
         'combined_converts',
+        'combined_holy_ghost_baptism',
         'combined_cars',
         'combined_totals_by_gender',
     ];
@@ -113,9 +118,9 @@ final class EventReport extends Model
      */
     public function getTotalAttendanceAttribute(): int
     {
-        return ($this->attendance_male ?? 0) + 
-               ($this->attendance_female ?? 0) + 
-               ($this->attendance_children ?? 0) + 
+        return ($this->attendance_male ?? 0) +
+               ($this->attendance_female ?? 0) +
+               ($this->attendance_children ?? 0) +
                ($this->attendance_online ?? 0);
     }
 
@@ -132,12 +137,12 @@ final class EventReport extends Model
      */
     public function getSecondServiceTotalAttendanceAttribute(): int
     {
-        if (!$this->is_multi_service) {
+        if (! $this->is_multi_service) {
             return 0;
         }
-        
-        return ($this->second_service_attendance_male ?? 0) + 
-               ($this->second_service_attendance_female ?? 0) + 
+
+        return ($this->second_service_attendance_male ?? 0) +
+               ($this->second_service_attendance_female ?? 0) +
                ($this->second_service_attendance_children ?? 0) +
                ($this->second_service_attendance_online ?? 0);
     }
@@ -164,6 +169,14 @@ final class EventReport extends Model
     public function getCombinedConvertsAttribute(): int
     {
         return ($this->converts ?? 0) + ($this->is_multi_service ? ($this->second_service_converts ?? 0) : 0);
+    }
+
+    /**
+     * Holy Ghost baptisms across both services.
+     */
+    public function getCombinedHolyGhostBaptismAttribute(): int
+    {
+        return ($this->holy_ghost_baptism ?? 0) + ($this->is_multi_service ? ($this->second_service_holy_ghost_baptism ?? 0) : 0);
     }
 
     /**
@@ -209,6 +222,6 @@ final class EventReport extends Model
         'Community Outreach',
         'Baby Dedication',
         'Holy Ghost Baptism',
-        'Other'
+        'Other',
     ];
 }

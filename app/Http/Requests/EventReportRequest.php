@@ -23,7 +23,7 @@ final class EventReportRequest extends FormRequest
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'notes' => 'nullable|string',
-            
+
             // First Service (using form field names)
             'male_attendance' => 'required|integer|min:0',
             'female_attendance' => 'required|integer|min:0',
@@ -31,8 +31,9 @@ final class EventReportRequest extends FormRequest
             'online_attendance' => 'nullable|integer|min:0',
             'first_time_guests' => 'required|integer|min:0',
             'converts' => 'required|integer|min:0',
+            'holy_ghost_baptism' => 'nullable|integer|min:0',
             'cars' => 'required|integer|min:0',
-            
+
             // Second Service (optional, using form field names)
             'has_second_service' => 'boolean',
             'second_service_start_time' => 'nullable|date_format:H:i|required_if:has_second_service,true',
@@ -43,6 +44,7 @@ final class EventReportRequest extends FormRequest
             'second_online_attendance' => 'nullable|integer|min:0',
             'second_first_time_guests' => 'nullable|integer|min:0|required_if:has_second_service,true',
             'second_converts' => 'nullable|integer|min:0|required_if:has_second_service,true',
+            'second_holy_ghost_baptism' => 'nullable|integer|min:0',
             'second_cars' => 'nullable|integer|min:0|required_if:has_second_service,true',
         ];
     }
@@ -58,7 +60,7 @@ final class EventReportRequest extends FormRequest
             'start_time.required' => 'Start time is required.',
             'end_time.required' => 'End time is required.',
             'end_time.after' => 'End time must be after start time.',
-            
+
             'male_attendance.required' => 'Male attendance is required.',
             'female_attendance.required' => 'Female attendance is required.',
             'children_attendance.required' => 'Children attendance is required.',
@@ -66,7 +68,7 @@ final class EventReportRequest extends FormRequest
             'first_time_guests.required' => 'First time guests count is required.',
             'converts.required' => 'Converts count is required.',
             'cars.required' => 'Cars count is required.',
-            
+
             'second_service_start_time.required_if' => 'Second service start time is required when second service is enabled.',
             'second_service_end_time.required_if' => 'Second service end time is required when second service is enabled.',
             'second_service_end_time.after' => 'Second service end time must be after start time.',
@@ -99,4 +101,4 @@ final class EventReportRequest extends FormRequest
             'second_cars' => 'second service cars',
         ];
     }
-} 
+}

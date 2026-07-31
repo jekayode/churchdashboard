@@ -541,6 +541,7 @@ final class ReportingController extends Controller
             'second_cars' => 'second_service_number_of_cars',
             'second_first_time_guests' => 'second_service_first_time_guests',
             'second_converts' => 'second_service_converts',
+            'second_holy_ghost_baptism' => 'second_service_holy_ghost_baptism',
         ];
 
         foreach ($transformations as $fromKey => $toKey) {

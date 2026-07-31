@@ -222,6 +222,13 @@
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div>
+                                <label for="holy_ghost_baptism" class="block text-sm font-medium text-gray-700 mb-2">
+                                    Holy Ghost Baptism
+                                </label>
+                                <input type="number" id="holy_ghost_baptism" x-model="formData.holy_ghost_baptism" min="0"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
                                 <label for="cars" class="block text-sm font-medium text-gray-700 mb-2">
                                     Number of Cars *
                                 </label>
@@ -309,6 +316,13 @@
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 </div>
                                 <div>
+                                    <label for="second_holy_ghost_baptism" class="block text-sm font-medium text-gray-700 mb-2">
+                                        Holy Ghost Baptism
+                                    </label>
+                                    <input type="number" id="second_holy_ghost_baptism" x-model="formData.second_holy_ghost_baptism" min="0"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
                                     <label for="second_cars" class="block text-sm font-medium text-gray-700 mb-2">
                                         Number of Cars *
                                     </label>
@@ -372,6 +386,7 @@
                     online_attendance: 0,
                     first_time_guests: 0,
                     converts: 0,
+                    holy_ghost_baptism: 0,
                     cars: 0,
                     has_second_service: false,
                     second_service_start_time: '',
@@ -382,6 +397,7 @@
                     second_online_attendance: 0,
                     second_first_time_guests: 0,
                     second_converts: 0,
+                    second_holy_ghost_baptism: 0,
                     second_cars: 0,
                     second_service_notes: '',
                     notes: ''
@@ -575,6 +591,7 @@
                                 online_attendance: 0,
                                 first_time_guests: 0,
                                 converts: 0,
+                                holy_ghost_baptism: 0,
                                 cars: 0,
                                 has_second_service: false,
                                 second_service_start_time: '',
@@ -585,6 +602,7 @@
                                 second_online_attendance: 0,
                                 second_first_time_guests: 0,
                                 second_converts: 0,
+                                second_holy_ghost_baptism: 0,
                                 second_cars: 0,
                                 second_service_notes: '',
                                 notes: ''

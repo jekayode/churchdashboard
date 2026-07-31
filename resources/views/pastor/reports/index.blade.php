@@ -543,6 +543,10 @@
                                 <input type="number" name="converts" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Holy Ghost Baptism</label>
+                                <input type="number" name="holy_ghost_baptism" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700">Cars</label>
                                 <input type="number" name="cars" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                             </div>
@@ -595,6 +599,10 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Converts</label>
                                     <input type="number" name="second_converts" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Holy Ghost Baptism</label>
+                                    <input type="number" name="second_holy_ghost_baptism" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Cars</label>
@@ -690,6 +698,10 @@
                                 <input type="number" id="editConverts" name="converts" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                             </div>
                             <div>
+                                <label class="block text-sm font-medium text-gray-700">Holy Ghost Baptism</label>
+                                <input type="number" id="editHolyGhostBaptism" name="holy_ghost_baptism" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                            </div>
+                            <div>
                                 <label class="block text-sm font-medium text-gray-700">Cars</label>
                                 <input type="number" id="editCars" name="cars" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm" required>
                             </div>
@@ -742,6 +754,10 @@
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Converts</label>
                                     <input type="number" id="editSecondConverts" name="second_converts" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Holy Ghost Baptism</label>
+                                    <input type="number" id="editSecondHolyGhostBaptism" name="second_holy_ghost_baptism" min="0" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                                 </div>
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Cars</label>
@@ -2168,6 +2184,7 @@
             document.getElementById('editOnlineAttendance').value = report.attendance_online ?? report.online_attendance ?? 0;
             document.getElementById('editFirstTimeGuests').value = report.first_time_guests || 0;
             document.getElementById('editConverts').value = report.converts || 0;
+            document.getElementById('editHolyGhostBaptism').value = report.holy_ghost_baptism || 0;
             document.getElementById('editCars').value = report.number_of_cars || 0;
             
             // Handle second service
@@ -2205,6 +2222,7 @@
                 document.getElementById('editSecondOnlineAttendance').value = report.second_service_attendance_online || 0;
                 document.getElementById('editSecondFirstTimeGuests').value = report.second_service_first_time_guests || 0;
                 document.getElementById('editSecondConverts').value = report.second_service_converts || 0;
+                document.getElementById('editSecondHolyGhostBaptism').value = report.second_service_holy_ghost_baptism || 0;
                 document.getElementById('editSecondCars').value = report.second_service_number_of_cars || 0;
             } else {
                 document.getElementById('editSecondServiceFields').classList.add('hidden');
