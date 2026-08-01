@@ -39,6 +39,21 @@ class GuestRegistrationAttemptTest extends TestCase
         ]);
     }
 
+    public function test_profession_is_saved_to_the_member(): void
+    {
+        $branch = Branch::factory()->create(['status' => 'active']);
+        $payload = $this->validGuestPayload($branch->id, ['occupation' => 'Architect']);
+
+        $this->post(route('public.guest-register.store'), $payload)
+            ->assertRedirect(route('member.profile-completion'));
+
+        // Labelled "Profession" on the form; stored in the occupation column.
+        $this->assertDatabaseHas('members', [
+            'email' => $payload['email'],
+            'occupation' => 'Architect',
+        ]);
+    }
+
     public function test_validation_failure_logs_attempt_with_status_validation_failed(): void
     {
         $branch = Branch::factory()->create(['status' => 'active']);

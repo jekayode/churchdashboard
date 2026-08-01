@@ -39,6 +39,7 @@ final class GuestRegistrationRequest extends FormRequest
 
             // Optional fields (can be filled during registration or later)
             'gender' => 'nullable|in:male,female,prefer-not-to-say',
+            'occupation' => 'nullable|string|max:255',
             'preferred_call_time' => 'nullable|in:anytime,morning,afternoon,evening',
             'home_address' => 'nullable|string|max:1000',
             'date_of_birth' => 'nullable|date|before:today',

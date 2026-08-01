@@ -63,6 +63,7 @@ final class GuestRegistrationService
                     'email' => $data['email'],
                     'phone' => $data['phone'],
                     'gender' => $data['gender'] ?? null,
+                    'occupation' => $data['occupation'] ?? null,
                     'preferred_call_time' => $data['preferred_call_time'] ?? null,
                     'home_address' => $data['home_address'] ?? null,
                     'date_of_birth' => $data['date_of_birth'] ?? null,

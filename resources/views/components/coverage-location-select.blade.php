@@ -5,7 +5,7 @@
     'id' => 'closest_location',
 ])
 @php
-    $options = \App\Models\CoverageLocation::optionsForBranch($branchId ? (int) $branchId : null);
+    $options = \App\Models\CoverageLocation::optionsForForm($branchId ? (int) $branchId : null);
     $current = old($name, $selected);
     // Keep a member's stored value selectable even after it has been retired
     // from the list, so editing their profile can't silently blank it.

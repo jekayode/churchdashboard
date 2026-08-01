@@ -59,7 +59,8 @@ final class CoverageLocation extends Model
     }
 
     /**
-     * The active option names for a branch, in order — what a dropdown shows.
+     * The active option names for a branch, in order — strict scoping. Empty if
+     * the branch is unknown or has no active locations.
      *
      * @return list<string>
      */
@@ -74,6 +75,34 @@ final class CoverageLocation extends Model
             ->where('is_active', true)
             ->ordered()
             ->pluck('name')
+            ->all();
+    }
+
+    /**
+     * Options for a dropdown, which must never come back empty.
+     *
+     * The public guest form renders before a branch is chosen, and members can
+     * sit in a branch that has no coverage areas defined — in both cases strict
+     * scoping returns nothing and the dropdown is unusable. So fall back to all
+     * active locations across branches when the branch resolves to none. Today
+     * only Greater Lekki has any, so the fallback shows exactly its list.
+     *
+     * @return list<string>
+     */
+    public static function optionsForForm(?int $branchId): array
+    {
+        $scoped = $branchId === null ? [] : self::optionsForBranch($branchId);
+
+        if ($scoped !== []) {
+            return $scoped;
+        }
+
+        return self::query()
+            ->where('is_active', true)
+            ->ordered()
+            ->pluck('name')
+            ->unique()
+            ->values()
             ->all();
     }
 }
