@@ -1078,13 +1078,22 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
                 return;
             }
 
-            // Dispatch bulk account setup email job
+            // Onto a real (database) queue, never the caller's connection.
+            //
+            // This job paces itself with sleep() between batches, so if it ever
+            // runs inline — which it does whenever the queue connection is
+            // "sync" — it blocks the import request past PHP's max execution
+            // time and the browser gets a truncated HTML page ("Server returned
+            // an invalid response") instead of the import summary. Pinning it to
+            // the database connection guarantees a fast enqueue and a response
+            // that returns immediately, whatever the environment's default
+            // queue is. A worker then sends the emails out of band.
             \App\Jobs\SendBulkAccountSetupEmailsJob::dispatch(
                 $branch,
                 $this->usersForAccountSetup,
                 5, // Process 5 emails at a time
                 30 // 30 seconds between batches
-            );
+            )->onConnection('database');
 
             Log::info('Account setup emails scheduled for imported members', [
                 'branch_id' => $this->branchId,

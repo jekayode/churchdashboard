@@ -421,6 +421,11 @@
                             body: formData,
                             headers: {
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                // Ask for JSON, so a validation error, an expired
+                                // session, or any server error comes back as JSON
+                                // this modal can display — instead of an HTML
+                                // page that reads only as "invalid response".
+                                'Accept': 'application/json',
                             },
                         });
 
