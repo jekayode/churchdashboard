@@ -252,26 +252,46 @@
                         <!-- Duplicate Comparison Details -->
                         <div x-show="importResult && importResult.summary && importResult.summary.errors && importResult.summary.errors.length > 0" class="mt-4 max-h-60 overflow-y-auto">
                             <template x-for="(error, index) in (importResult && importResult.summary && importResult.summary.errors ? importResult.summary.errors : [])" :key="index">
-                                <div x-show="error.type === 'duplicate' && error.comparison" 
-                                     class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-2 text-xs">
-                                    <p class="font-medium text-yellow-800 mb-2">Row <span x-text="error.row"></span>: Duplicate Found</p>
-                                    <p class="text-yellow-700 mb-2" x-text="error.message"></p>
-                                    <div x-show="error.comparison.differences && error.comparison.differences.length > 0" class="mt-2">
-                                        <p class="font-medium text-yellow-800 mb-1">Differences:</p>
-                                        <template x-for="diff in error.comparison.differences" :key="diff.field">
-                                            <div class="ml-2 mb-1">
-                                                <span class="font-medium" x-text="diff.field"></span>:
-                                                <span class="text-red-600">Existing: <span x-text="diff.existing || 'N/A'"></span></span> →
-                                                <span class="text-green-600">Imported: <span x-text="diff.imported || 'N/A'"></span></span>
-                                            </div>
-                                        </template>
+                                <div>
+                                    {{-- Duplicate rows: show the field-by-field comparison. Optional
+                                         chaining throughout, because only duplicate errors carry a
+                                         comparison — a validation error has none, and the old
+                                         unguarded access threw for every non-duplicate row. --}}
+                                    <div x-show="error.type === 'duplicate'"
+                                         class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-2 text-xs">
+                                        <p class="font-medium text-yellow-800 mb-2">Row <span x-text="error.row"></span>: Duplicate Found</p>
+                                        <p class="text-yellow-700 mb-2" x-text="error.message"></p>
+                                        <div x-show="error.comparison?.differences && error.comparison.differences.length > 0" class="mt-2">
+                                            <p class="font-medium text-yellow-800 mb-1">Differences:</p>
+                                            <template x-for="diff in (error.comparison?.differences || [])" :key="diff.field">
+                                                <div class="ml-2 mb-1">
+                                                    <span class="font-medium" x-text="diff.field"></span>:
+                                                    <span class="text-red-600">Existing: <span x-text="diff.existing || 'N/A'"></span></span> →
+                                                    <span class="text-green-600">Imported: <span x-text="diff.imported || 'N/A'"></span></span>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <div x-show="error.comparison?.matches && error.comparison.matches.length > 0" class="mt-2">
+                                            <p class="font-medium text-yellow-800 mb-1">Matching Fields:</p>
+                                            {{-- x-for must live on a <template>, not a <span>; the old
+                                                 <span x-for> left `match` undefined and crashed. --}}
+                                            <template x-for="match in (error.comparison?.matches || [])" :key="match.field">
+                                                <span class="inline-block bg-green-100 text-green-700 px-2 py-1 rounded mr-1 mb-1 text-xs">
+                                                    <span x-text="match.field"></span>
+                                                </span>
+                                            </template>
+                                        </div>
                                     </div>
-                                    <div x-show="error.comparison.matches && error.comparison.matches.length > 0" class="mt-2">
-                                        <p class="font-medium text-yellow-800 mb-1">Matching Fields:</p>
-                                        <span x-for="match in error.comparison.matches" 
-                                              class="inline-block bg-green-100 text-green-700 px-2 py-1 rounded mr-1 mb-1 text-xs">
-                                            <span x-text="match.field"></span>
-                                        </span>
+
+                                    {{-- Everything else (validation, general): previously rendered
+                                         nothing, so a failed import showed a count with no reason.
+                                         Now each failed row states why. --}}
+                                    <div x-show="error.type !== 'duplicate'"
+                                         class="bg-red-50 border border-red-200 rounded p-3 mb-2 text-xs">
+                                        <p class="text-red-700">
+                                            Row <span x-text="error.row"></span>:
+                                            <span x-text="typeof error.message === 'string' ? error.message : JSON.stringify(error.message)"></span>
+                                        </p>
                                     </div>
                                 </div>
                             </template>
@@ -401,6 +421,11 @@
                             body: formData,
                             headers: {
                                 'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                // Ask for JSON, so a validation error, an expired
+                                // session, or any server error comes back as JSON
+                                // this modal can display — instead of an HTML
+                                // page that reads only as "invalid response".
+                                'Accept': 'application/json',
                             },
                         });
 

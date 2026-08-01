@@ -258,6 +258,14 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             }
         }
 
+        // A typo'd email ("...@gmail.chom") shouldn't cost the church the whole
+        // guest — drop the bad address and let createOrFindUser generate a
+        // phone-based placeholder, so the person still imports and can be
+        // corrected later, rather than the row being rejected outright.
+        if (isset($cleanData['email']) && $cleanData['email'] !== '' && ! filter_var($cleanData['email'], FILTER_VALIDATE_EMAIL)) {
+            unset($cleanData['email']);
+        }
+
         // Parse leadership trainings if present (check normalized row for "Leadership Trainings" from exports)
         if (! isset($cleanData['leadership_trainings'])) {
             foreach (['leadership_trainings', 'trainings', 'completed_trainings'] as $key) {
@@ -296,7 +304,7 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
                 'divorced' => 'divorced',
                 'separated' => 'separated',
                 'widowed', 'widow', 'widower' => 'widowed',
-                'in a relationship', 'relationship', 'dating', 'in-relationship' => 'in_a_relationship',
+                'in a relationship', 'relationship', 'dating', 'in-relationship', 'in_a_relationship' => 'in-relationship',
                 'engaged', 'engagement' => 'engaged',
                 default => 'single'
             };
@@ -683,11 +691,11 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:20',
+            'phone' => 'nullable|string|max:50',
             'date_of_birth' => 'nullable|date',
             'anniversary' => 'nullable|date',
             'gender' => 'nullable|in:male,female,prefer-not-to-say',
-            'marital_status' => 'nullable|in:single,married,divorced,separated,widowed,in_a_relationship,engaged',
+            'marital_status' => 'nullable|in:single,married,divorced,separated,widowed,in-relationship,engaged',
             'occupation' => 'nullable|string|max:255',
             'nearest_bus_stop' => 'nullable|string|max:255',
             'date_joined' => 'nullable|date',
@@ -942,33 +950,15 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
     public function rules(): array
     {
         return [
-            // A row is acceptable with a combined name, or with either name part.
-            // "surname" is the header the template and the members table both use;
-            // it is accepted here alongside "last_name" so the exported template
-            // re-imports without being renamed. cleanRowData then fills in
-            // whichever of first_name / surname / name the file left out.
-            '*.name' => 'required_without_all:*.first_name,*.last_name,*.surname|string|max:255',
-            '*.first_name' => 'nullable|string|max:255',
-            '*.last_name' => 'nullable|string|max:255',
-            '*.surname' => 'nullable|string|max:255',
-            '*.email' => 'nullable|email|max:255',
-            '*.phone' => 'nullable|max:20',
-            '*.gender' => 'nullable|in:male,female,prefer-not-to-say',
-            '*.marital_status' => 'nullable|in:single,married,divorced,separated,widowed,in_a_relationship,engaged',
-            '*.date_of_birth' => 'nullable|date|before:today',
-            '*.member_status' => 'nullable|in:visitor,member,volunteer,leader,minister',
-            '*.teci_status' => 'nullable|in:not_started,100_level,200_level,300_level,400_level,500_level,graduated,paused',
-            '*.growth_level' => 'nullable|in:core,pastor,growing,new_believer',
-            // Guest form fields
-            '*.preferred_call_time' => 'nullable|in:anytime,morning,afternoon,evening',
-            '*.home_address' => 'nullable|string|max:1000',
-            '*.age_group' => 'nullable|in:15-20,21-25,26-30,31-35,36-40,above-40',
-            '*.prayer_request' => 'nullable|string|max:2000',
-            '*.discovery_source' => 'nullable|in:social-media,word-of-mouth,billboard,email,website,promotional-material,radio-tv,outreach',
-            '*.staying_intention' => 'nullable|in:yes-for-sure,visit-when-in-town,just-visiting,weighing-options',
-            '*.closest_location' => 'nullable|string|max:255',
-            '*.additional_info' => 'nullable|string|max:2000',
-            '*.leadership_trainings' => 'nullable|string',
+            /*
+             * Intentionally empty. This runs on the RAW spreadsheet values,
+             * BEFORE cleanRowData normalizes them — so any strict check here
+             * (enums, name shape, date, even email) rejects ordinary human data
+             * on every row, which is what was failing entire files including our
+             * own filled-in template. The authoritative validation is
+             * getRowValidationRules(), which runs per row AFTER normalization,
+             * where every value is a valid enum slug, a valid email, or null.
+             */
         ];
     }
 
@@ -1088,13 +1078,22 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
                 return;
             }
 
-            // Dispatch bulk account setup email job
+            // Onto a real (database) queue, never the caller's connection.
+            //
+            // This job paces itself with sleep() between batches, so if it ever
+            // runs inline — which it does whenever the queue connection is
+            // "sync" — it blocks the import request past PHP's max execution
+            // time and the browser gets a truncated HTML page ("Server returned
+            // an invalid response") instead of the import summary. Pinning it to
+            // the database connection guarantees a fast enqueue and a response
+            // that returns immediately, whatever the environment's default
+            // queue is. A worker then sends the emails out of band.
             \App\Jobs\SendBulkAccountSetupEmailsJob::dispatch(
                 $branch,
                 $this->usersForAccountSetup,
                 5, // Process 5 emails at a time
                 30 // 30 seconds between batches
-            );
+            )->onConnection('database');
 
             Log::info('Account setup emails scheduled for imported members', [
                 'branch_id' => $this->branchId,

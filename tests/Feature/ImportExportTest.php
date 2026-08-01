@@ -433,9 +433,13 @@ final class ImportExportTest extends TestCase
     {
         Sanctum::actingAs($this->superAdmin);
 
+        // Messy-but-recoverable data (a typo'd email, an unparseable date) is
+        // cleaned and the person still imports — losing a guest over a bad
+        // optional field is worse than storing them without it. A row with no
+        // name at all is genuinely unimportable and must still fail.
         $csvContent = "first_name,last_name,email,phone,gender,date_of_birth,member_status,growth_level\n";
-        $csvContent .= "John,Doe,invalid-email,1234567890,male,1990-01-01,member,new_believer\n";
-        $csvContent .= "Jane,Smith,jane@example.com,0987654321,female,invalid-date,member,growing\n";
+        $csvContent .= "John,Doe,invalid-email,1234567890,male,not-a-date,member,new_believer\n";
+        $csvContent .= ",,nameless@example.com,0987654321,female,1990-01-01,member,growing\n";
 
         $file = UploadedFile::fake()->createWithContent('members.csv', $csvContent);
 
@@ -444,23 +448,48 @@ final class ImportExportTest extends TestCase
             'branch_id' => $this->branch->id,
         ]);
 
-        // Any failed row makes the import unsuccessful (422) and reports per-row errors
+        // One row imported (recovered), one failed (no name) → overall 422 with
+        // per-row errors reported.
         $response->assertStatus(422)
-            ->assertJson([
-                'success' => false,
-            ])
+            ->assertJson(['success' => false])
             ->assertJsonStructure([
                 'success',
                 'message',
-                'summary' => [
-                    'total_processed',
-                    'successful_imports',
-                    'failed_imports',
-                    'errors',
-                ],
+                'summary' => ['total_processed', 'successful_imports', 'failed_imports', 'errors'],
             ]);
 
-        $this->assertGreaterThan(0, $response->json('summary.failed_imports'));
+        $this->assertSame(1, $response->json('summary.successful_imports'));
+        $this->assertSame(1, $response->json('summary.failed_imports'));
+
+        // The recovered guest is in, with the bad email and date dropped.
+        $john = \App\Models\Member::where('name', 'John Doe')->first();
+        $this->assertNotNull($john);
+        $this->assertNull($john->date_of_birth);
+    }
+
+    public function test_import_recovers_real_world_messy_values(): void
+    {
+        Sanctum::actingAs($this->superAdmin);
+
+        // The shapes a human-filled sheet actually contains: capitalised gender,
+        // spaced age range, free-text discovery/intention, "in a relationship".
+        $csv = "First Name,Surname,Email,Phone,Gender,Marital Status,Age Group,Discovery Source,Staying Intention\n";
+        $csv .= "Grace,Okafor,grace.messy@example.test,+234 810 701 3083,Female,In a relationship,15 - 20,Social Media,Yes for Sure!\n";
+
+        $file = UploadedFile::fake()->createWithContent('guests.csv', $csv);
+
+        $this->postJson('/api/import-export/members/import', [
+            'file' => $file,
+            'branch_id' => $this->branch->id,
+        ])->assertOk()->assertJson(['success' => true]);
+
+        $member = \App\Models\Member::where('email', 'grace.messy@example.test')->first();
+        $this->assertNotNull($member, 'A row of ordinary human values must import');
+        $this->assertSame('female', $member->gender);
+        $this->assertSame('in-relationship', $member->marital_status);
+        $this->assertSame('15-20', $member->age_group);
+        $this->assertSame('social-media', $member->discovery_source);
+        $this->assertSame('yes-for-sure', $member->staying_intention);
     }
 
     /**
