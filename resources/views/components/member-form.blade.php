@@ -13,7 +13,7 @@
     $fieldConfigs = [
         'guest' => [
             'required' => ['first_name', 'surname', 'email', 'phone', 'branch_id'],
-            'optional' => ['gender', 'preferred_call_time', 'home_address', 'date_of_birth', 'age_group', 'marital_status', 'discovery_source', 'staying_intention', 'closest_location', 'prayer_request', 'additional_info']
+            'optional' => ['gender', 'occupation', 'preferred_call_time', 'home_address', 'date_of_birth', 'age_group', 'marital_status', 'discovery_source', 'staying_intention', 'closest_location', 'prayer_request', 'additional_info']
         ],
         'admin' => [
             'required' => ['first_name', 'surname', 'email', 'phone', 'branch_id'],
@@ -21,7 +21,7 @@
         ],
         'profile' => [
             'required' => [],
-            'optional' => ['gender', 'preferred_call_time', 'home_address', 'date_of_birth', 'age_group', 'marital_status', 'discovery_source', 'staying_intention', 'closest_location', 'prayer_request', 'additional_info']
+            'optional' => ['gender', 'occupation', 'preferred_call_time', 'home_address', 'date_of_birth', 'age_group', 'marital_status', 'discovery_source', 'staying_intention', 'closest_location', 'prayer_request', 'additional_info']
         ]
     ];
 
@@ -336,7 +336,7 @@
 
                 @if(in_array('occupation', $config['optional']))
                     <div>
-                        <label for="occupation" class="block text-sm font-medium text-gray-700">Occupation</label>
+                        <label for="occupation" class="block text-sm font-medium text-gray-700">Profession</label>
                         <input type="text" 
                                name="occupation" 
                                id="occupation" 

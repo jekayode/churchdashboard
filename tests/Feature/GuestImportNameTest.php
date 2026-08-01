@@ -72,6 +72,30 @@ final class GuestImportNameTest extends TestCase
         $this->assertSame('Jane Van Der Berg', $member->surname, 'Only the first space splits the name');
     }
 
+    public function test_a_profession_column_imports_to_occupation(): void
+    {
+        // The church calls it Profession; the column is occupation, and the
+        // importer already maps the header — this guards that it stays wired.
+        $this->import('first_name,surname,email,phone,profession
+Grace,Okafor,grace@example.test,08010000004,Nurse
+');
+
+        $member = Member::firstWhere('email', 'grace@example.test');
+        $this->assertSame('Nurse', $member->occupation);
+    }
+
+    public function test_the_template_advertises_the_profession_column(): void
+    {
+        $result = app(\App\Services\GuestManagementService::class)->getGuestImportTemplate();
+        $path = \Illuminate\Support\Facades\Storage::disk('public')->path($result['file_path']);
+        Excel::import(new MembersImport($this->branch->id, 'guest-form', 'visitor'), $path);
+
+        // Round-trip proves the Profession heading and its column values line up:
+        // the sample row's profession lands in occupation.
+        $john = Member::firstWhere('name', 'John Doe');
+        $this->assertNotNull($john->occupation, 'Template Profession column did not map through');
+    }
+
     public function test_the_downloaded_template_re_imports_with_its_names_split(): void
     {
         // The strongest guarantee is that the loop closes: generate the template
