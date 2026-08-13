@@ -231,6 +231,9 @@
                             <div x-show="importResult && importResult.summary" class="mt-2 text-xs space-y-1">
                                 <p>Processed: <span x-text="importResult && importResult.summary ? importResult.summary.total_processed : 0"></span></p>
                                 <p>Successful: <span x-text="importResult && importResult.summary ? importResult.summary.successful_imports : 0"></span></p>
+                                <p x-show="importResult && importResult.summary && (importResult.summary.skipped_duplicates || 0) > 0">
+                                    Skipped duplicates: <span x-text="importResult.summary.skipped_duplicates || 0"></span>
+                                </p>
                                 <p>Failed: <span x-text="importResult && importResult.summary ? importResult.summary.failed_imports : 0"></span></p>
                                 <p x-show="importResult && importResult.summary && importResult.summary.account_setup_emails_scheduled">
                                     Account Setup Emails Scheduled: <span x-text="importResult && importResult.summary ? importResult.summary.account_setup_emails_scheduled : 0"></span>
@@ -249,9 +252,9 @@
                             <p x-text="importResult && importResult.message ? importResult.message : 'An unknown error occurred'" class="text-sm mt-1"></p>
                         </div>
                         
-                        <!-- Duplicate Comparison Details -->
-                        <div x-show="importResult && importResult.summary && importResult.summary.errors && importResult.summary.errors.length > 0" class="mt-4 max-h-60 overflow-y-auto">
-                            <template x-for="(error, index) in (importResult && importResult.summary && importResult.summary.errors ? importResult.summary.errors : [])" :key="index">
+                        <!-- Skip / error details -->
+                        <div x-show="importResult && importResult.summary && ((importResult.summary.skipped && importResult.summary.skipped.length) || (importResult.summary.errors && importResult.summary.errors.length))" class="mt-4 max-h-60 overflow-y-auto">
+                            <template x-for="(error, index) in (importResult?.summary?.skipped || []).concat(importResult?.summary?.errors || [])" :key="index">
                                 <div>
                                     {{-- Duplicate rows: show the field-by-field comparison. Optional
                                          chaining throughout, because only duplicate errors carry a
@@ -426,6 +429,7 @@
                                 // this modal can display — instead of an HTML
                                 // page that reads only as "invalid response".
                                 'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
                             },
                         });
 

@@ -326,32 +326,34 @@ final class GuestManagementController extends Controller
     {
         Gate::authorize('viewAnyGuests', [\App\Models\Member::class]);
 
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
-        ]);
-
-        $user = auth()->user();
-
-        // Determine branch ID for non-super-admin users
-        $branchId = null;
-        if (! $user->isSuperAdmin()) {
-            $branchId = $user->getPrimaryBranch()?->id;
-        } else {
-            // For super admin, require branch_id in request
-            $request->validate([
-                'branch_id' => 'required|integer|exists:branches,id',
-            ]);
-            $branchId = $request->get('branch_id');
-        }
-
-        if (! $branchId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Branch ID is required for guest import.',
-            ], 422);
-        }
-
         try {
+            // extensions: trusts the client filename (macOS CSVs often arrive as text/plain,
+            // which breaks mimes:csv). txt is allowed only in mimes as a fallback for that MIME.
+            $request->validate([
+                'file' => 'required|file|extensions:xlsx,xls,csv|mimes:xlsx,xls,csv,txt|max:10240',
+            ]);
+
+            $user = auth()->user();
+
+            // Determine branch ID for non-super-admin users
+            $branchId = null;
+            if (! $user->isSuperAdmin()) {
+                $branchId = $user->getPrimaryBranch()?->id;
+            } else {
+                // For super admin, require branch_id in request
+                $request->validate([
+                    'branch_id' => 'required|integer|exists:branches,id',
+                ]);
+                $branchId = $request->get('branch_id');
+            }
+
+            if (! $branchId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Branch ID is required for guest import.',
+                ], 422);
+            }
+
             $result = $this->guestManagementService->importGuests(
                 $request->file('file'),
                 $branchId
@@ -359,13 +361,13 @@ final class GuestManagementController extends Controller
 
             $statusCode = $result['success'] ? 200 : 422;
 
-            return response()->json($result, $statusCode);
+            return response()->json($result, $statusCode, [], JSON_INVALID_UTF8_SUBSTITUTE);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => collect($e->errors())->flatten()->first() ?? 'Validation failed',
                 'errors' => $e->errors(),
-            ], 422);
+            ], 422, [], JSON_INVALID_UTF8_SUBSTITUTE);
         } catch (\Exception $e) {
             \Log::error('Guest import API error', [
                 'error' => $e->getMessage(),
@@ -376,7 +378,7 @@ final class GuestManagementController extends Controller
                 'success' => false,
                 'message' => 'An error occurred during import: '.$e->getMessage(),
                 'errors' => ['system' => 'Import operation failed'],
-            ], 500);
+            ], 500, [], JSON_INVALID_UTF8_SUBSTITUTE);
         }
     }
 

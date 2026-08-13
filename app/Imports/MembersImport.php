@@ -27,11 +27,15 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
 
     private array $errors = [];
 
+    private array $skipped = [];
+
     private array $successes = [];
 
     private int $successCount = 0;
 
     private int $failureCount = 0;
+
+    private int $skippedCount = 0;
 
     private array $usersForAccountSetup = [];
 
@@ -113,26 +117,17 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             return;
         }
 
-        // Check if member already exists (by email if provided, otherwise by name and phone)
-        $existingMember = null;
-
-        if (! empty($data['email'])) {
-            $existingMember = Member::where('email', $data['email'])->first();
-        } elseif (! empty($data['phone'])) {
-            $existingMember = Member::where('name', $data['name'])
-                ->where('phone', $data['phone'])
-                ->first();
-        }
+        // Check if member already exists (email, phone alone, or name+phone)
+        $existingMember = $this->findExistingMember($data);
 
         if ($existingMember) {
-            $identifier = $data['email'] ?? $data['name'];
+            $identifier = $data['email'] ?? ($data['phone'] ?? $data['name']);
             $comparison = $this->compareMemberData($existingMember, $data);
-            $this->addError($rowNumber, 'duplicate', [
+            $this->addSkipped($rowNumber, 'duplicate', [
                 'message' => "Member already exists: {$identifier}",
                 'comparison' => $comparison,
                 'existing_id' => $existingMember->id,
             ]);
-            $this->failureCount++;
 
             return;
         }
@@ -418,15 +413,21 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             }
         }
 
-        if ($dobValue && is_string($dobValue)) {
+        if ($dobValue !== null && $dobValue !== '') {
+            // Excel may send serial numbers as int/float
+            if (is_numeric($dobValue) && ! is_string($dobValue)) {
+                $dobValue = (string) $dobValue;
+            } elseif (! is_string($dobValue)) {
+                $dobValue = (string) $dobValue;
+            }
+
             $dateValue = trim($dobValue);
-            if (! empty($dateValue)) {
+            if ($dateValue !== '') {
                 $birthdayData = $this->parseBirthDate($dateValue);
                 $cleanData['date_of_birth'] = $birthdayData['date'];
                 $cleanData['birthday_month'] = $birthdayData['month'];
                 $cleanData['birthday_day'] = $birthdayData['day'];
             } else {
-                // Ensure null values are set explicitly
                 $cleanData['date_of_birth'] = null;
                 $cleanData['birthday_month'] = null;
                 $cleanData['birthday_day'] = null;
@@ -485,34 +486,86 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
 
     /**
      * Format phone number to Nigerian format (09068719246).
+     * Caps length for users.phone varchar(20); splits concatenated numbers.
      */
     private function formatPhoneNumber(mixed $phone): string
     {
-        // Convert to string and trim (Excel may provide numeric values)
+        // Excel float / scientific notation
+        if (is_float($phone) || (is_numeric($phone) && ! is_string($phone))) {
+            $phone = sprintf('%.0f', (float) $phone);
+        }
+
         $phone = trim((string) $phone);
 
         // Remove all non-numeric characters except +
-        $phone = preg_replace('/[^\d+]/', '', $phone);
+        $phone = preg_replace('/[^\d+]/', '', $phone) ?? '';
 
         // Handle different formats
         if (str_starts_with($phone, '+234')) {
-            // Convert +2349068719246 to 09068719246
             $phone = '0'.substr($phone, 4);
-        } elseif (str_starts_with($phone, '234')) {
-            // Convert 2349068719246 to 09068719246
+        } elseif (str_starts_with($phone, '234') && strlen($phone) >= 13) {
             $phone = '0'.substr($phone, 3);
         } elseif (! str_starts_with($phone, '0') && strlen($phone) === 10) {
-            // If it's 10 digits without leading 0, add 0
             $phone = '0'.$phone;
         }
 
-        // Ensure it starts with 0 and has 11 digits (Nigerian format)
-        if (str_starts_with($phone, '0') && strlen($phone) === 11) {
-            return $phone;
+        // Digits only for length checks
+        $digits = preg_replace('/\D/', '', $phone) ?? '';
+
+        // Concatenated Nigerian phones (e.g. 0803…0701…): take first 0[789]XXXXXXXXX
+        if (strlen($digits) > 11) {
+            if (preg_match('/0[789]\d{9}/', $digits, $matches)) {
+                $phone = $matches[0];
+            } else {
+                $phone = substr($digits, 0, 11);
+            }
+            $digits = preg_replace('/\D/', '', $phone) ?? '';
         }
 
-        // If format is still invalid, return as-is (validation will catch it)
-        return $phone;
+        // Ensure it starts with 0 and has 11 digits (Nigerian format)
+        if (str_starts_with($phone, '0') && strlen($digits) === 11) {
+            return $digits;
+        }
+
+        // Cap for DB (users.phone is varchar(20)); null-out useless junk
+        if (strlen($digits) > 20) {
+            return substr($digits, 0, 20);
+        }
+
+        return $digits !== '' ? $digits : $phone;
+    }
+
+    /**
+     * Find an existing member by email, then phone, then name+phone.
+     */
+    private function findExistingMember(array $data): ?Member
+    {
+        if (! empty($data['email'])) {
+            $member = Member::query()
+                ->whereRaw('LOWER(email) = ?', [strtolower((string) $data['email'])])
+                ->first();
+            if ($member) {
+                return $member;
+            }
+        }
+
+        if (! empty($data['phone'])) {
+            $byPhone = Member::query()
+                ->where('phone', $data['phone'])
+                ->first();
+            if ($byPhone) {
+                return $byPhone;
+            }
+
+            if (! empty($data['name'])) {
+                return Member::query()
+                    ->where('name', $data['name'])
+                    ->where('phone', $data['phone'])
+                    ->first();
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -530,7 +583,7 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
     }
 
     /**
-     * Parse birthdate with special handling for partial dates (day/month without year).
+     * Parse birthdate with special handling for Excel serials and partial dates.
      * Returns array with 'date' (full date or null) and 'month'/'day' (extracted values).
      */
     private function parseBirthDate(string $dateString): array
@@ -543,8 +596,29 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
         ];
 
         // Return early if empty
-        if (empty($dateString)) {
+        if ($dateString === '') {
             return $result;
+        }
+
+        // Excel serial day number (e.g. 36533 ≈ 2000-01-12)
+        if (preg_match('/^\d{4,6}(\.\d+)?$/', $dateString)) {
+            $serial = (float) $dateString;
+            if ($serial >= 1 && $serial < 100000) {
+                try {
+                    // Excel epoch: 1899-12-30 (accounts for Excel's 1900 leap bug convention)
+                    $date = \Carbon\Carbon::create(1899, 12, 30)->addDays((int) $serial);
+
+                    if (! $date->isFuture() && $date->gte(now()->subYears(120))) {
+                        $result['date'] = $date->format('Y-m-d');
+                        $result['month'] = (int) $date->format('n');
+                        $result['day'] = (int) $date->format('j');
+
+                        return $result;
+                    }
+                } catch (\Exception $e) {
+                    // fall through to other parsers
+                }
+            }
         }
 
         // Check if it's a partial date (only day/month format like "26/09" or "13/11")
@@ -691,7 +765,7 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             'first_name' => 'nullable|string|max:255',
             'last_name' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
+            'phone' => 'nullable|string|max:20',
             'date_of_birth' => 'nullable|date',
             'anniversary' => 'nullable|date',
             'gender' => 'nullable|in:male,female,prefer-not-to-say',
@@ -754,7 +828,7 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $email,
-                'phone' => $data['phone'] ?? null,
+                'phone' => isset($data['phone']) ? substr((string) $data['phone'], 0, 20) : null,
                 'password' => Hash::make($password),
                 'email_verified_at' => now(), // Auto-verify church members
             ]);
@@ -896,6 +970,13 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
                 }
             }
 
+            if ($existingValue instanceof \DateTimeInterface) {
+                $existingValue = $existingValue->format('Y-m-d');
+            }
+            if ($importedValue instanceof \DateTimeInterface) {
+                $importedValue = $importedValue->format('Y-m-d');
+            }
+
             if ($existingValue == $importedValue) {
                 $comparison['matches'][] = [
                     'field' => $field,
@@ -930,6 +1011,26 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
                 'message' => $message,
             ];
         }
+    }
+
+    /**
+     * Soft skip (duplicates) — not counted as import failures.
+     */
+    private function addSkipped(int $row, string $type, string|array $message): void
+    {
+        if (is_array($message)) {
+            $this->skipped[] = array_merge([
+                'row' => $row,
+                'type' => $type,
+            ], $message);
+        } else {
+            $this->skipped[] = [
+                'row' => $row,
+                'type' => $type,
+                'message' => $message,
+            ];
+        }
+        $this->skippedCount++;
     }
 
     /**
@@ -1032,12 +1133,15 @@ final class MembersImport implements SkipsOnFailure, ToCollection, WithBatchInse
     public function getImportSummary(): array
     {
         return [
-            'total_processed' => count($this->successes) + count($this->errors),
+            'total_processed' => count($this->successes) + count($this->errors) + count($this->skipped),
             'successful_imports' => count($this->successes),
             'failed_imports' => count($this->errors),
-            'success_rate' => count($this->successes) > 0 ?
-                round((count($this->successes) / (count($this->successes) + count($this->errors))) * 100, 2) : 0,
+            'skipped_duplicates' => count($this->skipped),
+            'success_rate' => (count($this->successes) + count($this->errors) + count($this->skipped)) > 0
+                ? round((count($this->successes) / (count($this->successes) + count($this->errors) + count($this->skipped))) * 100, 2)
+                : 0,
             'errors' => $this->errors,
+            'skipped' => $this->skipped,
             'successes' => $this->successes,
             'account_setup_emails_scheduled' => count($this->usersForAccountSetup),
         ];

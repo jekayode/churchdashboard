@@ -75,16 +75,35 @@ final class ImportExportService
                 'account_setup_emails_scheduled' => $summary['account_setup_emails_scheduled'] ?? 0,
             ]);
 
-            // Determine success based on whether there were any failures
-            $success = $summary['failed_imports'] === 0;
-            $message = $success
-                ? 'Import completed successfully'
-                : "Import completed with {$summary['failed_imports']} errors out of {$summary['total_processed']} total rows";
+            $skippedDuplicates = (int) ($summary['skipped_duplicates'] ?? 0);
 
-            // Format error details for frontend display
+            // Hard errors only — skipped duplicates are not failures
+            $success = $summary['failed_imports'] === 0;
+            $parts = [];
+            if ($summary['successful_imports'] > 0) {
+                $parts[] = "imported {$summary['successful_imports']}";
+            }
+            if ($skippedDuplicates > 0) {
+                $parts[] = "skipped {$skippedDuplicates} duplicates";
+            }
+            if ($summary['failed_imports'] > 0) {
+                $parts[] = "{$summary['failed_imports']} errors";
+            }
+
+            $message = $success
+                ? (count($parts) > 0
+                    ? 'Import completed: '.implode(', ', $parts)
+                    : 'Import completed successfully')
+                : 'Import completed with '.implode(', ', $parts);
+
+            // Format error/skip details for frontend display
             $details = null;
-            if (! $success && isset($summary['errors']) && count($summary['errors']) > 0) {
-                $details = $this->formatErrorDetails($summary['errors']);
+            $detailRows = array_merge(
+                $summary['skipped'] ?? [],
+                $summary['errors'] ?? []
+            );
+            if (count($detailRows) > 0) {
+                $details = $this->formatErrorDetails($detailRows);
             }
 
             return [

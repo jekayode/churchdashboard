@@ -69,7 +69,7 @@ final class ImportExportController extends Controller
 
             // Validate request
             $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+                'file' => 'required|file|extensions:xlsx,xls,csv|mimes:xlsx,xls,csv,txt|max:10240',
                 'branch_id' => 'required|integer|exists:branches,id',
             ]);
 
@@ -217,7 +217,7 @@ final class ImportExportController extends Controller
 
             // Validate request
             $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+                'file' => 'required|file|extensions:xlsx,xls,csv|mimes:xlsx,xls,csv,txt|max:10240',
                 'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
@@ -272,7 +272,7 @@ final class ImportExportController extends Controller
 
             // Validate request
             $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+                'file' => 'required|file|extensions:xlsx,xls,csv|mimes:xlsx,xls,csv,txt|max:10240',
                 'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
@@ -327,7 +327,7 @@ final class ImportExportController extends Controller
 
             // Validate request
             $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+                'file' => 'required|file|extensions:xlsx,xls,csv|mimes:xlsx,xls,csv,txt|max:10240',
                 'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
@@ -382,7 +382,7 @@ final class ImportExportController extends Controller
 
             // Validate request
             $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+                'file' => 'required|file|extensions:xlsx,xls,csv|mimes:xlsx,xls,csv,txt|max:10240',
                 'branch_id' => 'nullable|integer|exists:branches,id',
             ]);
 
@@ -786,7 +786,7 @@ final class ImportExportController extends Controller
 
             // Validate request
             $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // 10MB max
+                'file' => 'required|file|extensions:xlsx,xls,csv|mimes:xlsx,xls,csv,txt|max:10240',
             ]);
 
             $result = $this->importExportService->validateImportFile($request->file('file'));
