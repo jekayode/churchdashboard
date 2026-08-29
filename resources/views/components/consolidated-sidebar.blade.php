@@ -64,6 +64,7 @@
                 <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 transform scale-95" x-transition:enter-end="opacity-100 transform scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 transform scale-100" x-transition:leave-end="opacity-0 transform scale-95" class="ml-8 mt-2 space-y-1">
                     <a href="{{ route('pastor.members') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">All Members</a>
                     <a href="{{ route('guests.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('guests.*') ? 'bg-church-50 text-church-700' : '' }}">Guest Management</a>
+                    <a href="{{ route('workforce-drive.admin.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('workforce-drive.admin.*') ? 'bg-church-50 text-church-700' : '' }}">Workforce Drive</a>
                     <a href="{{ route('pastor.import-export') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700">Import Members</a>
                     @if($canAssignUserRoles)
                         <a href="{{ route('pastor.users') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.users') ? 'bg-church-50 text-church-700' : '' }}">User Roles</a>
@@ -229,6 +230,7 @@
                     <a href="{{ route('pastor.series') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.series*') ? 'bg-church-50 text-church-700' : '' }}">Sermon Series</a>
                     <a href="{{ route('pastor.reading-plans') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.reading-plans*') ? 'bg-church-50 text-church-700' : '' }}">Reading Plans</a>
                     <a href="{{ route('pastor.quizzes') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.quizzes*') ? 'bg-church-50 text-church-700' : '' }}">Quizzes</a>
+                    <a href="{{ route('workforce-drive.admin.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('workforce-drive.admin.*') ? 'bg-church-50 text-church-700' : '' }}">Workforce Drive</a>
                     <a href="{{ route('pastor.coverage-locations') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('pastor.coverage-locations*') ? 'bg-church-50 text-church-700' : '' }}">Coverage Locations</a>
                 </div>
             </div>
@@ -368,6 +370,7 @@
                     @if($canManageGuests)
                         <a href="{{ route('guests.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('guests.*') ? 'bg-church-50 text-church-700' : '' }}">Guest Management</a>
                     @endif
+                    <a href="{{ route('workforce-drive.admin.index') }}" class="block px-4 py-2 text-sm text-gray-600 rounded-lg hover:bg-church-50 hover:text-church-700 {{ request()->routeIs('workforce-drive.admin.*') ? 'bg-church-50 text-church-700' : '' }}">Workforce Drive</a>
                 </div>
             </div>
 

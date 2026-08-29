@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'workforce_drive' => [
+        // WhatsApp group people are invited to after joining a team.
+        'whatsapp_url' => env('WORKFORCE_DRIVE_WHATSAPP_URL', 'https://chat.whatsapp.com/LcrXGHTjk4mICOCo6CGJtM?s=cl&p=a&mlu=4'),
+    ],
+
 ];

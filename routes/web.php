@@ -16,6 +16,7 @@ use App\Http\Controllers\Quiz\WebPlayerController as QuizWebPlayerController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\WorkforceDriveController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -646,3 +647,25 @@ Route::get('/quiz/{code}/screen', [QuizScreenController::class, 'show'])->name('
 Route::get('/quiz/{code}/screen/state', [QuizScreenController::class, 'state'])
     ->middleware('throttle:quiz-state')
     ->name('quiz.screen.state');
+
+/*
+ * Workforce Drive — public, no auth. People open the join form on their phones
+ * (or scan the QR off the projector), and the leaderboard is opened on whatever
+ * machine drives the screen. The state endpoint is polled, so it is throttled.
+ */
+Route::get('/workforce-drive', [WorkforceDriveController::class, 'join'])->name('workforce-drive.join');
+Route::post('/workforce-drive', [WorkforceDriveController::class, 'store'])->name('workforce-drive.store');
+Route::get('/workforce-drive/joined', [WorkforceDriveController::class, 'joined'])->name('workforce-drive.joined');
+Route::get('/workforce-drive/leaderboard', [WorkforceDriveController::class, 'leaderboard'])->name('workforce-drive.leaderboard');
+Route::get('/workforce-drive/leaderboard/state', [WorkforceDriveController::class, 'leaderboardState'])
+    ->middleware('throttle:60,1')
+    ->name('workforce-drive.leaderboard.state');
+
+/* Workforce Drive admin — leadership views/exports the registrations. */
+Route::middleware(['auth', 'verified', 'role:super_admin,branch_pastor,ministry_leader'])
+    ->prefix('workforce-drive-admin')
+    ->name('workforce-drive.admin.')
+    ->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\WorkforceDriveAdminController::class, 'index'])->name('index');
+        Route::get('/export', [App\Http\Controllers\Admin\WorkforceDriveAdminController::class, 'export'])->name('export');
+    });
