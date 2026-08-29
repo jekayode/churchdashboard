@@ -44,6 +44,7 @@ final class DatabaseSeeder extends Seeder
             EventSeeder::class,
             ExpenseSeeder::class,
             ProjectionSeeder::class,
+            WorkforceDriveTeamSeeder::class,
         ]);
 
         // Assign super admin role to the admin user
