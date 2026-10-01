@@ -45,6 +45,12 @@
         .alt .code-label { font-size: 2vh; letter-spacing: .3vh; text-transform: uppercase; color: var(--muted); }
         .alt .code { font-size: 13vh; font-weight: 800; letter-spacing: 1.2vh; line-height: 1.05; font-variant-numeric: tabular-nums; }
 
+        /* Independence: the QR sits between two green panels, like the flag. */
+        .flag-band { position: fixed; top: 0; left: 0; }
+        .theme-nigeria .qr { box-shadow: -6vh 0 0 0 #008751, 6vh 0 0 0 #008751; }
+        .theme-nigeria .split { gap: 10vw; }
+        .occasion { font-size: 3vh; font-weight: 800; color: #00A862; margin-bottom: 1vh; }
+
         .foot { margin-top: 3vh; font-size: 2.4vh; color: var(--muted); }
 
         /* Everything is sized in vh so the layout holds on a cinema screen,
@@ -55,7 +61,11 @@
         }
     </style>
 </head>
-<body>
+<body class="theme-{{ $quiz->theme->value }}">
+    @include('quiz.partials.flag-band')
+    @if ($quiz->theme === \App\Enums\QuizTheme::Nigeria)
+        <div class="occasion">Happy Independence · Nigeria @ {{ now()->year - 1960 }}</div>
+    @endif
     <div class="kicker">{{ $quiz->title }}</div>
     <h1>Join the quiz</h1>
 

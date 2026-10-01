@@ -96,6 +96,47 @@ final class QuizPagesRenderTest extends TestCase
             ->assertSee('\u003Csvg', escape: false);
     }
 
+    public function test_the_independence_theme_dresses_the_screen_slide_and_phones(): void
+    {
+        $quiz = $this->quizFor($this->pastor(), 'lobby');
+        $quiz->update(['theme' => 'nigeria']);
+
+        foreach (['/quiz/QZ4KM/screen', '/quiz/QZ4KM/join', '/quiz/QZ4KM'] as $page) {
+            $this->get($page)
+                ->assertOk()
+                ->assertSee('class="theme-nigeria"', false)
+                ->assertSee('class="flag-band"', false);
+        }
+
+        $this->get('/quiz/QZ4KM/join')->assertSee('Happy Independence · Nigeria @ '.(now()->year - 1960));
+        $this->get('/quiz/QZ4KM/screen')->assertSee('Happy Independence');
+    }
+
+    public function test_a_standard_quiz_has_no_flag(): void
+    {
+        $this->quizFor($this->pastor(), 'lobby');
+
+        foreach (['/quiz/QZ4KM/screen', '/quiz/QZ4KM/join', '/quiz/QZ4KM'] as $page) {
+            $this->get($page)
+                ->assertOk()
+                ->assertSee('class="theme-standard"', false)
+                ->assertDontSee('class="flag-band"', false)
+                ->assertDontSee('Happy Independence');
+        }
+    }
+
+    public function test_the_finish_carries_its_medals_and_confetti_on_screen_and_phone(): void
+    {
+        $this->quizFor($this->pastor(), 'lobby');
+
+        foreach (['/quiz/QZ4KM/screen', '/quiz/QZ4KM'] as $page) {
+            $this->get($page)
+                ->assertSee('window.quizCelebration', false)
+                ->assertSee('celebrate.medal(', false)
+                ->assertSee('celebrate.confetti(', false);
+        }
+    }
+
     public function test_an_unknown_code_on_the_projector_is_a_404_not_a_crash(): void
     {
         $this->get('/quiz/NOPE1/screen')->assertNotFound();

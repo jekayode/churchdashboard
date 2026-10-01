@@ -110,11 +110,38 @@
            heading and so never actually landed on the winner. */
         .row.winner { background: rgba(232,84,30,.28); font-size: 2.9vw; padding: 1.4vw 2vw; }
 
+        /* The finish. Places are revealed from fifth up to first, then the
+           winner's medal drops in. */
+        .row { transition: opacity .5s ease, transform .5s ease; }
+        .row.pending { opacity: 0; transform: translateY(1.5vw); }
+        .row .rank { display: flex; align-items: center; justify-content: center; min-width: 3.5vw; }
+        .medal { width: 3.2vw; height: auto; display: block; }
+        .row.winner .medal { width: 4.4vw; filter: drop-shadow(0 0 1vw rgba(245,197,66,.55)); }
+        .row.winner:not(.pending) .medal { animation: medal-drop .9s cubic-bezier(.3, 1.5, .5, 1) both; }
+        @keyframes medal-drop {
+            from { transform: translateY(-30vh) rotate(-25deg); opacity: 0; }
+            to { transform: none; opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .row, .row.pending { transition: none; opacity: 1; transform: none; }
+            .row.winner .medal { animation: none !important; }
+        }
+
+        /* Independence: green carries the accents. The four answer colours
+           stay as they are — people pick by colour, and an all-green or a
+           white tile would read as "this is the right one". */
+        body.theme-nigeria { --brand: #00A862; }
+        .theme-nigeria .row.winner { background: rgba(0,135,81,.32); }
+        .theme-nigeria .qr { box-shadow: -5vh 0 0 0 #008751, 5vh 0 0 0 #008751; }
+        .occasion { font-size: 4.2vh; font-weight: 800; margin-bottom: 3vh; letter-spacing: .1vh; }
+        .occasion span { color: var(--brand); }
+
         .paused { position: fixed; inset: 0; background: rgba(11,11,15,.92); display: flex; align-items: center; justify-content: center; font-size: 6vw; font-weight: 800; }
         .hidden { display: none !important; }
     </style>
 </head>
-<body>
+<body class="theme-{{ $quiz->theme->value }}">
+    @include('quiz.partials.flag-band')
     <div class="bar">
         <span>{{ $quiz->title }}</span>
         <span id="bar-right"></span>
@@ -123,8 +150,12 @@
     <div class="stage" id="stage"></div>
     <div class="paused hidden" id="paused">Paused</div>
 
+@include('quiz.partials.celebration')
 <script>
 (function () {
+    const OCCASION = @json($quiz->theme === \App\Enums\QuizTheme::Nigeria
+        ? 'Happy Independence · Nigeria @ '.(now()->year - 1960)
+        : null);
     const stateUrl = @json(route('quiz.screen.state', ['code' => $quiz->code]));
     const QR_SVG = @json($qr);
     const JOIN_URL = @json($joinUrl);
@@ -145,6 +176,7 @@
 
     function renderLobby(data) {
         stage.innerHTML = `
+            ${OCCASION ? `<div class="occasion">${escape(OCCASION).replace('Nigeria', '<span>Nigeria</span>')}</div>` : ''}
             <div class="lobby">
                 <div class="qr">${QR_SVG}</div>
                 <div>
@@ -193,15 +225,34 @@
             ${fact}${timer}${strip}`;
     }
 
+    let finaleTimers = [];
+
     function renderFinished(data) {
+        finaleTimers.forEach(clearTimeout);
+        finaleTimers = [];
+
+        const celebrate = window.quizCelebration;
+        const staged = !celebrate.reducedMotion;
+
         const rows = data.leaderboard.slice(0, 5).map((p) => `
-            <div class="row${p.rank === 1 ? ' winner' : ''}">
-                <span class="rank">${p.rank}</span>
+            <div class="row${p.rank === 1 ? ' winner' : ''}${staged ? ' pending' : ''}">
+                <span class="rank">${p.rank <= 3 ? celebrate.medal(p.rank) : p.rank}</span>
                 <span class="name">${escape(p.name)}</span>
                 <span class="score">${p.score.toLocaleString()}</span>
             </div>`).join('');
 
         stage.innerHTML = `<div class="board"><h2>Final scores</h2>${rows || '<p>No players</p>'}</div>`;
+
+        if (!rows) return;
+
+        // Fifth place first, the winner last: the room counts up to it.
+        const pending = [...stage.querySelectorAll('.row')].reverse();
+        pending.forEach((row, i) => {
+            finaleTimers.push(setTimeout(() => {
+                row.classList.remove('pending');
+                if (i === pending.length - 1) celebrate.confetti();
+            }, staged ? 900 + i * 1300 : 0));
+        });
     }
 
     function paint(data) {

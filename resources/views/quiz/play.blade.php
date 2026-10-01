@@ -105,9 +105,24 @@
         .cta p { font-size: 15px; color: var(--sub); line-height: 1.5; }
         .hidden { display: none !important; }
         main { flex: 1; }
+
+        /* The flag band sits flush with the top edge, outside the page padding. */
+        .flag-band { margin: 0 -16px; width: calc(100% + 32px) !important; height: 6px !important; }
+        .theme-nigeria .fact { border-left-color: #008751; background: rgba(0,135,81,.08); }
+
+        .row .r { display: flex; align-items: center; }
+        .medal { width: 22px; height: auto; display: block; }
+        .podium { display: flex; justify-content: center; margin-bottom: 8px; }
+        .podium .medal { width: 64px; animation: medal-drop .9s cubic-bezier(.3, 1.5, .5, 1) both; }
+        @keyframes medal-drop {
+            from { transform: translateY(-120px) rotate(-25deg); opacity: 0; }
+            to { transform: none; opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) { .podium .medal { animation: none; } }
     </style>
 </head>
-<body>
+<body class="theme-{{ $quiz->theme->value }}">
+    @include('quiz.partials.flag-band')
     <div class="head">
         <h1>{{ $quiz->title }}</h1>
         <span class="code">{{ $quiz->code }}</span>
@@ -117,6 +132,7 @@
         <div class="card centre"><p class="sub">Loading…</p></div>
     </main>
 
+@include('quiz.partials.celebration')
 <script>
 (function () {
     const CODE = @json($quiz->code);
@@ -312,16 +328,21 @@
         });
     }
 
+    let celebrated = false;
+
     function renderFinished() {
+        const celebrate = window.quizCelebration;
         const rows = state.leaderboard.slice(0, 5).map((p) => `
             <div class="row ${state.me && p.participant_id === state.me.participant_id ? 'mine' : ''}">
-                <span class="r">${p.rank}</span><span class="n">${esc(p.name)}</span>
+                <span class="r">${p.rank <= 3 ? celebrate.medal(p.rank) : p.rank}</span><span class="n">${esc(p.name)}</span>
                 <span class="s">${p.score.toLocaleString()}</span>
             </div>`).join('');
 
+        const onPodium = state.me && state.me.rank <= 3;
         const mine = state.me ? `
             <div class="card centre">
-                <p class="big">That’s the lot</p>
+                ${onPodium ? `<div class="podium">${celebrate.medal(state.me.rank)}</div>` : ''}
+                <p class="big">${onPodium ? `You came ${ordinal(state.me.rank)}!` : 'That’s the lot'}</p>
                 <p class="sub">You finished ${ordinal(state.me.rank)} of ${state.participant_count},
                    with ${state.me.score.toLocaleString()} points from ${state.me.correct_count} correct.</p>
             </div>` : '';
@@ -335,6 +356,12 @@
                    Get the LifePointe app and your history follows you — plus your
                    notes, the daily reading and what’s on this week.</p>
             </div>`;
+
+        // Once per visit: this re-renders whenever the poll changes anything.
+        if (!celebrated) {
+            celebrated = true;
+            celebrate.confetti({ burst: 50, cap: 120, rainMs: 4000, onLight: true });
+        }
     }
 
     function paint() {

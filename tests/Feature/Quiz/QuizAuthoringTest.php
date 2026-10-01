@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Quiz;
 
+use App\Enums\QuizTheme;
 use App\Models\Branch;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
@@ -69,6 +70,49 @@ final class QuizAuthoringTest extends TestCase
         // Issued at creation, so the projector link can be handed to the
         // multimedia team well before the day rather than minutes before.
         $this->assertNotNull($quiz->code);
+    }
+
+    public function test_a_quiz_is_standard_unless_a_theme_is_chosen(): void
+    {
+        $pastor = $this->pastor();
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.store'), [
+            'title' => 'Plain quiz',
+            'seconds_per_question' => 20,
+            'reveal_seconds' => 6,
+            'base_points' => 1000,
+        ]);
+
+        $this->assertSame(QuizTheme::Standard, Quiz::firstWhere('title', 'Plain quiz')->theme);
+    }
+
+    public function test_the_independence_theme_can_be_chosen(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)->put(route('pastor.quizzes.update', $quiz), [
+            'title' => $quiz->title,
+            'seconds_per_question' => 20,
+            'reveal_seconds' => 20,
+            'base_points' => 1000,
+            'theme' => 'nigeria',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(QuizTheme::Nigeria, $quiz->fresh()->theme);
+    }
+
+    public function test_an_unknown_theme_is_rejected(): void
+    {
+        $pastor = $this->pastor();
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.store'), [
+            'title' => 'Odd quiz',
+            'seconds_per_question' => 20,
+            'reveal_seconds' => 6,
+            'base_points' => 1000,
+            'theme' => 'neon',
+        ])->assertSessionHasErrors('theme');
     }
 
     public function test_the_projector_link_works_before_the_quiz_is_opened(): void
