@@ -8,6 +8,11 @@
     <meta name="theme-color" content="#DD5D20">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $quiz->title }}</title>
+    {{-- Noto draws stacked tone marks (ọ́, n̄, ô) cleanly where some phone
+         fonts do not. If it cannot load, the system stack still renders. --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&display=swap">
     <style>
         :root {
             --brand: #DD5D20; --amber: #F79000;
@@ -19,7 +24,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
             background: var(--bg); color: var(--ink); min-height: 100dvh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 20px);
             display: flex; flex-direction: column;
         }
@@ -70,6 +75,8 @@
 
         .verdict { text-align: center; margin-top: 16px; font-size: 17px; font-weight: 700; }
         .verdict.good { color: var(--good); } .verdict.bad { color: var(--bad); }
+        .fact { margin-top: 12px; padding: 12px 14px; border-radius: 12px; border-left: 4px solid var(--brand);
+                background: rgba(221, 93, 32, .08); font-size: 15px; line-height: 1.5; color: var(--ink); }
 
         label { display: block; font-size: 14px; font-weight: 600; color: var(--sub); margin-bottom: 8px; }
         input[type=text] {
@@ -278,7 +285,7 @@
                 : state.me.answer_was_correct
                     ? `<p class="verdict good">Correct — ${(state.me.points_from_answer || 0).toLocaleString()} points</p>`
                     : '<p class="verdict bad">Not that one.</p>';
-            footer = verdict;
+            footer = verdict + (q.reveal_note ? `<p class="fact">${esc(q.reveal_note)}</p>` : '');
         } else if (answered !== null && state.me) {
             /* The wait cannot be skipped: everyone has to start the next
                question together or answering quickly stops being worth

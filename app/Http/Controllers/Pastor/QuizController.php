@@ -98,6 +98,7 @@ final class QuizController extends Controller
             // correct answer as an index rather than a flag on the option.
             'existing' => $questions->map(fn (QuizQuestion $question): array => [
                 'text' => $question->text,
+                'reveal_note' => $question->reveal_note,
                 'time_limit_seconds' => $question->time_limit_seconds,
                 'points' => $question->points,
                 'correct' => (int) $question->options->search(fn ($option): bool => (bool) $option->is_correct) ?: 0,
@@ -127,6 +128,7 @@ final class QuizController extends Controller
                     'quiz_id' => $quiz->id,
                     'position' => $position + 1,
                     'text' => $input['text'],
+                    'reveal_note' => filled($input['reveal_note'] ?? null) ? $input['reveal_note'] : null,
                     'time_limit_seconds' => $input['time_limit_seconds'] ?? null,
                     'points' => $input['points'] ?? null,
                 ]);
@@ -190,6 +192,7 @@ final class QuizController extends Controller
                     'quiz_id' => $quiz->id,
                     'position' => $position + 1,
                     'text' => $input['text'],
+                    'reveal_note' => $input['reveal_note'],
                 ]);
 
                 foreach ($input['options'] as $index => $option) {

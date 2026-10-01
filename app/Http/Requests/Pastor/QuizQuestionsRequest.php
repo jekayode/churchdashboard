@@ -23,6 +23,7 @@ final class QuizQuestionsRequest extends FormRequest
             'questions' => ['present', 'array', 'max:50'],
             'questions.*.id' => ['nullable', 'integer'],
             'questions.*.text' => ['required', 'string', 'max:500'],
+            'questions.*.reveal_note' => ['nullable', 'string', 'max:400'],
             'questions.*.time_limit_seconds' => ['nullable', 'integer', 'min:5', 'max:120'],
             'questions.*.points' => ['nullable', 'integer', 'min:100', 'max:5000'],
             // Two options is the minimum that is still a question; four is all
@@ -59,6 +60,7 @@ final class QuizQuestionsRequest extends FormRequest
         return [
             'questions.*.text.required' => 'Every question needs its wording.',
             'questions.*.options.min' => 'A question needs at least two answers.',
+            'questions.*.reveal_note.max' => 'Keep the fact under 400 characters so it can be read on the screen.',
         ];
     }
 }

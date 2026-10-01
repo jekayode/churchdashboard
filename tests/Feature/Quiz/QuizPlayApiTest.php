@@ -138,6 +138,30 @@ final class QuizPlayApiTest extends TestCase
         Carbon::setTestNow();
     }
 
+    public function test_the_fact_waits_for_the_reveal(): void
+    {
+        $quiz = $this->quiz('running');
+        $quiz->questions->first()->update(['reveal_note' => 'Aôndo also means sky.']);
+        $join = $this->postJson('/api/quiz/join', ['code' => 'QZ4KM', 'name' => 'Tobi']);
+        $token = $join->json('device_token');
+
+        $this->assertNull(
+            $this->getJson('/quiz/QZ4KM/screen/state')->json('question.reveal_note'),
+            'The fact names the answer, so it cannot show while the question is open',
+        );
+        $this->assertNull($this->getJson('/api/quiz/QZ4KM/state?device_token='.$token)->json('question.reveal_note'));
+
+        Carbon::setTestNow($quiz->started_at->copy()->addSeconds(11));
+
+        $this->getJson('/quiz/QZ4KM/screen/state')
+            ->assertJsonPath('state.phase', 'reveal')
+            ->assertJsonPath('question.reveal_note', 'Aôndo also means sky.');
+        $this->getJson('/api/quiz/QZ4KM/state?device_token='.$token)
+            ->assertJsonPath('question.reveal_note', 'Aôndo also means sky.');
+
+        Carbon::setTestNow();
+    }
+
     // Answering ----------------------------------------------------------
 
     public function test_a_correct_answer_scores(): void

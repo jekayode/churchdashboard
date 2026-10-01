@@ -4,6 +4,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $quiz->title }}</title>
+    {{-- Noto draws stacked tone marks (ọ́, n̄, ô) cleanly where some system
+         fonts do not. If it cannot load, the system stack still renders. --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&display=swap">
     {{--
         Standalone rather than part of the dashboard layout. This is opened on
         whatever machine drives the projector, read from the back of the room,
@@ -20,7 +25,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             background: #0B0B0F; color: var(--ink); min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             display: flex; flex-direction: column; overflow: hidden;
         }
         .bar { display: flex; justify-content: space-between; align-items: center; padding: 1.4vw 2.4vw; font-size: 1.5vw; color: var(--muted); }
@@ -69,6 +74,15 @@
            room can still see what it was choosing between. */
         .opt.dim { opacity: .28; transform: scale(.97); }
         .opt.right { box-shadow: 0 0 0 .6vw #FFF inset; }
+
+        /* The fact behind the answer, read aloud while it is on screen. */
+        .fact {
+            width: 92vw; margin-top: 2vw; padding: 1.6vw 2.4vw; border-radius: 1.2vw;
+            background: rgba(255,255,255,.08); border-left: .6vw solid var(--brand);
+            font-size: 2.3vw; line-height: 1.35; text-align: left;
+        }
+        .has-fact .question { font-size: 3.6vw; margin: 1vw 0 2vw; }
+        .has-fact .opt { padding: 1.4vw 2.4vw; font-size: 2.4vw; }
 
         .timerwrap { display: flex; align-items: center; gap: 1.6vw; width: 92vw; margin-top: 3vw; }
         .timer { flex: 1; height: 1.2vw; background: rgba(255,255,255,.14); border-radius: 1vw; overflow: hidden; }
@@ -167,11 +181,16 @@
                    <span class="s">${p.score.toLocaleString()}</span></div>`).join('')}</div>`
             : '';
 
+        const fact = revealed && q.reveal_note
+            ? `<div class="fact">${escape(q.reveal_note)}</div>`
+            : '';
+
+        if (fact) stage.classList.add('has-fact');
         stage.innerHTML = `
             <div class="qnum">Question ${q.number} of ${data.state.question_count}</div>
             <div class="question">${escape(q.text)}</div>
             <div class="options">${options}</div>
-            ${timer}${strip}`;
+            ${fact}${timer}${strip}`;
     }
 
     function renderFinished(data) {
@@ -197,6 +216,7 @@
         // Only rebuild when the view actually changes, so the timer bar is not
         // thrown away and restarted on every poll.
         if (phase !== lastPhase || questionId !== lastQuestionId) {
+            stage.classList.remove('has-fact');
             if (phase === 'lobby') renderLobby(data);
             else if (phase === 'question') renderQuestion(data, false);
             else if (phase === 'reveal') renderQuestion(data, true);

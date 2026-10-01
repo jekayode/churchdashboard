@@ -329,4 +329,88 @@ final class QuestionImporterTest extends TestCase
 
         unlink($path);
     }
+
+    public function test_a_fact_line_is_kept_as_the_reveal_note(): void
+    {
+        $result = QuestionImporter::parseText(<<<'TEXT'
+        Which people call God Aôndo?
+        *Tiv
+        Idoma
+        Fact: The same word means sky.
+
+        Who led Israel across the Jordan?
+        Moses
+        *Joshua
+        TEXT);
+
+        $this->assertSame([], $result['errors']);
+        $this->assertSame('The same word means sky.', $result['questions'][0]['reveal_note']);
+        $this->assertCount(2, $result['questions'][0]['options'], 'The fact is not an answer');
+        $this->assertNull($result['questions'][1]['reveal_note']);
+    }
+
+    public function test_tone_marks_and_special_letters_survive_a_paste(): void
+    {
+        $result = QuestionImporter::parseText(<<<'TEXT'
+        Which people call God Ọlọ́run?
+        *Yoruba
+        Igala
+        Fact: The Efik Bible is N̄wed Abasi; the Igala call God Ọjọ.
+        TEXT);
+
+        $this->assertSame([], $result['errors']);
+        $this->assertSame('Which people call God Ọlọ́run?', $result['questions'][0]['text']);
+        $this->assertSame('The Efik Bible is N̄wed Abasi; the Igala call God Ọjọ.', $result['questions'][0]['reveal_note']);
+    }
+
+    public function test_an_overlong_fact_is_an_error(): void
+    {
+        $result = QuestionImporter::parseText("Who?\n*A\nB\nFact: ".str_repeat('x', 401));
+
+        $this->assertSame([], $result['questions']);
+        $this->assertStringContainsString('fact is longer', $result['errors'][0]);
+    }
+
+    public function test_a_csv_fact_column_becomes_the_reveal_note(): void
+    {
+        $path = $this->csv("question,a,b,c,d,answer,fact\n"
+            ."Which people call God Aôndo?,Tiv,Idoma,Igala,Nupe,A,\"It also means sky, as in heaven.\"\n"
+            ."Which people call God Ọjọ?,Tiv,Igala,Edo,Efik,B,\n");
+
+        $result = QuestionImporter::parseCsv($path);
+
+        $this->assertSame([], $result['errors']);
+        $this->assertSame('Which people call God Aôndo?', $result['questions'][0]['text']);
+        $this->assertSame('It also means sky, as in heaven.', $result['questions'][0]['reveal_note']);
+        $this->assertCount(4, $result['questions'][0]['options'], 'The fact column is not an answer');
+        $this->assertNull($result['questions'][1]['reveal_note']);
+
+        unlink($path);
+    }
+
+    public function test_a_csv_saved_by_excel_with_a_byte_order_mark_still_finds_its_columns(): void
+    {
+        $path = $this->csv("\u{FEFF}question,a,b,answer\nWho led Israel?,Moses,Joshua,B\n");
+
+        $result = QuestionImporter::parseCsv($path);
+
+        $this->assertSame([], $result['errors']);
+        $this->assertCount(1, $result['questions']);
+
+        unlink($path);
+    }
+
+    public function test_the_independence_names_of_god_pack_imports_cleanly(): void
+    {
+        $result = QuestionImporter::parseCsv(__DIR__.'/../../../database/data/quizzes/independence-names-of-god.csv');
+
+        $this->assertSame([], $result['errors']);
+        $this->assertCount(20, $result['questions']);
+        $this->assertSame('Which people call God “Ọjọ”?', $result['questions'][8]['text']);
+
+        foreach ($result['questions'] as $question) {
+            $this->assertCount(4, $question['options']);
+            $this->assertNotNull($question['reveal_note']);
+        }
+    }
 }

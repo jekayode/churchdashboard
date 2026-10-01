@@ -82,6 +82,13 @@
                                 class="text-sm text-church-600 hover:text-church-800 font-medium">+ Add answer</button>
                     </div>
 
+                    <label class="block space-y-1">
+                        <span class="text-sm font-medium text-gray-700">Fact shown on reveal <span class="font-normal text-gray-400">(optional)</span></span>
+                        <textarea :name="`questions[${qi}][reveal_note]`" x-model="question.reveal_note" rows="2" maxlength="400"
+                                  placeholder="Appears on the screen and phones once answering closes."
+                                  class="w-full rounded-lg border-gray-300 text-sm focus:border-church-500 focus:ring-church-500"></textarea>
+                    </label>
+
                     <details class="text-sm">
                         <summary class="cursor-pointer text-gray-500 hover:text-gray-700">Override timing or points for this question</summary>
                         <div class="grid sm:grid-cols-2 gap-3 mt-3">
@@ -126,6 +133,7 @@
             const blank = () => ({
                 key: nextKey++,
                 text: '',
+                reveal_note: '',
                 time_limit_seconds: '',
                 points: '',
                 correct: 0,
@@ -134,7 +142,7 @@
 
             return {
                 questions: saved.length
-                    ? saved.map(q => ({ ...q, key: nextKey++, time_limit_seconds: q.time_limit_seconds ?? '', points: q.points ?? '' }))
+                    ? saved.map(q => ({ ...q, key: nextKey++, reveal_note: q.reveal_note ?? '', time_limit_seconds: q.time_limit_seconds ?? '', points: q.points ?? '' }))
                     : [blank()],
                 addQuestion() { this.questions.push(blank()); },
                 removeQuestion(i) { this.questions.splice(i, 1); },
