@@ -17,7 +17,7 @@ final class QuizQuestion extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = ['quiz_id', 'position', 'text', 'time_limit_seconds', 'points'];
+    protected $fillable = ['quiz_id', 'position', 'text', 'reveal_note', 'time_limit_seconds', 'points'];
 
     /**
      * @var array<string, string>

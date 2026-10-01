@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Quiz;
 
+use App\Enums\QuizTheme;
 use App\Models\Branch;
 use App\Models\Quiz;
 use App\Models\QuizQuestion;
@@ -71,6 +72,49 @@ final class QuizAuthoringTest extends TestCase
         $this->assertNotNull($quiz->code);
     }
 
+    public function test_a_quiz_is_standard_unless_a_theme_is_chosen(): void
+    {
+        $pastor = $this->pastor();
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.store'), [
+            'title' => 'Plain quiz',
+            'seconds_per_question' => 20,
+            'reveal_seconds' => 6,
+            'base_points' => 1000,
+        ]);
+
+        $this->assertSame(QuizTheme::Standard, Quiz::firstWhere('title', 'Plain quiz')->theme);
+    }
+
+    public function test_the_independence_theme_can_be_chosen(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)->put(route('pastor.quizzes.update', $quiz), [
+            'title' => $quiz->title,
+            'seconds_per_question' => 20,
+            'reveal_seconds' => 20,
+            'base_points' => 1000,
+            'theme' => 'nigeria',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(QuizTheme::Nigeria, $quiz->fresh()->theme);
+    }
+
+    public function test_an_unknown_theme_is_rejected(): void
+    {
+        $pastor = $this->pastor();
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.store'), [
+            'title' => 'Odd quiz',
+            'seconds_per_question' => 20,
+            'reveal_seconds' => 6,
+            'base_points' => 1000,
+            'theme' => 'neon',
+        ])->assertSessionHasErrors('theme');
+    }
+
     public function test_the_projector_link_works_before_the_quiz_is_opened(): void
     {
         $pastor = $this->pastor();
@@ -122,6 +166,48 @@ final class QuizAuthoringTest extends TestCase
         $this->assertSame('Who led Israel across the Jordan?', $question->text);
         $this->assertCount(3, $question->options);
         $this->assertSame('Joshua', $question->correctOption()->text);
+    }
+
+    public function test_a_fact_is_saved_with_its_tone_marks_and_can_be_cleared(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        $payload = $this->questionPayload();
+        $payload['questions'][0]['reveal_note'] = 'Ọlọ́run means "owner of heaven".';
+
+        $this->actingAs($pastor)->put(route('pastor.quizzes.questions.update', $quiz), $payload)->assertSessionHasNoErrors();
+
+        $this->assertSame('Ọlọ́run means "owner of heaven".', $quiz->fresh()->questions()->first()->reveal_note);
+
+        $payload['questions'][0]['reveal_note'] = '';
+        $this->actingAs($pastor)->put(route('pastor.quizzes.questions.update', $quiz), $payload);
+
+        $this->assertNull($quiz->fresh()->questions()->first()->reveal_note);
+    }
+
+    public function test_a_fact_too_long_for_the_screen_is_rejected(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        $payload = $this->questionPayload();
+        $payload['questions'][0]['reveal_note'] = str_repeat('x', 401);
+
+        $this->actingAs($pastor)
+            ->put(route('pastor.quizzes.questions.update', $quiz), $payload)
+            ->assertSessionHasErrors('questions.0.reveal_note');
+    }
+
+    public function test_the_editor_shows_a_saved_fact(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+        QuizQuestion::factory()->create(['quiz_id' => $quiz->id, 'position' => 1, 'reveal_note' => 'Aôndo also means sky.']);
+
+        $this->actingAs($pastor)
+            ->get(route('pastor.quizzes.questions', $quiz))
+            ->assertOk()
+            // Handed to the editor as JSON, which escapes the ô.
+            ->assertSee('"reveal_note":"A\\u00f4ndo also means sky."', false);
     }
 
     public function test_saving_questions_replaces_the_previous_set(): void
@@ -263,6 +349,37 @@ final class QuizAuthoringTest extends TestCase
             ->assertRedirect(route('pastor.quizzes.questions', $quiz));
 
         $this->assertSame('Joshua', $quiz->fresh()->questions()->with('options')->first()->correctOption()->text);
+    }
+
+    public function test_a_csv_fact_column_is_imported(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $file = \Illuminate\Http\UploadedFile::fake()->createWithContent(
+            'questions.csv',
+            "question,a,b,c,d,answer,fact\nWhich people call God Ọjọ?,Tiv,Igala,Edo,Efik,B,The Igala Bible is Ọtakada Ọla Ọjọ.\n",
+        );
+
+        $this->actingAs($pastor)
+            ->post(route('pastor.quizzes.import.store', $quiz), ['file' => $file])
+            ->assertRedirect(route('pastor.quizzes.questions', $quiz));
+
+        $question = $quiz->fresh()->questions()->first();
+        $this->assertSame('Which people call God Ọjọ?', $question->text);
+        $this->assertSame('The Igala Bible is Ọtakada Ọla Ọjọ.', $question->reveal_note);
+    }
+
+    public function test_pasted_facts_are_imported(): void
+    {
+        $pastor = $this->pastor();
+        $quiz = Quiz::factory()->create(['branch_id' => $pastor->getActiveBranchId()]);
+
+        $this->actingAs($pastor)->post(route('pastor.quizzes.import.store', $quiz), [
+            'pasted' => "Which people call God Aôndo?\n*Tiv\nIdoma\nFact: It also means sky.",
+        ]);
+
+        $this->assertSame('It also means sky.', $quiz->fresh()->questions()->first()->reveal_note);
     }
 
     public function test_questions_cannot_be_imported_once_the_quiz_is_open(): void

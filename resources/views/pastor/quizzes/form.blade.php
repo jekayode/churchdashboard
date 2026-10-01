@@ -56,6 +56,17 @@
                 Questions move on by themselves, so on the day you only need to press start.
             </p>
 
+            <div>
+                <label for="theme" class="block text-sm font-medium text-gray-700 mb-1">Screen theme</label>
+                <select id="theme" name="theme"
+                        class="w-full sm:w-auto rounded-lg border-gray-300 focus:border-church-500 focus:ring-church-500">
+                    @foreach (\App\Enums\QuizTheme::cases() as $theme)
+                        <option value="{{ $theme->value }}" @selected(old('theme', $quiz?->theme?->value ?? 'standard') === $theme->value)>{{ $theme->label() }}</option>
+                    @endforeach
+                </select>
+                @error('theme') <p class="text-sm text-red-600 mt-1">{{ $message }}</p> @enderror
+            </div>
+
             <label class="flex items-start gap-3">
                 <input type="checkbox" name="allow_guests" value="1"
                        {{ old('allow_guests', $quiz?->allow_guests ?? true) ? 'checked' : '' }}

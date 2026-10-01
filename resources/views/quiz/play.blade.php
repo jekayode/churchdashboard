@@ -8,6 +8,11 @@
     <meta name="theme-color" content="#DD5D20">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $quiz->title }}</title>
+    {{-- Noto draws stacked tone marks (ọ́, n̄, ô) cleanly where some phone
+         fonts do not. If it cannot load, the system stack still renders. --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;600;700;800&display=swap">
     <style>
         :root {
             --brand: #DD5D20; --amber: #F79000;
@@ -19,7 +24,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
         body {
             background: var(--bg); color: var(--ink); min-height: 100dvh;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: "Noto Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 20px);
             display: flex; flex-direction: column;
         }
@@ -70,6 +75,8 @@
 
         .verdict { text-align: center; margin-top: 16px; font-size: 17px; font-weight: 700; }
         .verdict.good { color: var(--good); } .verdict.bad { color: var(--bad); }
+        .fact { margin-top: 12px; padding: 12px 14px; border-radius: 12px; border-left: 4px solid var(--brand);
+                background: rgba(221, 93, 32, .08); font-size: 15px; line-height: 1.5; color: var(--ink); }
 
         label { display: block; font-size: 14px; font-weight: 600; color: var(--sub); margin-bottom: 8px; }
         input[type=text] {
@@ -98,9 +105,24 @@
         .cta p { font-size: 15px; color: var(--sub); line-height: 1.5; }
         .hidden { display: none !important; }
         main { flex: 1; }
+
+        /* The flag band sits flush with the top edge, outside the page padding. */
+        .flag-band { margin: 0 -16px; width: calc(100% + 32px) !important; height: 6px !important; }
+        .theme-nigeria .fact { border-left-color: #008751; background: rgba(0,135,81,.08); }
+
+        .row .r { display: flex; align-items: center; }
+        .medal { width: 22px; height: auto; display: block; }
+        .podium { display: flex; justify-content: center; margin-bottom: 8px; }
+        .podium .medal { width: 64px; animation: medal-drop .9s cubic-bezier(.3, 1.5, .5, 1) both; }
+        @keyframes medal-drop {
+            from { transform: translateY(-120px) rotate(-25deg); opacity: 0; }
+            to { transform: none; opacity: 1; }
+        }
+        @media (prefers-reduced-motion: reduce) { .podium .medal { animation: none; } }
     </style>
 </head>
-<body>
+<body class="theme-{{ $quiz->theme->value }}">
+    @include('quiz.partials.flag-band')
     <div class="head">
         <h1>{{ $quiz->title }}</h1>
         <span class="code">{{ $quiz->code }}</span>
@@ -110,6 +132,7 @@
         <div class="card centre"><p class="sub">Loading…</p></div>
     </main>
 
+@include('quiz.partials.celebration')
 <script>
 (function () {
     const CODE = @json($quiz->code);
@@ -278,7 +301,7 @@
                 : state.me.answer_was_correct
                     ? `<p class="verdict good">Correct — ${(state.me.points_from_answer || 0).toLocaleString()} points</p>`
                     : '<p class="verdict bad">Not that one.</p>';
-            footer = verdict;
+            footer = verdict + (q.reveal_note ? `<p class="fact">${esc(q.reveal_note)}</p>` : '');
         } else if (answered !== null && state.me) {
             /* The wait cannot be skipped: everyone has to start the next
                question together or answering quickly stops being worth
@@ -305,16 +328,21 @@
         });
     }
 
+    let celebrated = false;
+
     function renderFinished() {
+        const celebrate = window.quizCelebration;
         const rows = state.leaderboard.slice(0, 5).map((p) => `
             <div class="row ${state.me && p.participant_id === state.me.participant_id ? 'mine' : ''}">
-                <span class="r">${p.rank}</span><span class="n">${esc(p.name)}</span>
+                <span class="r">${p.rank <= 3 ? celebrate.medal(p.rank) : p.rank}</span><span class="n">${esc(p.name)}</span>
                 <span class="s">${p.score.toLocaleString()}</span>
             </div>`).join('');
 
+        const onPodium = state.me && state.me.rank <= 3;
         const mine = state.me ? `
             <div class="card centre">
-                <p class="big">That’s the lot</p>
+                ${onPodium ? `<div class="podium">${celebrate.medal(state.me.rank)}</div>` : ''}
+                <p class="big">${onPodium ? `You came ${ordinal(state.me.rank)}!` : 'That’s the lot'}</p>
                 <p class="sub">You finished ${ordinal(state.me.rank)} of ${state.participant_count},
                    with ${state.me.score.toLocaleString()} points from ${state.me.correct_count} correct.</p>
             </div>` : '';
@@ -328,6 +356,12 @@
                    Get the LifePointe app and your history follows you — plus your
                    notes, the daily reading and what’s on this week.</p>
             </div>`;
+
+        // Once per visit: this re-renders whenever the poll changes anything.
+        if (!celebrated) {
+            celebrated = true;
+            celebrate.confetti({ burst: 50, cap: 120, rainMs: 4000, onLight: true });
+        }
     }
 
     function paint() {

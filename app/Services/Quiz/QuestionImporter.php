@@ -25,8 +25,10 @@ final class QuestionImporter
 
     private const MAX_OPTIONS = 4;
 
+    public const MAX_NOTE_LENGTH = 400;
+
     /**
-     * @return array{questions: list<array{text: string, options: list<array{text: string}>, correct: int}>, errors: list<string>}
+     * @return array{questions: list<array{text: string, options: list<array{text: string}>, correct: int, reveal_note: string|null}>, errors: list<string>}
      */
     public static function parseText(string $input): array
     {
@@ -62,7 +64,7 @@ final class QuestionImporter
      * A sheet exported to CSV. The header row names the columns, and the usual
      * spellings are all accepted because nobody will look this up.
      *
-     * @return array{questions: list<array{text: string, options: list<array{text: string}>, correct: int}>, errors: list<string>}
+     * @return array{questions: list<array{text: string, options: list<array{text: string}>, correct: int, reveal_note: string|null}>, errors: list<string>}
      */
     public static function parseCsv(string $path): array
     {
@@ -142,7 +144,20 @@ final class QuestionImporter
                 continue;
             }
 
-            $questions[] = ['text' => $text, 'options' => $options, 'correct' => $correct];
+            $note = $columns['note'] === null ? '' : trim((string) ($record[$columns['note']] ?? ''));
+
+            if (mb_strlen($note) > self::MAX_NOTE_LENGTH) {
+                $errors[] = "Row {$row}: the fact is longer than ".self::MAX_NOTE_LENGTH.' characters.';
+
+                continue;
+            }
+
+            $questions[] = [
+                'text' => $text,
+                'options' => $options,
+                'correct' => $correct,
+                'reveal_note' => $note === '' ? null : $note,
+            ];
         }
 
         fclose($handle);
@@ -232,7 +247,7 @@ final class QuestionImporter
 
     /**
      * @param  list<string>  $lines
-     * @return array{question?: array{text: string, options: list<array{text: string}>, correct: int}, error?: string}
+     * @return array{question?: array{text: string, options: list<array{text: string}>, correct: int, reveal_note: string|null}, error?: string}
      */
     private static function parseBlock(array $lines, int $number): array
     {
@@ -245,10 +260,17 @@ final class QuestionImporter
         $options = [];
         $starredIndexes = [];
         $namedAnswer = null;
+        $note = null;
 
         foreach ($lines as $line) {
             if (preg_match('/^(?:answer|ans|correct)\s*[:\-]\s*(.+)$/i', $line, $matches) === 1) {
                 $namedAnswer = trim($matches[1]);
+
+                continue;
+            }
+
+            if (preg_match('/^(?:fact|note|reveal)\s*:\s*(.+)$/iu', $line, $matches) === 1) {
+                $note = trim($matches[1]);
 
                 continue;
             }
@@ -298,6 +320,10 @@ final class QuestionImporter
             return ['error' => "Question {$number} (\"{$questionText}\"): has more than four answers."];
         }
 
+        if ($note !== null && mb_strlen($note) > self::MAX_NOTE_LENGTH) {
+            return ['error' => "Question {$number} (\"{$questionText}\"): the fact is longer than ".self::MAX_NOTE_LENGTH.' characters.'];
+        }
+
         $correct = $starred;
 
         if ($correct === null && $namedAnswer !== null) {
@@ -309,7 +335,12 @@ final class QuestionImporter
                 .'Put a * against it, or add a line reading "Answer: B".'];
         }
 
-        return ['question' => ['text' => $questionText, 'options' => $options, 'correct' => $correct]];
+        return ['question' => [
+            'text' => $questionText,
+            'options' => $options,
+            'correct' => $correct,
+            'reveal_note' => $note,
+        ]];
     }
 
     /**
@@ -397,27 +428,32 @@ final class QuestionImporter
 
     /**
      * @param  list<string>  $header
-     * @return array{question: int|null, answer: int|null, options: list<int>}
+     * @return array{question: int|null, answer: int|null, note: int|null, options: list<int>}
      */
     private static function mapCsvColumns(array $header): array
     {
         $question = null;
         $answer = null;
+        $note = null;
         $options = [];
 
         foreach ($header as $index => $name) {
-            $key = mb_strtolower(trim((string) $name));
+            // Excel prefixes a UTF-8 CSV with a byte-order mark, which would
+            // otherwise glue itself to the first column name.
+            $key = mb_strtolower(trim(str_replace("\u{FEFF}", '', (string) $name)));
 
             if (in_array($key, ['question', 'q', 'text', 'question text'], true)) {
                 $question = $index;
             } elseif (in_array($key, ['answer', 'correct', 'correct answer', 'key'], true)) {
                 $answer = $index;
+            } elseif (in_array($key, ['fact', 'note', 'notes', 'reveal', 'explanation'], true)) {
+                $note = $index;
             } elseif (preg_match('/^(?:option\s*\d+|answer\s*\d+|[a-d])$/', $key) === 1) {
                 $options[] = $index;
             }
         }
 
-        return ['question' => $question, 'answer' => $answer, 'options' => $options];
+        return ['question' => $question, 'answer' => $answer, 'note' => $note, 'options' => $options];
     }
 
     /**

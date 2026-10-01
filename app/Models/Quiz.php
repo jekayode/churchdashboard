@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\QuizTheme;
 use App\Services\Quiz\QuizTimeline;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,13 @@ final class Quiz extends Model
     private const CODE_LENGTH = 5;
 
     /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'theme' => 'standard',
+    ];
+
+    /**
      * @var list<string>
      */
     protected $fillable = [
@@ -40,6 +48,7 @@ final class Quiz extends Model
         'base_points',
         'reveal_seconds',
         'allow_guests',
+        'theme',
         'started_at',
         'paused_at',
         'paused_ms',
@@ -56,6 +65,7 @@ final class Quiz extends Model
         'reveal_seconds' => 'integer',
         'paused_ms' => 'integer',
         'allow_guests' => 'boolean',
+        'theme' => QuizTheme::class,
         'started_at' => 'datetime',
         'paused_at' => 'datetime',
         'finished_at' => 'datetime',

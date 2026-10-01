@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\Pastor;
 
+use App\Enums\QuizTheme;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class QuizRequest extends FormRequest
 {
@@ -27,11 +29,15 @@ final class QuizRequest extends FormRequest
             'reveal_seconds' => ['required', 'integer', 'min:2', 'max:30'],
             'base_points' => ['required', 'integer', 'min:100', 'max:5000'],
             'allow_guests' => ['boolean'],
+            'theme' => ['required', Rule::enum(QuizTheme::class)],
         ];
     }
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['allow_guests' => $this->boolean('allow_guests')]);
+        $this->merge([
+            'allow_guests' => $this->boolean('allow_guests'),
+            'theme' => $this->input('theme', QuizTheme::Standard->value),
+        ]);
     }
 }

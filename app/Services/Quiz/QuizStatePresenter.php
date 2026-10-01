@@ -96,6 +96,8 @@ final class QuizStatePresenter
             'id' => $state->question->id,
             'number' => $state->questionNumber(),
             'text' => $state->question->text,
+            // A fact about the answer, so it waits for the reveal too.
+            'reveal_note' => $revealed ? $state->question->reveal_note : null,
             'options' => $state->question->options
                 ->map(fn (QuizOption $option): array => array_filter([
                     'id' => $option->id,
